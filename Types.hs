@@ -1,8 +1,10 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Types where
 
-import Control.Monad.Reader
+import Control.Monad.State
 import Data.Maybe
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
@@ -154,10 +156,22 @@ data Cost
   | ExileCost (Object -> Bool)
 
 
-class MonadReader Game m => MonadInteract m where
-  choose :: [Choice a] -> m a
+data Interact :: * -> * where
+  Return  :: a -> Interact a
+  Bind    :: Interact a -> (a -> Interact b) -> Interact b
+  GetGame :: Interact Game
+  PutGame :: Game -> Interact ()
+  Choose  :: [Choice a] -> Interact a
 
-targetOne :: (Entity -> Bool) -> m Entity
+instance Monad Interact where
+  return = Return
+  (>>=)  = Bind
+
+instance MonadState Game Interact where
+  get = GetGame
+  put = PutGame
+
+targetOne :: (Entity -> Bool) -> Interact Entity
 targetOne = undefined
 
 data Choice a
