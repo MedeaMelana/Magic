@@ -5,12 +5,8 @@ module M12 where
 import Types
 
 import Control.Monad.State
-import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
-import Data.Set (Set)
-import qualified Data.Set as Set
 import Data.Text (Text)
-import qualified Data.Text as Text
 
 
 shock :: Card
