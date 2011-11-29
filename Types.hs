@@ -61,13 +61,12 @@ data Player = Player
   , manaPool :: Bag (Maybe Color)
   } deriving (Eq, Ord, Show)
 
-data Zone = Library | Hand | Stack
-  | Battlefield TapStatus | Graveyard | Exile
-  deriving (Eq, Ord, Show)
-
 data Card = Card
   { enterGame :: Ref Player -> Ref Object -> Object
   }
+
+
+-- Objects
 
 data Object = Object
   { name       :: Maybe Text
@@ -82,37 +81,20 @@ data Object = Object
 data Color = White | Blue | Black | Red | Green
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
+data Zone = Library | Hand | Stack
+  | Battlefield TapStatus | Graveyard | Exile
+  deriving (Eq, Ord, Show)
+
 data TapStatus = Untapped | Tapped
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data Group
-  = Spell SpellType (Set SpellSubtype)
+  = Spell SpellType
   | Permanent (Set Supertype) (Set PermanentType)
   deriving (Eq, Ord, Show)
 
-data Cost
-  = PayMana (Bag (Maybe Color))
-  | PayLife Int
-  | SacrificeCost (Object -> Bool)
-  | ExileCost (Object -> Bool)
-
-
--- Spells
-
-data SpellType
-  = Instant (Set InstantType)
-  | Sorcery
+data SpellType = Instant | Sorcery
   deriving (Eq, Ord, Show)
-
-data SpellSubtype = Arcane
-  deriving (Eq, Ord, Show, Read, Enum, Bounded)
-
-data InstantType = Trap
-  deriving (Eq, Ord, Show, Read, Enum, Bounded)
-
-
-
--- Permanents
 
 data Supertype = Basic | Legendary
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
@@ -128,7 +110,7 @@ data PermanentType
 type Power = Int
 type Toughness = Int
 
-data ArtifactType = Contraption | Fortification | Equipment
+data ArtifactType = Equipment
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data CreatureType
@@ -146,17 +128,14 @@ data CreatureType
   | Shaman
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data EnchantmentType = Aura | Curse | Shrine
+data EnchantmentType = Aura | Curse
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data LandType
-  = Plains | Island | Swamp | Mountain | Forest
-  | Desert | Lair | Locus | Urza's | Mine | PowerPlant | Tower
+data LandType = Plains | Island | Swamp | Mountain | Forest | Locus
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data PlaneswalkerType
-  = Ajani | Bolas | Chandra | Elspeth | Garruk | Gideon | Jace | Koth
-  | Liliana | Nissa | Sarkhan | Sorin | Tezzeret | Venser | Karn 
+data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
+  | Koth | Liliana | Sorin | Tezzeret | Venser | Karn 
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 
@@ -167,6 +146,12 @@ data ActivatedAbility = ActivatedAbility
   , cost      :: [Cost]
   , effect    :: Game -> Game
   }
+
+data Cost
+  = PayMana (Bag (Maybe Color))
+  | PayLife Int
+  | SacrificeCost (Object -> Bool)
+  | ExileCost (Object -> Bool)
 
 
 class MonadReader Game m => MonadInteract m where
