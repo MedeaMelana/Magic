@@ -24,8 +24,9 @@ type RefMap = IntMap
 
 -- | Current game situation.
 data World = World
-  { entities     :: RefMap Entity
-  , activePlayer :: Ref Entity
+  { objects      :: RefMap Object
+  , players      :: RefMap Player
+  , activePlayer :: Ref Player
   , activeStep   :: Step
   }
 
@@ -53,10 +54,6 @@ data Step
   | CleanupStep
   
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
-
-data Entity
-  = PlayerEntity Player
-  | ObjectEntity Object
 
 data Player = Player
   { life     :: Int
@@ -161,7 +158,10 @@ data Interact :: * -> * where
   Bind     :: Interact a -> (a -> Interact b) -> Interact b
   GetWorld :: Interact World
   PutWorld :: World -> Interact ()
-  Choose  :: [Choice a] -> Interact a
+  Choose   :: [Choice a] -> Interact a
+
+choose :: [Choice a] -> Interact a
+choose = Choose
 
 instance Monad Interact where
   return = Return
@@ -171,9 +171,7 @@ instance MonadState World Interact where
   get = GetWorld
   put = PutWorld
 
-targetOne :: (Entity -> Bool) -> Interact Entity
-targetOne = undefined
-
 data Choice a
-  = TargetEntity (Ref Entity) a
+  = TargetPlayer (Ref Player) a
+  | TargetObject (Ref Object) a
   | Custom Text a  -- with explanation

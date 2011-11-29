@@ -11,10 +11,10 @@ import Data.Text (Text)
 
 shock :: Card
 shock = mkInstant "Shock" [PayMana [Just Red]] $ do
-  t <- targetOne (const True)
-  get
+  playerRefs <- gets (IntMap.keys . players)
+  return ()
 
-mkInstant :: Text -> [Cost] -> Interact World -> Card
+mkInstant :: Text -> [Cost] -> Interact () -> Card
 mkInstant name cost effect = Card
   { enterWorld = \rOwner rSelf -> Object
     { name = Just name
@@ -25,7 +25,7 @@ mkInstant name cost effect = Card
     , abilities = []
     , play = ActivatedAbility
       { available = \game ->
-          let ObjectEntity self = entities game IntMap.! rSelf
+          let self = objects game IntMap.! rSelf
            in zone self == Hand
       , cost = cost
       , effect = undefined
