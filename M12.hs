@@ -14,9 +14,9 @@ shock = mkInstant "Shock" [PayMana [Just Red]] $ do
   t <- targetOne (const True)
   get
 
-mkInstant :: Text -> [Cost] -> Interact Game -> Card
+mkInstant :: Text -> [Cost] -> Interact World -> Card
 mkInstant name cost effect = Card
-  { enterGame = \rOwner rSelf -> Object
+  { enterWorld = \rOwner rSelf -> Object
     { name = Just name
     , group = Spell Instant
     , zone = Library

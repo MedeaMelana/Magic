@@ -23,7 +23,7 @@ type RefMap = IntMap
 
 
 -- | Current game situation.
-data Game = Game
+data World = World
   { entities     :: RefMap Entity
   , activePlayer :: Ref Entity
   , activeStep   :: Step
@@ -64,7 +64,7 @@ data Player = Player
   } deriving (Eq, Ord, Show)
 
 data Card = Card
-  { enterGame :: Ref Player -> Ref Object -> Object
+  { enterWorld :: Ref Player -> Ref Object -> Object
   }
 
 
@@ -144,9 +144,9 @@ data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
 -- Actions
 
 data ActivatedAbility = ActivatedAbility
-  { available :: Game -> Bool
+  { available :: World -> Bool
   , cost      :: [Cost]
-  , effect    :: Game -> Game
+  , effect    :: World -> World
   }
 
 data Cost
@@ -157,19 +157,19 @@ data Cost
 
 
 data Interact :: * -> * where
-  Return  :: a -> Interact a
-  Bind    :: Interact a -> (a -> Interact b) -> Interact b
-  GetGame :: Interact Game
-  PutGame :: Game -> Interact ()
+  Return   :: a -> Interact a
+  Bind     :: Interact a -> (a -> Interact b) -> Interact b
+  GetWorld :: Interact World
+  PutWorld :: World -> Interact ()
   Choose  :: [Choice a] -> Interact a
 
 instance Monad Interact where
   return = Return
   (>>=)  = Bind
 
-instance MonadState Game Interact where
-  get = GetGame
-  put = PutGame
+instance MonadState World Interact where
+  get = GetWorld
+  put = PutWorld
 
 targetOne :: (Entity -> Bool) -> Interact Entity
 targetOne = undefined
