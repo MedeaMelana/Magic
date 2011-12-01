@@ -90,7 +90,7 @@ data Object = Object
 data Color = White | Blue | Black | Red | Green
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data Zone = Library | Hand | Stack { resolution :: Interact () }
+data Zone = Library | Hand | Stack { resolution :: Magic () }
   | Battlefield TapStatus | Graveyard | Exile
 
 data TapStatus = Untapped | Tapped
@@ -153,7 +153,7 @@ data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
 data ActivatedAbility = ActivatedAbility
   { _available :: World -> Bool
   , _cost      :: [Cost]
-  , _effect    :: Interact ()
+  , _effect    :: Magic ()
   }
 
 data Cost
@@ -163,21 +163,21 @@ data Cost
   | ExileCost (Object -> Bool)
 
 
-data Interact :: * -> * where
-  Return   :: a -> Interact a
-  Bind     :: Interact a -> (a -> Interact b) -> Interact b
-  GetWorld :: Interact World
-  PutWorld :: World -> Interact ()
-  Choose   :: [Choice a] -> Interact a
+data Magic :: * -> * where
+  Return   :: a -> Magic a
+  Bind     :: Magic a -> (a -> Magic b) -> Magic b
+  GetWorld :: Magic World
+  PutWorld :: World -> Magic ()
+  Choose   :: [Choice a] -> Magic a
 
-choose :: [Choice a] -> Interact a
+choose :: [Choice a] -> Magic a
 choose = Choose
 
-instance Monad Interact where
+instance Monad Magic where
   return = Return
   (>>=)  = Bind
 
-instance MonadState World Interact where
+instance MonadState World Magic where
   get = GetWorld
   put = PutWorld
 
