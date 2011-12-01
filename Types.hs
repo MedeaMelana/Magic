@@ -90,7 +90,7 @@ data Object = Object
 data Color = White | Blue | Black | Red | Green
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data Zone = Library | Hand | Stack { resolution :: Magic () }
+data Zone = Library | Hand | Stack { resolve :: Magic () }
   | Battlefield TapStatus | Graveyard | Exile
 
 data TapStatus = Untapped | Tapped
