@@ -1,10 +1,20 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Types where
 
+import Prelude hiding ((.), id)
+
+import Control.Arrow (ArrowZero(..), ArrowChoice(..), arr, returnA)
+import Control.Category ((.), id)
 import Control.Monad.State
+
+import Data.Label (mkLabels, Lens(..))
+import Data.Label.Abstract (lens)
 import Data.Maybe
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
@@ -24,10 +34,10 @@ type RefMap = IntMap
 
 -- | Current game situation.
 data World = World
-  { objects      :: RefMap Object
-  , players      :: RefMap Player
-  , activePlayer :: Ref Player
-  , activeStep   :: Step
+  { _objects      :: RefMap Object
+  , _players      :: RefMap Player
+  , _activePlayer :: Ref Player
+  , _activeStep   :: Step
   }
 
 data Step
@@ -56,8 +66,8 @@ data Step
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data Player = Player
-  { life     :: Int
-  , manaPool :: Bag (Maybe Color)
+  { _life     :: Int
+  , _manaPool :: Bag (Maybe Color)
   } deriving (Eq, Ord, Show)
 
 data Card = Card
@@ -68,28 +78,29 @@ data Card = Card
 -- Objects
 
 data Object = Object
-  { name       :: Maybe Text
-  , group      :: Group
-  , zone       :: Zone
-  , owner      :: Ref Player
-  , controller :: Ref Player
-  , abilities  :: [ActivatedAbility]
-  , play       :: ActivatedAbility
+  { _name       :: Maybe Text
+  , _group      :: Group
+  , _zone       :: Zone
+  , _owner      :: Ref Player
+  , _controller :: Ref Player
+  , _abilities  :: [ActivatedAbility]
+  , _play       :: ActivatedAbility
   }
 
 data Color = White | Blue | Black | Red | Green
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data Zone = Library | Hand | Stack
+data Zone = Library | Hand | Stack { resolution :: Interact () }
   | Battlefield TapStatus | Graveyard | Exile
-  deriving (Eq, Ord, Show)
 
 data TapStatus = Untapped | Tapped
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data Group
-  = Spell SpellType
-  | Permanent (Set Supertype) (Set PermanentType)
+  = Spell { _spellType :: SpellType }
+  | Permanent
+    { _supertypes     :: Set Supertype
+    , _permanentTypes :: Set PermanentType }
   deriving (Eq, Ord, Show)
 
 data SpellType = Instant | Sorcery
@@ -99,15 +110,14 @@ data Supertype = Basic | Legendary
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data PermanentType
-  = Artifact      (Set ArtifactType)
-  | Creature      (Set CreatureType) Power Toughness
-  | Enchantment   (Set EnchantmentType)
-  | Land          (Set LandType)
-  | Planeswalker  (Set PlaneswalkerType)
+  = Artifact      { _artifactTypes     :: Set ArtifactType }
+  | Creature      { _creatureTypes     :: Set CreatureType
+                  , _power             :: Int
+                  , _toughness         :: Int }
+  | Enchantment   { _enchantmentTypes  :: Set EnchantmentType }
+  | Land          { _landTypes         :: Set LandType }
+  | Planeswalker  { _planeswalkerTypes :: Set PlaneswalkerType }
   deriving (Eq, Ord, Show)
-
-type Power = Int
-type Toughness = Int
 
 data ArtifactType = Equipment
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
@@ -141,9 +151,9 @@ data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
 -- Actions
 
 data ActivatedAbility = ActivatedAbility
-  { available :: World -> Bool
-  , cost      :: [Cost]
-  , effect    :: World -> World
+  { _available :: World -> Bool
+  , _cost      :: [Cost]
+  , _effect    :: Interact ()
   }
 
 data Cost
@@ -175,3 +185,5 @@ data Choice a
   = TargetPlayer (Ref Player) a
   | TargetObject (Ref Object) a
   | Custom Text a  -- with explanation
+
+$(mkLabels [''World, ''Player, ''Object, ''Zone, ''Group, ''PermanentType, ''ActivatedAbility])
