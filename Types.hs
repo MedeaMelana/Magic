@@ -83,8 +83,8 @@ data Object = Object
   , _zone       :: Zone
   , _owner      :: Ref Player
   , _controller :: Ref Player
-  , _abilities  :: [ActivatedAbility]
-  , _play       :: ActivatedAbility
+  , _abilities  :: [Action]
+  , _play       :: Action
   }
 
 data Color = White | Blue | Black | Red | Green
@@ -150,7 +150,7 @@ data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
 
 -- Actions
 
-data ActivatedAbility = ActivatedAbility
+data Action = Action
   { _available :: World -> Bool
   , _cost      :: [Cost]
   , _effect    :: Magic ()
@@ -168,9 +168,9 @@ data Magic :: * -> * where
   Bind     :: Magic a -> (a -> Magic b) -> Magic b
   GetWorld :: Magic World
   PutWorld :: World -> Magic ()
-  Choose   :: [Choice a] -> Magic a
+  Choose   :: [(Choice, a)] -> Magic a
 
-choose :: [Choice a] -> Magic a
+choose :: [(Choice, a)] -> Magic a
 choose = Choose
 
 instance Monad Magic where
@@ -181,9 +181,9 @@ instance MonadState World Magic where
   get = GetWorld
   put = PutWorld
 
-data Choice a
-  = TargetPlayer (Ref Player) a
-  | TargetObject (Ref Object) a
-  | Custom Text a  -- with explanation
+data Choice
+  = TargetPlayer (Ref Player)
+  | TargetObject (Ref Object)
 
-$(mkLabels [''World, ''Player, ''Object, ''Zone, ''Group, ''PermanentType, ''ActivatedAbility])
+$(mkLabels [''World, ''Player, ''Object, ''Zone, ''Group,
+  ''PermanentType, ''Action])
