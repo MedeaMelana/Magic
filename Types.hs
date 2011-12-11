@@ -169,6 +169,8 @@ data Magic :: * -> * where
   GetWorld :: Magic World
   PutWorld :: World -> Magic ()
   Choose   :: [(Choice, a)] -> Magic a
+  Fail     :: Magic a
+  Plus     :: Magic a -> Magic a -> Magic a
 
 choose :: [(Choice, a)] -> Magic a
 choose = Choose
@@ -180,6 +182,10 @@ instance Monad Magic where
 instance MonadState World Magic where
   get = GetWorld
   put = PutWorld
+
+instance MonadPlus Magic where
+  mzero = Fail
+  mplus = Plus
 
 data Choice
   = TargetPlayer (Ref Player)
