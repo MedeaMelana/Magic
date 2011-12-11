@@ -3,32 +3,65 @@
 module M12 where
 
 import Types
+import Labels
+import Predicates
 
-import Control.Monad.State
+import Control.Monad (when)
+import Data.Boolean
 import qualified Data.IntMap as IntMap
+import Data.Label.MaybeM
+import Data.Maybe (catMaybes)
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.Text (Text)
 
 
-shock :: Card
-shock = mkInstant "Shock" [PayMana [Just Red]] $ do
-  playerRefs <- gets (IntMap.keys . players)
-  return ()
+doomblade :: Card
+doomblade =
+  mkInstant "Doomblade" [PayMana [Just Black, Nothing]] $
+    \rSelf rOwner -> do
+      let crit = notB (hasColor Black) &&* isOnBattlefield
+      rTarget <- targetCreature crit
+      stack rSelf $ do
+        o <- gets (objects ^. ref rTarget)
+        when (crit o) $ do
+          objects ^. ref rTarget ^. zone =: Graveyard
 
-mkInstant :: Text -> [Cost] -> Interact () -> Card
+stack :: Ref Object -> Magic () -> Magic ()
+stack r a = objects ^. ref r ^. zone =: Stack a
+
+target :: (Object -> Bool) -> Magic (Ref Object)
+target = undefined
+
+targetCreature :: (Object -> Bool) -> Magic (Ref Object)
+targetCreature = undefined
+
+targetPlayer :: (Player -> Bool) -> Magic (Ref Player)
+targetPlayer = undefined
+
+mkInstant :: Text -> [Cost] -> (Ref Object -> Ref Player ->
+  Magic ()) -> Card
 mkInstant name cost effect = Card
   { enterWorld = \rOwner rSelf -> Object
-    { name = Just name
-    , group = Spell Instant
-    , zone = Library
-    , owner = rOwner
-    , controller = rOwner
-    , abilities = []
-    , play = ActivatedAbility
-      { available = \game ->
-          let self = objects game IntMap.! rSelf
-           in zone self == Hand
-      , cost = cost
-      , effect = undefined
+    { _name = Just name
+    , _colors = colorsFromCost cost
+    , _group = Spell Instant
+    , _zone = Library
+    , _owner = rOwner
+    , _controller = rOwner
+    , _abilities = []
+    , _play = Action
+      { _available = do
+          self <- gets (objects ^. ref rSelf)
+          return (isInHand self)
+      , _cost = cost
+      , _effect = undefined
       }
     }
   }
+
+colorsFromCost :: [Cost] -> Set Color
+colorsFromCost = Set.fromList . concat . map f
+  where
+    f (PayMana colors) = catMaybes colors
+    f _                = []

@@ -30,6 +30,7 @@ type Bag = []
 
 type Ref a = Int
 type RefMap = IntMap
+type WithRef a = (Ref a, a)
 
 
 -- | Current game situation.
@@ -79,6 +80,7 @@ data Card = Card
 
 data Object = Object
   { _name       :: Maybe Text
+  , _colors     :: Set Color
   , _group      :: Group
   , _zone       :: Zone
   , _owner      :: Ref Player
@@ -151,7 +153,7 @@ data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
 -- Actions
 
 data Action = Action
-  { _available :: World -> Bool
+  { _available :: Magic Bool
   , _cost      :: [Cost]
   , _effect    :: Magic ()
   }
