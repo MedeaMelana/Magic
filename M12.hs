@@ -8,7 +8,6 @@ import Predicates
 
 import Control.Monad (when)
 import Data.Boolean
-import qualified Data.IntMap as IntMap
 import Data.Label.MaybeM
 import Data.Maybe (catMaybes)
 import Data.Set (Set)
