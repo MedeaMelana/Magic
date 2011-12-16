@@ -27,6 +27,35 @@ doomblade =
         when (crit o) $ do
           objects ^. ref rTarget ^. zone =: Graveyard
 
+goblinFireslinger :: Card
+goblinFireslinger = Card
+  { enterWorld = \rOwner rSelf -> Object
+    { _name = Just "Goblin Fireslinger"
+    , _colors = colorsFromCost cost
+    , _group = Permanent
+      { _supertypes = Set.empty
+      , _permanentTypes = Set.fromList
+        [ Creature
+          { _creatureTypes = Set.fromList [Goblin, Warrior]
+          , _power = 1
+          , _toughness = 1
+          , _damage = 0
+          }
+        ]
+      }
+    , _zone = Library
+    , _owner = rOwner
+    , _controller = rOwner
+    , _abilities = undefined
+    , _play = undefined
+    , _timestamp = undefined
+    , _staticAbilities = []
+    , _effects = []
+    }
+  }
+  where
+    cost = [PayMana [Just Red]]
+
 stack :: Ref Object -> Magic () -> Magic ()
 stack r a = objects ^. ref r ^. zone =: Stack a
 
@@ -57,6 +86,9 @@ mkInstant name cost effect = Card
       , _cost = cost
       , _effect = undefined
       }
+    , _timestamp = undefined
+    , _staticAbilities = undefined
+    , _effects = undefined
     }
   }
 
