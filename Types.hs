@@ -30,6 +30,7 @@ type Bag = []
 
 type Ref a = Int
 type RefMap = IntMap
+type RefSet a = Set (Ref a)
 type WithRef a = (Ref a, a)
 
 
@@ -48,7 +49,7 @@ data Step
   | DrawStep
   
   -- Main phase
-  | MainPreCombatPhase
+  | PrecombatMainPhase
   
   -- Combat phase
   | BeginningOfCombatStep
@@ -58,7 +59,7 @@ data Step
   | EndOfCombatStep
   
   -- Main phase
-  | MainPostCombatPhase
+  | PostcombatMainPhase
   
   -- End phase
   | EndOfTurnStep
@@ -87,13 +88,19 @@ data Object = Object
   , _controller :: Ref Player
   , _abilities  :: [Action]
   , _play       :: Action
+  , _timestamp  :: Timestamp
+  -- , _triggeredAbilities :: Event -> Magic ()
+  , _staticAbilities :: Bag StaticAbility
+  , _effects    :: [World -> World]  -- cleared when object changes zone
   }
+
+type Timestamp = Int
 
 data Color = White | Blue | Black | Red | Green
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data Zone = Library | Hand | Stack { resolve :: Magic () }
-  | Battlefield TapStatus | Graveyard | Exile
+data Zone = Library | Hand | Stack { _resolve :: Magic () }
+  | Battlefield { _tapStatus :: TapStatus } | Graveyard | Exile
 
 data TapStatus = Untapped | Tapped
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
@@ -115,7 +122,8 @@ data PermanentType
   = Artifact      { _artifactTypes     :: Set ArtifactType }
   | Creature      { _creatureTypes     :: Set CreatureType
                   , _power             :: Int
-                  , _toughness         :: Int }
+                  , _toughness         :: Int
+                  , _damage            :: Int }
   | Enchantment   { _enchantmentTypes  :: Set EnchantmentType }
   | Land          { _landTypes         :: Set LandType }
   | Planeswalker  { _planeswalkerTypes :: Set PlaneswalkerType }
@@ -133,6 +141,7 @@ data CreatureType
   | Insect
   | Spider
   | Devil
+  | Goblin
   
   -- Roles
   | Warrior
@@ -164,6 +173,53 @@ data Cost
   | SacrificeCost (Object -> Bool)
   | ExileCost (Object -> Bool)
 
+data StaticAbility
+  = Flying
+  | Intimidate
+  -- | CannotBeBlockedBy (Object -> Bool)
+  | Deathtouch
+  | Defender
+  | DoubleStrike
+  | Enchant
+  | FirstStrike
+  | Flash
+  | Haste
+  | Hexproof
+  | Lifelink
+  | Protection (Object -> Bool)  -- spell, or ability's source
+  | Reach
+  | Shroud
+  | Trample
+  | Vigilance
+  | Flashback [Cost]
+  | Bloodthirst Int
+  | Infect
+
+-- data TriggeredAbility
+--   = BattleCry
+--   | LivingWeapon
+
+data Effect = Effect
+  { _layer       :: Layer
+  , _efTimestamp :: Timestamp
+  , _efEffect    :: Magic ()
+  }
+
+data Layer
+  = Layer1       -- copy effects
+  | Layer2       -- control-changing effects
+  | Layer3       -- text-changing effects
+  | Layer4       -- type-chaning effects
+  | Layer5       -- color-changing effects
+  | Layer6       -- ability-adding and ability-removing effects
+  | Layer7a      -- p/t from characteristic-defining abilities
+  | Layer7b      -- set p/t
+  | Layer7c      -- modify p/t
+  | Layer7d      -- p/t counters
+  | Layer7e      -- switch p/t
+  | LayerPlayer  -- player-affecting effects
+  | LayerRules   -- rules-affecting effects
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data Magic :: * -> * where
   Return   :: a -> Magic a
