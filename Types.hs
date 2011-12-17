@@ -8,6 +8,7 @@
 module Types where
 
 import Prelude hiding ((.), id)
+import Control.Applicative
 import Control.Monad.State
 import Data.Label (mkLabels)
 import Data.IntMap (IntMap)
@@ -75,7 +76,7 @@ data Object = Object
   , _zone       :: Zone
   , _owner      :: Ref Player
   , _controller :: Ref Player
-  , _abilities  :: [Action]
+  , _activatedAbilities  :: [Action]
   , _play       :: Action
   , _timestamp  :: Timestamp
   -- , _triggeredAbilities :: Event -> Magic ()
@@ -151,7 +152,7 @@ data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
 -- Actions
 
 data Action = Action
-  { _available :: Magic Bool
+  { _available :: Ref Player -> Magic Bool  -- check for cost is implied
   , _cost      :: [Cost]
   , _effect    :: Magic ()
   }
@@ -159,6 +160,7 @@ data Action = Action
 data Cost
   = PayMana (Bag (Maybe Color))
   | PayLife Int
+  | TapSelf
   | SacrificeCost (Object -> Bool)
   | ExileCost (Object -> Bool)
 
@@ -221,6 +223,13 @@ data Magic :: * -> * where
 
 choose :: [(Choice, a)] -> Magic a
 choose = Choose
+
+instance Functor Magic where
+  fmap = liftM
+
+instance Applicative Magic where
+  pure  = return
+  (<*>) = ap
 
 instance Monad Magic where
   return = Return

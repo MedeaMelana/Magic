@@ -12,7 +12,10 @@ hasColor :: Color -> Object -> Bool
 hasColor c o = c `Set.member` get colors o
 
 isOwnedBy :: Ref Player -> Object -> Bool
-isOwnedBy p o = p == get owner o
+isOwnedBy rp o = rp == get owner o
+
+isControlledBy :: Ref Player -> Object -> Bool
+isControlledBy rp o = rp == get controller o
 
 
 -- Zones

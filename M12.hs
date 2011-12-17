@@ -5,7 +5,9 @@ module M12 where
 import Types
 import Labels
 import Predicates
+import Utils
 
+import Control.Applicative
 import Control.Monad (when)
 import Data.Boolean
 import Data.Label.MaybeM
@@ -22,9 +24,9 @@ doomblade =
       let crit = notB (hasColor Black) &&* isOnBattlefield
       rTarget <- targetCreature crit
       stack rSelf $ do
-        o <- gets (objects ^. ref rTarget)
+        o <- gets (object rTarget)
         when (crit o) $ do
-          objects ^. ref rTarget ^. zone =: Graveyard
+          object rTarget .^ zone =: Graveyard
 
 goblinFireslinger :: Card
 goblinFireslinger = Card
@@ -45,8 +47,25 @@ goblinFireslinger = Card
     , _zone = Library
     , _owner = rOwner
     , _controller = rOwner
-    , _abilities = undefined
-    , _play = undefined
+    , _activatedAbilities =
+      [ Action
+        { _available = \rp ->
+            (isOnBattlefield &&* isControlledBy rp) <$>
+            gets (object rSelf)
+        , _cost = [TapSelf]
+        , _effect = do
+            rt <- targetPlayer (const True)
+            stack rSelf $ player rt .^ life .~ subtract 1
+        }
+      ]
+    , _play = Action
+      { _available = \rp ->
+          (isInHand &&* isControlledBy rp) <$>
+          gets (object rSelf)
+      , _cost = [PayMana [Just Red]]
+      , _effect = stack rSelf $
+          object rSelf .^ zone =: Battlefield Untapped
+      }
     , _timestamp = undefined
     , _staticAbilities = []
     , _effects = []
@@ -56,7 +75,7 @@ goblinFireslinger = Card
     cost = [PayMana [Just Red]]
 
 stack :: Ref Object -> Magic () -> Magic ()
-stack r a = objects ^. ref r ^. zone =: Stack a
+stack r a = object r .^ zone =: Stack a
 
 target :: (Object -> Bool) -> Magic (Ref Object)
 target = undefined
@@ -77,11 +96,11 @@ mkInstant name cost effect = Card
     , _zone = Library
     , _owner = rOwner
     , _controller = rOwner
-    , _abilities = []
+    , _activatedAbilities = []
     , _play = Action
-      { _available = do
-          self <- gets (objects ^. ref rSelf)
-          return (isInHand self)
+      { _available = \rp ->
+        (isInHand &&* isControlledBy rp) <$>
+        gets (object rSelf)
       , _cost = cost
       , _effect = undefined
       }
