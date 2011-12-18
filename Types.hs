@@ -76,11 +76,12 @@ data Object = Object
   , _zone       :: Zone
   , _owner      :: Ref Player
   , _controller :: Ref Player
-  , _activatedAbilities  :: [Action]
   , _play       :: Action
+  , _activatedAbilities  :: [Action]
   , _timestamp  :: Timestamp
   -- , _triggeredAbilities :: Event -> Magic ()
   , _staticAbilities :: Bag StaticAbility
+  , _counters   :: Bag Counter
   , _effects    :: [World -> World]  -- cleared when object changes zone
   }
 
@@ -94,6 +95,13 @@ data Zone = Library | Hand | Stack { _resolve :: Magic () }
 
 data TapStatus = Untapped | Tapped
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
+
+data Counter
+  = Charge
+  | Plus1Plus1
+  | Minus1Minus1
+  | Poison
+  | Hatchling
 
 data Group
   = Spell { _spellType :: SpellType }
@@ -161,8 +169,10 @@ data Cost
   = PayMana (Bag (Maybe Color))
   | PayLife Int
   | TapSelf
-  | SacrificeCost (Object -> Bool)
+  | Sacrifice (Object -> Bool)
+  | SacrificeSpecific (Ref Object)
   | ExileCost (Object -> Bool)
+  | RemoveCounter (Ref Object) Counter
 
 data StaticAbility
   = Flying

@@ -68,6 +68,7 @@ goblinFireslinger = Card
       }
     , _timestamp = undefined
     , _staticAbilities = []
+    , _counters = []
     , _effects = []
     }
   }
@@ -75,7 +76,13 @@ goblinFireslinger = Card
     cost = [PayMana [Just Red]]
 
 stack :: Ref Object -> Magic () -> Magic ()
-stack r a = object r .^ zone =: Stack a
+stack r a = move r (Stack a)
+
+move :: Ref Object -> Zone -> Magic ()
+move r z = do
+  object r .^ zone =: z
+  object r .^ effects =: []
+  object r .^ counters =: []
 
 target :: (Object -> Bool) -> Magic (Ref Object)
 target = undefined
@@ -102,10 +109,11 @@ mkInstant name cost effect = Card
         (isInHand &&* isControlledBy rp) <$>
         gets (object rSelf)
       , _cost = cost
-      , _effect = undefined
+      , _effect = stack rSelf (move rSelf (Battlefield Untapped))
       }
     , _timestamp = undefined
     , _staticAbilities = undefined
+    , _counters = []
     , _effects = undefined
     }
   }
