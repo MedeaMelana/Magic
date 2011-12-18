@@ -30,7 +30,7 @@ doomblade =
 
 goblinFireslinger :: Card
 goblinFireslinger = Card
-  { enterWorld = \rOwner rSelf -> Object
+  { enterWorld = \timestamp rOwner rSelf -> Object
     { _name = Just "Goblin Fireslinger"
     , _colors = colorsFromCost cost
     , _group = Permanent
@@ -66,7 +66,7 @@ goblinFireslinger = Card
       , _effect = stack rSelf $
           object rSelf .^ zone =: Battlefield Untapped
       }
-    , _timestamp = undefined
+    , _timestamp = timestamp
     , _staticAbilities = []
     , _counters = []
     , _effects = []
@@ -82,7 +82,8 @@ move :: Ref Object -> Zone -> Magic ()
 move r z = do
   object r .^ zone =: z
   object r .^ effects =: []
-  object r .^ counters =: []
+  object r .^ counters =: []  -- [121.2]
+  stamp >>= puts (object r .^ timestamp)  -- [613.6c]
 
 target :: (Object -> Bool) -> Magic (Ref Object)
 target = undefined
@@ -96,7 +97,7 @@ targetPlayer = undefined
 mkInstant :: Text -> [Cost] -> (Ref Object -> Ref Player ->
   Magic ()) -> Card
 mkInstant name cost effect = Card
-  { enterWorld = \rOwner rSelf -> Object
+  { enterWorld = \timestamp rOwner rSelf -> Object
     { _name = Just name
     , _colors = colorsFromCost cost
     , _group = Spell Instant
@@ -111,7 +112,7 @@ mkInstant name cost effect = Card
       , _cost = cost
       , _effect = stack rSelf (move rSelf (Battlefield Untapped))
       }
-    , _timestamp = undefined
+    , _timestamp = timestamp
     , _staticAbilities = undefined
     , _counters = []
     , _effects = undefined

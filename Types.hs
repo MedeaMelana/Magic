@@ -30,6 +30,7 @@ data World = World
   , _players      :: RefMap Player
   , _activePlayer :: Ref Player
   , _activeStep   :: Step
+  , _time         :: Timestamp
   }
 
 data Step
@@ -63,7 +64,7 @@ data Player = Player
   } deriving (Eq, Ord, Show)
 
 data Card = Card
-  { enterWorld :: Ref Player -> Ref Object -> Object
+  { enterWorld :: Timestamp -> Ref Player -> Ref Object -> Object
   }
 
 
