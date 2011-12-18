@@ -113,9 +113,9 @@ mkInstant name cost effect = Card
       , _effect = stack rSelf (move rSelf (Battlefield Untapped))
       }
     , _timestamp = timestamp
-    , _staticAbilities = undefined
+    , _staticAbilities = []
     , _counters = []
-    , _effects = undefined
+    , _effects = []
     }
   }
 
