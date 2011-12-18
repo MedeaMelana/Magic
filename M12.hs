@@ -119,7 +119,7 @@ mkInstant name cost effect = Card
         (isInHand &&* isControlledBy rp) <$>
         gets (object rSelf)
       , _cost = cost
-      , _effect = stack rSelf (move rSelf (Battlefield Untapped))
+      , _effect = stack rSelf effect
       }
     , _timestamp = timestamp
     , _staticAbilities = []
