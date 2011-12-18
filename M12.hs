@@ -26,8 +26,7 @@ doomblade =
       rTarget <- targetCreature crit
       stack rSelf $ do
         o <- gets (object rTarget)
-        when (crit o) $ do
-          object rTarget .^ zone =: Graveyard
+        when (crit o) $ object rTarget .^ zone =: Graveyard
 
 goblinFireslinger :: Card
 goblinFireslinger = Card
@@ -103,7 +102,7 @@ targetPlayer' f = do
   rpps <- IntMap.toList <$> gets players
   choose [ (TargetPlayer rp, rp) | rpp@(rp, _) <- rpps, f rpp ]
 
-mkInstant :: Text -> [Cost] -> (Ref Object -> Ref Player ->
+mkInstant :: Text -> [Cost] -> (Ref Player -> Ref Object ->
   Magic ()) -> Card
 mkInstant name cost effect = Card
   { enterWorld = \timestamp rOwner rSelf -> Object
@@ -119,7 +118,7 @@ mkInstant name cost effect = Card
         (isInHand &&* isControlledBy rp) <$>
         gets (object rSelf)
       , _cost = cost
-      , _effect = stack rSelf effect
+      , _effect = stack rSelf (effect rOwner rSelf)
       }
     , _timestamp = timestamp
     , _staticAbilities = []
@@ -129,7 +128,7 @@ mkInstant name cost effect = Card
   }
 
 colorsFromCost :: [Cost] -> Set Color
-colorsFromCost = Set.fromList . concat . map f
+colorsFromCost = Set.fromList . concatMap f
   where
     f (PayMana colors) = catMaybes colors
     f _                = []

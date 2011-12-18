@@ -64,6 +64,7 @@ data Player = Player
   } deriving (Eq, Ord, Show)
 
 data Card = Card
+  -- timestamp, owner (and controller), new ref
   { enterWorld :: Timestamp -> Ref Player -> Ref Object -> Object
   }
 
@@ -83,7 +84,7 @@ data Object = Object
   -- , _triggeredAbilities :: Event -> Magic ()
   , _staticAbilities :: Bag StaticAbility
   , _counters   :: Bag Counter
-  , _effects    :: [World -> World]  -- cleared when object changes zone
+  , _effects    :: [World -> World]
   }
 
 type Timestamp = Int
@@ -112,7 +113,7 @@ data Group
   deriving (Eq, Ord, Show)
 
 data SpellType = Instant | Sorcery
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data Supertype = Basic | Legendary
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
