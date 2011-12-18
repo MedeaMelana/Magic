@@ -10,6 +10,7 @@ import Utils
 import Control.Applicative
 import Control.Monad (when)
 import Data.Boolean
+import qualified Data.IntMap as IntMap
 import Data.Label.MaybeM
 import Data.Maybe (catMaybes)
 import Data.Set (Set)
@@ -54,7 +55,7 @@ goblinFireslinger = Card
             gets (object rSelf)
         , _cost = [TapSelf]
         , _effect = do
-            rt <- targetPlayer (const True)
+            rt <- targetPlayer
             stack rSelf $ player rt .^ life .~ subtract 1
         }
       ]
@@ -91,8 +92,16 @@ target = undefined
 targetCreature :: (Object -> Bool) -> Magic (Ref Object)
 targetCreature = undefined
 
-targetPlayer :: (Player -> Bool) -> Magic (Ref Player)
-targetPlayer = undefined
+targetPlayer :: Magic (Ref Player)
+targetPlayer = targetPlayer' (const True)
+
+targetOpponent :: Ref Player -> Magic (Ref Player)
+targetOpponent rController = targetPlayer' (\(rp, _) -> rp /= rController)
+
+targetPlayer' :: (WithRef Player -> Bool) -> Magic (Ref Player)
+targetPlayer' f = do
+  rpps <- IntMap.toList <$> gets players
+  choose [ (TargetPlayer rp, rp) | rpp@(rp, _) <- rpps, f rpp ]
 
 mkInstant :: Text -> [Cost] -> (Ref Object -> Ref Player ->
   Magic ()) -> Card
