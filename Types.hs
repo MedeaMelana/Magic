@@ -85,7 +85,7 @@ data Object = Object
   , _timestamp  :: Timestamp
   -- , _triggeredAbilities :: Event -> Magic ()
   , _staticAbilities :: Bag StaticAbility
-  , _counters   :: Bag Counter
+  , _counters   :: Bag CounterType
   , _effects    :: [World -> World]
   }
 
@@ -100,7 +100,7 @@ data Zone = Library | Hand | Stack { _resolve :: Magic () }
 data TapStatus = Untapped | Tapped
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data Counter
+data CounterType
   = Charge
   | Plus1Plus1
   | Minus1Minus1
@@ -176,7 +176,7 @@ data Cost
   | Sacrifice (Object -> Bool)
   | SacrificeSpecific (Ref Object)
   | ExileCost (Object -> Bool)
-  | RemoveCounter (Ref Object) Counter
+  | RemoveCounter (Ref Object) CounterType
 
 data StaticAbility
   = Flying
