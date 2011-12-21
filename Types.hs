@@ -34,28 +34,30 @@ data World = World
   }
 
 data Step
-  -- Beginning phase
+  = BeginningPhase BeginningStep
+  | PrecombatMainPhase
+  | CombatPhase CombatStep
+  | PostcombatMainPhase
+  | EndPhase EndStep
+  deriving (Eq, Ord, Show, Read)
+
+data BeginningStep
   = UntapStep
   | UpkeepStep
   | DrawStep
-  
-  -- Main phase
-  | PrecombatMainPhase
-  
-  -- Combat phase
-  | BeginningOfCombatStep
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+
+data CombatStep
+  = BeginningOfCombatStep
   | DeclareAttackersStep
   | DeclareBlockersStep
   | CombatDamageStep
   | EndOfCombatStep
-  
-  -- Main phase
-  | PostcombatMainPhase
-  
-  -- End phase
-  | EndOfTurnStep
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+
+data EndStep
+  = EndOfTurnStep
   | CleanupStep
-  
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data Player = Player
