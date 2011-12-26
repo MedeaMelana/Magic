@@ -258,8 +258,12 @@ instance MonadPlus Magic where
   mplus = Plus
 
 data Choice
-  = TargetPlayer (Ref Player)
-  | TargetObject (Ref Object)
+  = ChoosePlayer (Ref Player)
+  | ChooseObject (Ref Object)
+  | ChooseColor Color
+  | ChooseNumber Int
+  | Pass
+  | Concede
 
 $(mkLabels [''World, ''Player, ''Object, ''Zone, ''Group,
   ''PermanentType, ''Action])
