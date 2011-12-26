@@ -7,9 +7,8 @@
 
 module Types where
 
-import Prelude hiding ((.), id)
 import Control.Applicative
-import Control.Monad.State
+import Control.Monad.Reader
 import Data.Label (mkLabels)
 import Data.IntMap (IntMap)
 import Data.Set (Set)
@@ -29,6 +28,7 @@ data World = World
   { _objects      :: RefMap Object
   , _players      :: RefMap Player
   , _activePlayer :: Ref Player
+  , _priority     :: Ref Player
   , _activeStep   :: Step
   , _time         :: Timestamp
   }
@@ -81,12 +81,13 @@ data Object = Object
   , _owner      :: Ref Player
   , _controller :: Ref Player
   , _play       :: Action
-  , _activatedAbilities  :: [Action]
   , _timestamp  :: Timestamp
-  -- , _triggeredAbilities :: Event -> Magic ()
-  , _staticAbilities :: Bag StaticAbility
   , _counters   :: Bag CounterType
-  , _effects    :: [World -> World]
+
+  , _staticAbilities     :: Bag StaticAbility
+  , _continuousEffects   :: [Effect]  -- special form of static ability
+  , _activatedAbilities  :: [Action]
+  , _triggeredAbilities  :: [Event -> Magic ()]
   }
 
 type Timestamp = Int
@@ -164,7 +165,7 @@ data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
 -- Actions
 
 data Action = Action
-  { _available :: Ref Player -> Magic Bool  -- check for cost is implied
+  { _available :: Ref Player -> View Bool  -- check for cost is implied
   , _cost      :: [Cost]
   , _effect    :: Magic ()
   }
@@ -176,7 +177,7 @@ data Cost
   | Sacrifice (Object -> Bool)
   | SacrificeSpecific (Ref Object)
   | ExileCost (Object -> Bool)
-  | RemoveCounter (Ref Object) CounterType
+  | RemoveCounterCost (Ref Object) CounterType
 
 data StaticAbility
   = Flying
@@ -200,14 +201,10 @@ data StaticAbility
   | Bloodthirst Int
   | Infect
 
--- data TriggeredAbility
---   = BattleCry
---   | LivingWeapon
-
 data Effect = Effect
   { _layer       :: Layer
   , _efTimestamp :: Timestamp
-  , _efEffect    :: Magic ()
+  , _efEffect    :: World -> World
   }
 
 data Layer
@@ -226,17 +223,68 @@ data Layer
   | LayerRules   -- rules-affecting effects
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data Magic :: * -> * where
-  Return   :: a -> Magic a
-  Bind     :: Magic a -> (a -> Magic b) -> Magic b
-  GetWorld :: Magic World
-  PutWorld :: World -> Magic ()
-  Choose   :: [(Choice, a)] -> Magic a
-  Fail     :: Magic a
-  Plus     :: Magic a -> Magic a -> Magic a
+-- The 'Event' datatype exhaustively describes every single thing that can
+-- happen in a game.
+data Event
+  -- Keyword actions [701]
+  = ActivateAbility (Ref Object) Int  -- index of ability
+  | Attach (Ref Object) (Ref Object)  -- aura/equipment, receiver
+  | Unattach (Ref Object) (Ref Object)  -- aura/equipment, receiver
+  | CastSpell (Ref Player) (Ref Object)  -- controller, spell
+  | Counter (Ref Object) (Ref Object)  -- source (spell or ability), target
+  | DestroyPermanent (Ref Object)
+  | DiscardCard (Ref Object)
+  | ExileObject (Ref Object)
+  | FightCreature (Ref Object) (Ref Object)
+  | PlayLand (Ref Object)
+  | RegeneratePermanent (Ref Object)
+  | RevealCard (Ref Object)
+  | SacrificePermanent (Ref Object)
+  | ShuffleLibrary (Ref Player)
+  | TapObject (Ref Object)
+  | UntapObject (Ref Object)
+  | Search (Object -> Bool) (Object -> Bool) -- cards revealed, cards eligible
 
-choose :: [(Choice, a)] -> Magic a
-choose = Choose
+  -- Combat
+  | CreatureAttacks (Ref Object)
+  | CreatureBlock (RefSet Object) (RefSet Object)  -- attackers, blockers
+  | CreatureDealsCombatDamage (Ref Object) (Ref Object)
+  | CreatureIsDealtDamage (Ref Object) Int
+
+  -- Misc
+  | ChangeStep Step Step
+  | DrawCard (Ref Player)
+  | ChangeZone (Ref Object) Zone Zone
+  | PutCounter (Ref Object) CounterType
+  | RemoveCounter (Ref Object) CounterType
+  | AdjustLife (Ref Player) Int
+  | AddToManaPool (Ref Player) (Bag (Maybe Color))
+  | WinGame (Ref Player)
+
+newtype View a = View { runView :: World -> Maybe a }
+
+instance MonadReader World View where
+  ask = View Just
+
+instance Monad View where
+  return = View . const . Just
+
+data Magic :: * -> * where
+  Return       :: a -> Magic a
+  Bind         :: Magic a -> (a -> Magic b) -> Magic b
+
+  Fail         :: Magic a
+  Plus         :: Magic a -> Magic a -> Magic a
+
+  ViewWorld    :: View a -> Magic a
+  PromptPlayer :: Ref Player -> [(Choice, a)] -> Magic a
+  RaiseEvent   :: Event -> Magic ()
+
+prompt :: Ref Player -> [(Choice, a)] -> Magic a
+prompt = PromptPlayer
+
+raise :: Event -> Magic ()
+raise = undefined
 
 instance Functor Magic where
   fmap = liftM
@@ -249,9 +297,8 @@ instance Monad Magic where
   return = Return
   (>>=)  = Bind
 
-instance MonadState World Magic where
-  get = GetWorld
-  put = PutWorld
+instance MonadReader World Magic where
+  ask = ViewWorld ask
 
 instance MonadPlus Magic where
   mzero = Fail
