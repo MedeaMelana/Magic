@@ -9,15 +9,17 @@ module Types where
 
 import Control.Applicative
 import Control.Monad.Reader
+import Control.Monad.Identity
 import Data.Label (mkLabels)
 import Data.IntMap (IntMap)
+import Data.Monoid
 import Data.Set (Set)
 import Data.Text (Text)
 
 
 type Bag = []
 
-type Ref a = Int
+newtype Ref a = Ref Int
 type RefMap = IntMap
 type RefSet a = Set (Ref a)
 type WithRef a = (Ref a, a)
@@ -30,8 +32,12 @@ data World = World
   , _activePlayer :: Ref Player
   , _priority     :: Ref Player
   , _activeStep   :: Step
+  , _stack        :: [StackedEffect]
   , _time         :: Timestamp
   }
+
+
+-- Steps and phases
 
 data Step
   = BeginningPhase BeginningStep
@@ -65,13 +71,13 @@ data Player = Player
   , _manaPool :: Bag (Maybe Color)
   } deriving (Eq, Ord, Show)
 
+
+-- Objects
+
 data Card = Card
   -- timestamp, owner (and controller), new ref
   { enterWorld :: Timestamp -> Ref Player -> Ref Object -> Object
   }
-
-
--- Objects
 
 data Object = Object
   { _name       :: Maybe Text
@@ -80,14 +86,29 @@ data Object = Object
   , _zone       :: Zone
   , _owner      :: Ref Player
   , _controller :: Ref Player
-  , _play       :: Action
   , _timestamp  :: Timestamp
   , _counters   :: Bag CounterType
 
-  , _staticAbilities     :: Bag StaticAbility
-  , _continuousEffects   :: [Effect]  -- special form of static ability
-  , _activatedAbilities  :: [Action]
-  , _triggeredAbilities  :: [Event -> Magic ()]
+  -- for permanents on the battlefield
+  , _tapStatus :: Maybe TapStatus
+
+  -- for spells on the stack
+  , _pendingEffect :: Maybe StackedEffect
+
+  -- for creatures on the battlefield
+  , _power         :: Maybe Int
+  , _toughness     :: Maybe Int
+  , _damage        :: Maybe Int
+  , _mustBeBlocked :: Maybe Bool
+  , _mustAttack    :: Maybe Bool
+
+  , _indestructible    :: Bool
+
+  , _play                   :: Action
+  , _staticKeywordAbilities :: Bag StaticKeywordAbility
+  , _continuousEffects      :: [ContinuousEffect]  -- special form of static ability
+  , _activatedAbilities     :: [Action]
+  , _triggeredAbilities     :: [Event -> Special StackedEffect]
   }
 
 type Timestamp = Int
@@ -95,24 +116,26 @@ type Timestamp = Int
 data Color = White | Blue | Black | Red | Green
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data Zone = Library | Hand | Stack { _resolve :: Magic () }
-  | Battlefield { _tapStatus :: TapStatus } | Graveyard | Exile
+data Zone = Library | Hand | Stack | Battlefield | Graveyard | Exile
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data TapStatus = Untapped | Tapped
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data CounterType
-  = Charge
-  | Plus1Plus1
-  | Minus1Minus1
-  | Poison
-  | Hatchling
+  = Charge | Plus1Plus1 | Minus1Minus1 | Poison | Hatchling | Loyalty
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data Group
-  = Spell { _spellType :: SpellType }
+  = Spell { _spellType   :: SpellType }
   | Permanent
-    { _supertypes     :: Set Supertype
-    , _permanentTypes :: Set PermanentType }
+    { _supertypes        :: Set Supertype
+    , _artifactTypes     :: Maybe (Set ArtifactType)
+    , _creatureTypes     :: Maybe (Set CreatureType)
+    , _enchantmentTypes  :: Maybe (Set EnchantmentType)
+    , _landTypes         :: Maybe (Set LandType)
+    , _planeswalkerTypes :: Maybe (Set PlaneswalkerType)
+    }
   deriving (Eq, Ord, Show)
 
 data SpellType = Instant | Sorcery
@@ -120,17 +143,6 @@ data SpellType = Instant | Sorcery
 
 data Supertype = Basic | Legendary
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
-
-data PermanentType
-  = Artifact      { _artifactTypes     :: Set ArtifactType }
-  | Creature      { _creatureTypes     :: Set CreatureType
-                  , _power             :: Int
-                  , _toughness         :: Int
-                  , _damage            :: Int }
-  | Enchantment   { _enchantmentTypes  :: Set EnchantmentType }
-  | Land          { _landTypes         :: Set LandType }
-  | Planeswalker  { _planeswalkerTypes :: Set PlaneswalkerType }
-  deriving (Eq, Ord, Show)
 
 data ArtifactType = Equipment
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
@@ -166,42 +178,54 @@ data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
 
 data Action = Action
   { _available :: Ref Player -> View Bool  -- check for cost is implied
-  , _cost      :: [Cost]
-  , _effect    :: Magic ()
+  , _cost      :: Cost
+  , _effect    :: Special StackedEffect
   }
 
-data Cost
-  = PayMana (Bag (Maybe Color))
-  | PayLife Int
-  | TapSelf
-  | Sacrifice (Object -> Bool)
-  | SacrificeSpecific (Ref Object)
-  | ExileCost (Object -> Bool)
-  | RemoveCounterCost (Ref Object) CounterType
+data Cost = Cost
+  { payColoredMana      :: Bag Color
+  , payGenericMana      :: Int
+  , tapPermanents       :: [WithRef Object -> Bool]
+  , sacrificePermanents :: [WithRef Object -> Bool]
+  , exileObjects        :: [WithRef Object -> Bool]
+  , discardCards        :: Int
+  , removeCounters      :: [(Int, CounterType)]
+  }
 
-data StaticAbility
-  = Flying
-  | Intimidate
-  -- | CannotBeBlockedBy (Object -> Bool)
+instance Monoid Cost where
+  mempty = Cost [] 0 [] [] [] 0 []
+  c1 `mappend` c2 = Cost
+    { payColoredMana      = payColoredMana      c1 ++ payColoredMana      c2
+    , payGenericMana      = payGenericMana      c1 +  payGenericMana      c2
+    , tapPermanents       = tapPermanents       c1 ++ tapPermanents       c2
+    , sacrificePermanents = sacrificePermanents c1 ++ sacrificePermanents c2
+    , exileObjects        = exileObjects        c1 ++ exileObjects        c2
+    , discardCards        = discardCards        c1 +  discardCards        c2
+    , removeCounters      = removeCounters      c1 ++ removeCounters      c2
+    }
+
+data StaticKeywordAbility
+  = Bloodthirst Int
   | Deathtouch
   | Defender
   | DoubleStrike
   | Enchant
   | FirstStrike
   | Flash
+  | Flashback Cost
+  | Flying
   | Haste
   | Hexproof
+  | Infect
+  | Intimidate
   | Lifelink
-  | Protection (Object -> Bool)  -- spell, or ability's source
+  | ProtectionFromColor Color
   | Reach
   | Shroud
   | Trample
   | Vigilance
-  | Flashback [Cost]
-  | Bloodthirst Int
-  | Infect
 
-data Effect = Effect
+data ContinuousEffect = ContinuousEffect
   { _layer       :: Layer
   , _efTimestamp :: Timestamp
   , _efEffect    :: World -> World
@@ -223,86 +247,41 @@ data Layer
   | LayerRules   -- rules-affecting effects
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
--- The 'Event' datatype exhaustively describes every single thing that can
--- happen in a game.
 data Event
+  = OneShotEffectEvent (OneShotEffect Ref)
+
   -- Keyword actions [701]
-  = ActivateAbility (Ref Object) Int  -- index of ability
-  | Attach (Ref Object) (Ref Object)  -- aura/equipment, receiver
-  | Unattach (Ref Object) (Ref Object)  -- aura/equipment, receiver
+  | ActivateAbility (Ref Object) Int  -- index of ability
   | CastSpell (Ref Player) (Ref Object)  -- controller, spell
   | Counter (Ref Object) (Ref Object)  -- source (spell or ability), target
-  | DestroyPermanent (Ref Object)
-  | DiscardCard (Ref Object)
-  | ExileObject (Ref Object)
-  | FightCreature (Ref Object) (Ref Object)
   | PlayLand (Ref Object)
   | RegeneratePermanent (Ref Object)
   | RevealCard (Ref Object)
-  | SacrificePermanent (Ref Object)
-  | ShuffleLibrary (Ref Player)
-  | TapObject (Ref Object)
-  | UntapObject (Ref Object)
-  | Search (Object -> Bool) (Object -> Bool) -- cards revealed, cards eligible
+  | ChangeStep Step Step  -- old step, new step
+  | LoseGame (Ref Player)
 
-  -- Combat
-  | CreatureAttacks (Ref Object)
-  | CreatureBlock (RefSet Object) (RefSet Object)  -- attackers, blockers
-  | CreatureDealsCombatDamage (Ref Object) (Ref Object)
-  | CreatureIsDealtDamage (Ref Object) Int
+data OneShotEffect ref
+  = AdjustLife (ref Player) Int
+  | DamageObject (ref Object) (ref Object) Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
+  | DamagePlayer (ref Object) (ref Player) Int Bool Bool  -- source, player, amount, combat damage?, preventable?
+  | ShuffleLibrary
+  -- | ReorderLibraryCards
+  | DrawCard  -- Drawing is special [120.5]
+  | DestroyPermanent (ref Object) Bool  -- target, preventable? -- Destruction is special [701.6b]
+  | MoveObject (ref Object) Zone Zone
+  | TapPermanent (ref Object)
+  | UntapPermanent (ref Object)
+  | AddCounter (ref Object) CounterType
+  | RemoveCounter (ref Object) CounterType
+  | CreateObject Object  -- create a token, emblem or spell
+  | AddToManaPool (ref Player) (Bag (Maybe Color))
+  | AttachPermanent (ref Object) (Maybe (ref Object)) (Maybe (ref Object))  -- aura/equipment, old target, new target
+  | RemoveFromCombat (ref Object)
 
-  -- Misc
-  | ChangeStep Step Step
-  | DrawCard (Ref Player)
-  | ChangeZone (Ref Object) Zone Zone
-  | PutCounter (Ref Object) CounterType
-  | RemoveCounter (Ref Object) CounterType
-  | AdjustLife (Ref Player) Int
-  | AddToManaPool (Ref Player) (Bag (Maybe Color))
-  | WinGame (Ref Player)
+collectEffectRefs :: OneShotEffect ref -> ([ref Player], [ref Object])
+collectEffectRefs = undefined
 
-newtype View a = View { runView :: World -> Maybe a }
-
-instance MonadReader World View where
-  ask = View Just
-
-instance Monad View where
-  return = View . const . Just
-
-data Magic :: * -> * where
-  Return       :: a -> Magic a
-  Bind         :: Magic a -> (a -> Magic b) -> Magic b
-
-  Fail         :: Magic a
-  Plus         :: Magic a -> Magic a -> Magic a
-
-  ViewWorld    :: View a -> Magic a
-  PromptPlayer :: Ref Player -> [(Choice, a)] -> Magic a
-  RaiseEvent   :: Event -> Magic ()
-
-prompt :: Ref Player -> [(Choice, a)] -> Magic a
-prompt = PromptPlayer
-
-raise :: Event -> Magic ()
-raise = undefined
-
-instance Functor Magic where
-  fmap = liftM
-
-instance Applicative Magic where
-  pure  = return
-  (<*>) = ap
-
-instance Monad Magic where
-  return = Return
-  (>>=)  = Bind
-
-instance MonadReader World Magic where
-  ask = ViewWorld ask
-
-instance MonadPlus Magic where
-  mzero = Fail
-  mplus = Plus
+data MaybeRef a = MaybeRef (Maybe (Ref a))
 
 data Choice
   = ChoosePlayer (Ref Player)
@@ -312,5 +291,47 @@ data Choice
   | Pass
   | Concede
 
-$(mkLabels [''World, ''Player, ''Object, ''Zone, ''Group,
-  ''PermanentType, ''Action])
+
+
+-- Monads
+
+type ViewT = ReaderT World
+type View = ViewT Identity
+
+data StackedEffect
+  = StackedEffect (Special [Event])
+  | StackedTarget (Target -> View Bool) Target (Target -> StackedEffect)
+
+data MkStackedEffect
+  = MkStackedEffect (Special [Event])
+  | MkStackedTarget (Target -> View Bool) (Target -> MkStackedEffect)
+
+resolve :: StackedEffect -> Special [Event]
+resolve s =
+  case s of
+    StackedEffect x -> x
+    StackedTarget _ t f -> resolve (f t)
+
+collectTargets :: StackedEffect -> [Target]
+collectTargets s =
+  case s of
+    StackedEffect x -> []
+    StackedTarget _ t f -> t : collectTargets (f t)
+
+data Special a
+
+instance Functor Special
+instance Applicative Special
+instance Monad Special
+instance MonadReader World Special
+-- instance MonadPrompt Special
+
+data Prompt a
+  = PromptReturn a
+  | PromptAsk (Ref Player)
+
+data Target
+  = TargetPlayer (Ref Player)
+  | TargetObject (Ref Object)
+
+$(mkLabels [''World, ''Player, ''Object, ''Zone, ''Group, ''Action])
