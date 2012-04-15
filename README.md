@@ -13,9 +13,10 @@ The code is currently far from finished and in very experimental state.
 
 Short-term:
 
-* Model everything that happens as an Event [700.1]
+* Model events [700.1]
 * Implement replacement effects [614]
 * Implement attachments
+* Implement state-based effects
 * Build a monad that is able to present players with options/actions
 * Build a monad that keeps track of the World before continuous effects are applied [611]
 * Build a monad that offers a view of the World after continuous effects are applied [613]
