@@ -32,6 +32,7 @@ data World = World
   , _activePlayer :: Ref Player
   , _priority     :: Ref Player
   , _activeStep   :: Step
+  , _prestack     :: [Special StackedEffect]
   , _stack        :: [StackedEffect]
   , _time         :: Timestamp
   }
@@ -247,6 +248,7 @@ data Layer
   | LayerRules   -- rules-affecting effects
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
+-- | Events triggered abilities watch for.
 data Event
   = OneShotEffectEvent (OneShotEffect Ref)
 
@@ -260,23 +262,23 @@ data Event
   | ChangeStep Step Step  -- old step, new step
   | LoseGame (Ref Player)
 
-data OneShotEffect ref
-  = AdjustLife (ref Player) Int
-  | DamageObject (ref Object) (ref Object) Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
-  | DamagePlayer (ref Object) (ref Player) Int Bool Bool  -- source, player, amount, combat damage?, preventable?
+data OneShotEffect
+  = AdjustLife (Ref Player) Int
+  | DamageObject (Ref Object) (Ref Object) Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
+  | DamagePlayer (Ref Object) (Ref Player) Int Bool Bool  -- source, player, amount, combat damage?, preventable?
   | ShuffleLibrary
   -- | ReorderLibraryCards
   | DrawCard  -- Drawing is special [120.5]
-  | DestroyPermanent (ref Object) Bool  -- target, preventable? -- Destruction is special [701.6b]
-  | MoveObject (ref Object) Zone Zone
-  | TapPermanent (ref Object)
-  | UntapPermanent (ref Object)
-  | AddCounter (ref Object) CounterType
-  | RemoveCounter (ref Object) CounterType
+  | DestroyPermanent (Ref Object) Bool  -- target, preventable? -- Destruction is special [701.6b]
+  | MoveObject (Ref Object) Zone Zone
+  | TapPermanent (Ref Object)
+  | UntapPermanent (Ref Object)
+  | AddCounter (Ref Object) CounterType
+  | RemoveCounter (Ref Object) CounterType
   | CreateObject Object  -- create a token, emblem or spell
-  | AddToManaPool (ref Player) (Bag (Maybe Color))
-  | AttachPermanent (ref Object) (Maybe (ref Object)) (Maybe (ref Object))  -- aura/equipment, old target, new target
-  | RemoveFromCombat (ref Object)
+  | AddToManaPool (Ref Player) (Bag (Maybe Color))
+  | AttachPermanent (Ref Object) (Maybe (Ref Object)) (Maybe (Ref Object))  -- aura/equipment, old target, new target
+  | RemoveFromCombat (Ref Object)
 
 collectEffectRefs :: OneShotEffect ref -> ([ref Player], [ref Object])
 collectEffectRefs = undefined
@@ -298,13 +300,15 @@ data Choice
 type ViewT = ReaderT World
 type View = ViewT Identity
 
-data StackedEffect
-  = StackedEffect (Special [Event])
-  | StackedTarget (Target -> View Bool) Target (Target -> StackedEffect)
+data StackedEffect :: * -> * where
+  StackedEffect :: Special [OneShotEffect] -> StackedEffect (Special [OneShotEffect])
+  StackedTarget :: (Target -> View Bool) -> Target -> StackedEffect (Target -> a) -> StackedEffect a
 
 data MkStackedEffect
-  = MkStackedEffect (Special [Event])
-  | MkStackedTarget (Target -> View Bool) (Target -> MkStackedEffect)
+  = MkStackedEffect (Special [OneShotEffect])
+  | MkStackedTarget (Target -> View Bool) ()
+
+type DoMkStackedEffect = Special MkStackedEffect
 
 resolve :: StackedEffect -> Special [Event]
 resolve s =
