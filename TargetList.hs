@@ -1,5 +1,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module TargetList where
 
@@ -11,7 +13,7 @@ import Control.Applicative
 -- data Target
 
 data Target = TargetCreature Int | TargetPlayer Int
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 isTargetCreature :: Target -> Bool
 isTargetCreature (TargetCreature _) = True
@@ -60,10 +62,8 @@ instance Applicative (TargetList t) where
   -- ok' :: x' -> Bool
   -- zs :: TL x'
 
-instance Show (TargetList t a) where
-  show (Nil _)       = ""
-  show (Snoc xs _)   = show xs ++ "T"
-  show (Test _ _ xs) = show xs ++ ">"
+instance Show a => Show (TargetList Target a) where
+  show = show . snd . evaluate
 
 
 -- utility functions that consume TargetLists
@@ -101,23 +101,31 @@ xs <?> ok = Test id ok xs
 
 -- Interactively replace placeholders () by actual targets
 -- The first argument is all available targets in the world
-askTargets :: [Target] -> TargetList () a -> IO (TargetList Target a)
-askTargets = askTargets' (const True)
+askTargets :: forall m a. Monad m => ([Target] -> m Target) -> [Target] -> TargetList () a -> m (TargetList Target a)
+askTargets choose = askTargets' (const True)
   where
-    askTargets' :: (a -> Bool) -> [Target] -> TargetList () a -> IO (TargetList Target a)
+    askTargets' :: forall a. (a -> Bool) -> [Target] -> TargetList () a -> m (TargetList Target a)
     askTargets' ok ts scheme =
       case scheme of
         Nil x -> return (Nil x)
         Snoc xs () -> do
-          xs' <- askTargets ts xs
+          xs' <- askTargets choose ts xs
           let (_, f) = evaluate xs'
           let eligibleTargets = filter (ok . f) ts
-          putStr ("Possible targets: " ++ show eligibleTargets ++ " !! ")
-          index <- read <$> getLine
-          return (Snoc xs' (eligibleTargets !! index))
+          chosen <- choose eligibleTargets
+          return (Snoc xs' chosen)
         Test f ok' scheme' -> do
           z <- askTargets' (\x -> ok (f x) && ok' x) ts scheme'
           return (f <$> z)
 
+chooseIO :: [Target] -> IO Target
+chooseIO eligibleTargets = do
+  putStr ("Possible targets: " ++ show eligibleTargets ++ " !! ")
+  index <- read <$> getLine
+  return (eligibleTargets !! index)
+
 test0 :: IO (Target, Target)
-test0 = snd . evaluate <$> askTargets [TargetCreature 0, TargetCreature 1] arcTrailTargets
+test0 = snd . evaluate <$> askTargets chooseIO [TargetCreature 0, TargetCreature 1] arcTrailTargets
+
+test1 :: [(Target, Target)]
+test1 = snd . evaluate <$> askTargets id [TargetCreature 0, TargetCreature 1] arcTrailTargets
