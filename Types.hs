@@ -180,32 +180,25 @@ data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
 -- Actions
 
 data Action = Action
-  { _available :: Ref Player -> View Bool  -- check for cost is implied
-  , _cost      :: Cost
-  --, _effect    :: Special StackedEffect
+  { _available       :: Ref Player -> View Bool  -- check for cost is implied
+  , _manaCost        :: ManaCost
+  , _additionalCosts :: [AdditionalCost]
+  , _effect          :: Magic StackItem
   }
 
-data Cost = Cost
+type StackItem = TargetList Target (Magic [OneShotEffect])
+
+data ManaCost = ManaCost
   { payColoredMana      :: Bag Color
   , payGenericMana      :: Int
-  , tapPermanents       :: [WithRef Object -> Bool]
-  , sacrificePermanents :: [WithRef Object -> Bool]
-  , exileObjects        :: [WithRef Object -> Bool]
-  , discardCards        :: Int
-  , removeCounters      :: [(Int, CounterType)]
   }
 
-instance Monoid Cost where
-  mempty = Cost [] 0 [] [] [] 0 []
-  c1 `mappend` c2 = Cost
-    { payColoredMana      = payColoredMana      c1 ++ payColoredMana      c2
-    , payGenericMana      = payGenericMana      c1 +  payGenericMana      c2
-    , tapPermanents       = tapPermanents       c1 ++ tapPermanents       c2
-    , sacrificePermanents = sacrificePermanents c1 ++ sacrificePermanents c2
-    , exileObjects        = exileObjects        c1 ++ exileObjects        c2
-    , discardCards        = discardCards        c1 +  discardCards        c2
-    , removeCounters      = removeCounters      c1 ++ removeCounters      c2
-    }
+data AdditionalCost
+  = TapPermanentCost       (WithRef Object -> Bool)
+  | SacrificePermanentCost (WithRef Object -> Bool)
+  | ExileObjectCost        (WithRef Object -> Bool)
+  | DiscardCardCost
+  | RemoveCounterCost      CounterType
 
 data StaticKeywordAbility
   = Bloodthirst Int
@@ -215,7 +208,7 @@ data StaticKeywordAbility
   | Enchant
   | FirstStrike
   | Flash
-  | Flashback Cost
+  | Flashback ManaCost
   | Flying
   | Haste
   | Hexproof
