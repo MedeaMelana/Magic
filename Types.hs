@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Types where
 
@@ -288,6 +289,53 @@ data Choice
   | Pass
   | Concede
 
+
+-- Stack items
+
+data TargetList t a where
+  Nil  :: a -> TargetList t a
+  Snoc :: TargetList t (Target -> a) -> t -> TargetList t a
+  Test :: (x -> a) -> (x -> Bool) -> TargetList t x -> TargetList t a
+
+instance Functor (TargetList t) where
+  fmap f (Nil x)        = Nil (f x)
+  fmap f (Snoc xs t)    = Snoc (fmap (f .) xs) t
+  fmap f (Test g ok xs) = Test (f . g) ok xs
+
+instance Applicative (TargetList t) where
+  pure = Nil
+  xs <*> Nil b     = fmap ($ b) xs
+  xs <*> Snoc ys t = Snoc ((.) <$> xs <*> ys) t
+  xs <*> Test f ok ys = Test fst snd ((\g x -> (g (f x), ok x)) <$> xs <*> ys)
+
+evaluate :: TargetList Target a -> ([Target], a)
+evaluate (Nil x)       = ([], x)
+evaluate (Snoc xs t)   = (ts ++ [t], f t) where (ts, f) = evaluate xs
+evaluate (Test f _ xs) = (ts,        f x) where (ts, x) = evaluate xs
+
+singleTarget :: TargetList () Target
+singleTarget = Snoc (Nil id) ()
+
+infixl 4 <?>
+(<?>) :: TargetList t a -> (a -> Bool) -> TargetList t a
+xs <?> ok = Test id ok xs
+
+askTargets :: forall m a. Monad m => ([Target] -> m Target) -> [Target] -> TargetList () a -> m (TargetList Target a)
+askTargets choose = askTargets' (const True)
+  where
+    askTargets' :: forall a. (a -> Bool) -> [Target] -> TargetList () a -> m (TargetList Target a)
+    askTargets' ok ts scheme =
+      case scheme of
+        Nil x -> return (Nil x)
+        Snoc xs () -> do
+          xs' <- askTargets choose ts xs
+          let (_, f) = evaluate xs'
+          let eligibleTargets = filter (ok . f) ts
+          chosen <- choose eligibleTargets
+          return (Snoc xs' chosen)
+        Test f ok' scheme' -> do
+          z <- askTargets' (\x -> ok (f x) && ok' x) ts scheme'
+          return (f <$> z)
 
 
 -- Monads
