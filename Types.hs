@@ -32,8 +32,8 @@ data World = World
   , _activePlayer :: Ref Player
   , _priority     :: Ref Player
   , _activeStep   :: Step
-  , _prestack     :: [Special StackedEffect]
-  , _stack        :: [StackedEffect]
+  --, _prestack     :: [Special StackedEffect]
+  --, _stack        :: [StackedEffect]
   , _time         :: Timestamp
   }
 
@@ -94,7 +94,7 @@ data Object = Object
   , _tapStatus :: Maybe TapStatus
 
   -- for spells on the stack
-  , _pendingEffect :: Maybe StackedEffect
+  --, _pendingEffect :: Maybe StackedEffect
 
   -- for creatures on the battlefield
   , _power         :: Maybe Int
@@ -109,7 +109,7 @@ data Object = Object
   , _staticKeywordAbilities :: Bag StaticKeywordAbility
   , _continuousEffects      :: [ContinuousEffect]  -- special form of static ability
   , _activatedAbilities     :: [Action]
-  , _triggeredAbilities     :: [Event -> Special StackedEffect]
+  --, _triggeredAbilities     :: [Event -> Special StackedEffect]
   }
 
 type Timestamp = Int
@@ -180,7 +180,7 @@ data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
 data Action = Action
   { _available :: Ref Player -> View Bool  -- check for cost is implied
   , _cost      :: Cost
-  , _effect    :: Special StackedEffect
+  --, _effect    :: Special StackedEffect
   }
 
 data Cost = Cost
@@ -250,7 +250,7 @@ data Layer
 
 -- | Events triggered abilities watch for.
 data Event
-  = OneShotEffectEvent (OneShotEffect Ref)
+  = OneShotEffectEvent OneShotEffect
 
   -- Keyword actions [701]
   | ActivateAbility (Ref Object) Int  -- index of ability
@@ -280,11 +280,6 @@ data OneShotEffect
   | AttachPermanent (Ref Object) (Maybe (Ref Object)) (Maybe (Ref Object))  -- aura/equipment, old target, new target
   | RemoveFromCombat (Ref Object)
 
-collectEffectRefs :: OneShotEffect ref -> ([ref Player], [ref Object])
-collectEffectRefs = undefined
-
-data MaybeRef a = MaybeRef (Maybe (Ref a))
-
 data Choice
   = ChoosePlayer (Ref Player)
   | ChooseObject (Ref Object)
@@ -299,28 +294,6 @@ data Choice
 
 type ViewT = ReaderT World
 type View = ViewT Identity
-
-data StackedEffect :: * -> * where
-  StackedEffect :: Special [OneShotEffect] -> StackedEffect (Special [OneShotEffect])
-  StackedTarget :: (Target -> View Bool) -> Target -> StackedEffect (Target -> a) -> StackedEffect a
-
-data MkStackedEffect
-  = MkStackedEffect (Special [OneShotEffect])
-  | MkStackedTarget (Target -> View Bool) ()
-
-type DoMkStackedEffect = Special MkStackedEffect
-
-resolve :: StackedEffect -> Special [Event]
-resolve s =
-  case s of
-    StackedEffect x -> x
-    StackedTarget _ t f -> resolve (f t)
-
-collectTargets :: StackedEffect -> [Target]
-collectTargets s =
-  case s of
-    StackedEffect x -> []
-    StackedTarget _ t f -> t : collectTargets (f t)
 
 data Special a
 
