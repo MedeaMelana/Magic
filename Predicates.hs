@@ -20,26 +20,5 @@ isControlledBy rp o = rp == get controller o
 
 -- Zones
 
-isInLibrary :: Object -> Bool
-isInLibrary o =
-  case get zone o of
-    Library -> True
-    _ -> False
-
-isInHand :: Object -> Bool
-isInHand o =
-  case get zone o of
-    Hand -> True
-    _ -> False
-
-isOnStack :: Object -> Bool
-isOnStack o =
-  case get zone o of
-    Stack _ -> True
-    _ -> False
-
-isOnBattlefield :: Object -> Bool
-isOnBattlefield o =
-  case get zone o of
-    Battlefield _ -> True
-    _ -> False
+isInZone :: Zone -> Object -> Bool
+isInZone z o = get zone o == z
