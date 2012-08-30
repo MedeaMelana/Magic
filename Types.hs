@@ -11,6 +11,7 @@ module Types where
 import Control.Applicative
 import Control.Monad.Reader
 import Control.Monad.Identity
+import Control.Monad.Operational
 import Data.Label (mkLabels)
 import Data.IntMap (IntMap)
 import Data.Monoid
@@ -290,6 +291,13 @@ data Choice
   | Concede
 
 
+-- Targets
+
+data Target
+  = TargetPlayer (Ref Player)
+  | TargetObject (Ref Object)
+
+
 -- Stack items
 
 data TargetList t a where
@@ -343,20 +351,9 @@ askTargets choose = askTargets' (const True)
 type ViewT = ReaderT World
 type View = ViewT Identity
 
-data Special a
+type Magic = ViewT (Program Ask)
 
-instance Functor Special
-instance Applicative Special
-instance Monad Special
-instance MonadReader World Special
--- instance MonadPrompt Special
-
-data Prompt a
-  = PromptReturn a
-  | PromptAsk (Ref Player)
-
-data Target
-  = TargetPlayer (Ref Player)
-  | TargetObject (Ref Object)
+data Ask a where
+  Ask :: Ref Player -> [Choice] -> Ask Choice
 
 $(mkLabels [''World, ''Player, ''Object, ''Zone, ''Group, ''Action])
