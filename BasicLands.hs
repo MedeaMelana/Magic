@@ -5,23 +5,32 @@ module BasicLands where
 import Types
 import Predicates
 
+import Control.Applicative
 import Data.Boolean
+import Data.Label.PureM
 import Data.Monoid
 import Data.Set as Set
-import Data.Label.PureM
+import Data.String
 
 
-plains :: Card
-plains = Card $ \ts rOwner ->
+plains, island, swamp, mountain, forest :: Card
+plains   = mkBasicLandCard Plains   White
+island   = mkBasicLandCard Island   Blue
+swamp    = mkBasicLandCard Swamp    Black
+mountain = mkBasicLandCard Mountain Red
+forest   = mkBasicLandCard Forest   Green
+
+mkBasicLandCard :: LandType -> Color -> Card
+mkBasicLandCard ty color = Card $ \ts rOwner ->
   Object
-  { _name = Just "Plains"
+  { _name = Just (fromString (show ty))
   , _colors = mempty
   , _group = Permanent
     { _supertypes         = Set.singleton Basic
     , _artifactTypes      = Nothing
     , _creatureTypes      = Nothing
     , _enchantmentTypes   = Nothing
-    , _landTypes          = Just (Set.singleton Plains)
+    , _landTypes          = Just (Set.singleton ty)
     , _planeswalkerTypes  = Nothing
     }
   , _zone = Library
@@ -36,21 +45,17 @@ plains = Card $ \ts rOwner ->
   , _toughness = Nothing
   , _damage = Nothing
 
-  , _play = defaultPlay
+  , _play = defaultSpecialPlay
   , _staticKeywordAbilities = []
   , _continuousEffects = []
-  , _activatedAbilities = [tapToAddMana (Just White)]
+  , _activatedAbilities = [tapToAddMana (Just color)]
   , _triggeredAbilities = []
   , _replacementEffects = []
   }
 
-defaultPlay :: Ability
-defaultPlay rSource rActivator = ClosedAbility
-  { _available = do
-      os <- asks objects
-      let source = os ! rSource
-      let ok = (isControlledBy rActivator &&* isInZone Hand) source
-      return ok
+defaultSpecialPlay :: Ability
+defaultSpecialPlay rSource rActivator = ClosedAbility
+  { _available = checkObject rSource (isControlledBy rActivator &&* isInZone Hand)
   , _manaCost = mempty
   , _additionalCosts = []
   , _effect = SpecialAction (return [MoveObject rSource Library Battlefield])
@@ -58,12 +63,11 @@ defaultPlay rSource rActivator = ClosedAbility
 
 tapToAddMana :: Maybe Color -> Ability
 tapToAddMana mc rSource rActivator = ClosedAbility
-  { _available = do
-      os <- asks objects
-      let source = os ! rSource
-      let ok = (isControlledBy rActivator &&* isInZone Battlefield) source
-      return ok
+  { _available = checkObject rSource (isControlledBy rActivator &&* isInZone Battlefield)
   , _manaCost = mempty
   , _additionalCosts = []
   , _effect = SpecialAction (return [AddToManaPool rActivator mc])
   }
+
+checkObject :: Ref Object -> (Object -> Bool) -> View Bool
+checkObject ref ok = ok . (! ref) <$> asks objects
