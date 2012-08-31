@@ -22,29 +22,11 @@ mountain = mkBasicLandCard Mountain Red
 forest   = mkBasicLandCard Forest   Green
 
 mkBasicLandCard :: LandType -> Color -> Card
-mkBasicLandCard ty color = Card $ \ts rOwner ->
-  Object
-  { _name = Just (fromString (show ty))
-  , _colors = mempty
-  , _types = basicType <> objectType ty
-  , _zone = Library
-  , _owner = rOwner
-  , _controller = rOwner
-  , _timestamp = ts
-  , _counters = []
-
-  , _tapStatus = Nothing
-
-  , _power = Nothing
-  , _toughness = Nothing
-  , _damage = Nothing
-
-  , _play = playLand
-  , _staticKeywordAbilities = []
-  , _continuousEffects = []
+mkBasicLandCard ty color = Card $ \ts rOwner zone -> (object ts rOwner zone)
+  { _name               = Just (fromString (show ty))
+  , _types              = basicType <> objectType ty
+  , _play               = Just playLand
   , _activatedAbilities = [tapToAddMana (Just color)]
-  , _triggeredAbilities = []
-  , _replacementEffects = []
   }
 
 playLand :: Ability

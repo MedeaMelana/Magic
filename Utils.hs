@@ -10,6 +10,32 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 
 
+object :: Timestamp -> Ref Player -> Zone -> Object
+object ts rOwner zone = Object
+  { _name = Nothing
+  , _colors = mempty
+  , _types = mempty
+  , _zone = zone
+  , _owner = rOwner
+  , _controller = rOwner
+  , _timestamp = ts
+  , _counters = mempty
+
+  , _tapStatus = Nothing
+
+  , _power = Nothing
+  , _toughness = Nothing
+  , _damage = Nothing
+
+  , _play = Nothing
+  , _staticKeywordAbilities = []
+  , _continuousEffects = []
+  , _activatedAbilities = []
+  , _triggeredAbilities = []
+  , _replacementEffects = []
+  }
+
+
 basicType :: ObjectTypes
 basicType = mempty { _supertypes = Set.singleton Basic }
 

@@ -84,7 +84,7 @@ data Player = Player
 
 data Card = Card
   -- timestamp, owner (and controller)
-  { enterWorld :: Timestamp -> Ref Player -> Object
+  { enterWorld :: Timestamp -> Ref Player -> Zone -> Object
   }
 
 data Object = Object
@@ -112,7 +112,7 @@ data Object = Object
 
   --, _indestructible    :: Bool
 
-  , _play                   :: Ability
+  , _play                   :: Maybe Ability
   , _staticKeywordAbilities :: Bag StaticKeywordAbility
   , _continuousEffects      :: [ContinuousEffect]  -- special form of static ability
   , _activatedAbilities     :: [Ability]
