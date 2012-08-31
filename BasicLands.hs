@@ -12,7 +12,7 @@ import Data.Label.PureM
 
 
 plains :: Card
-plains = Card $ \ts rOwner rSelf ->
+plains = Card $ \ts rOwner ->
   Object
   { _name = Just "Plains"
   , _colors = mempty
@@ -36,19 +36,34 @@ plains = Card $ \ts rOwner rSelf ->
   , _toughness = Nothing
   , _damage = Nothing
 
-  , _play = Ability
-    { _available = \rp -> do
-        os <- asks objects
-        let self = os ! rSelf
-        let ok = (isControlledBy rp &&* isInZone Hand) self
-        return ok
-    , _manaCost = mempty
-    , _additionalCosts = []
-    , _effect = SpecialAction (return [MoveObject rSelf Library Battlefield])
-    }
+  , _play = defaultPlay
   , _staticKeywordAbilities = []
   , _continuousEffects = []
-  , _activatedAbilities = []
+  , _activatedAbilities = [tapToAddMana (Just White)]
   , _triggeredAbilities = []
   , _replacementEffects = []
+  }
+
+defaultPlay :: Ability
+defaultPlay rSource rActivator = ClosedAbility
+  { _available = do
+      os <- asks objects
+      let source = os ! rSource
+      let ok = (isControlledBy rActivator &&* isInZone Hand) source
+      return ok
+  , _manaCost = mempty
+  , _additionalCosts = []
+  , _effect = SpecialAction (return [MoveObject rSource Library Battlefield])
+  }
+
+tapToAddMana :: Maybe Color -> Ability
+tapToAddMana mc rSource rActivator = ClosedAbility
+  { _available = do
+      os <- asks objects
+      let source = os ! rSource
+      let ok = (isControlledBy rActivator &&* isInZone Battlefield) source
+      return ok
+  , _manaCost = mempty
+  , _additionalCosts = []
+  , _effect = SpecialAction (return [AddToManaPool rActivator mc])
   }

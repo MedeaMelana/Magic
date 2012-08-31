@@ -82,8 +82,8 @@ data Player = Player
 -- Objects
 
 data Card = Card
-  -- timestamp, owner (and controller), new ref
-  { enterWorld :: Timestamp -> Ref Player -> Ref Object -> Object
+  -- timestamp, owner (and controller)
+  { enterWorld :: Timestamp -> Ref Player -> Object
   }
 
 data Object = Object
@@ -114,7 +114,7 @@ data Object = Object
   , _play                   :: Ability
   , _staticKeywordAbilities :: Bag StaticKeywordAbility
   , _continuousEffects      :: [ContinuousEffect]  -- special form of static ability
-  , _activatedAbilities     :: [Action]
+  , _activatedAbilities     :: [Ability]
   , _triggeredAbilities     :: [Event -> Action]
   , _replacementEffects     :: [OneShotEffect -> Magic [OneShotEffect]]
   }
@@ -184,8 +184,10 @@ data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
 
 -- Actions
 
-data Ability = Ability
-  { _available       :: Ref Player -> View Bool  -- check for cost is implied
+type Ability = Ref Object -> Ref Player -> ClosedAbility
+
+data ClosedAbility = ClosedAbility
+  { _available       :: View Bool  -- check for cost is implied
   , _manaCost        :: ManaCost
   , _additionalCosts :: [AdditionalCost]
   , _effect          :: Action
@@ -284,7 +286,7 @@ data OneShotEffect
   | AddCounter (Ref Object) CounterType
   | RemoveCounter (Ref Object) CounterType
   | CreateObject Object  -- create a token, emblem or spell
-  | AddToManaPool (Ref Player) (Bag (Maybe Color))
+  | AddToManaPool (Ref Player) (Maybe Color)
   | AttachPermanent (Ref Object) (Maybe (Ref Object)) (Maybe (Ref Object))  -- aura/equipment, old target, new target
   | RemoveFromCombat (Ref Object)
 
