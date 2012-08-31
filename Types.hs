@@ -17,6 +17,7 @@ import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.Monoid
 import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.Text (Text)
 
 
@@ -89,7 +90,7 @@ data Card = Card
 data Object = Object
   { _name       :: Maybe Text
   , _colors     :: Set Color
-  , _group      :: Group
+  , _types      :: ObjectTypes
   , _zone       :: Zone
   , _owner      :: Ref Player
   , _controller :: Ref Player
@@ -134,20 +135,32 @@ data CounterType
   = Charge | Plus1Plus1 | Minus1Minus1 | Poison | Hatchling | Loyalty
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data Group
-  = Spell { _spellType   :: SpellType }
-  | Permanent
-    { _supertypes        :: Set Supertype
-    , _artifactTypes     :: Maybe (Set ArtifactType)
-    , _creatureTypes     :: Maybe (Set CreatureType)
-    , _enchantmentTypes  :: Maybe (Set EnchantmentType)
-    , _landTypes         :: Maybe (Set LandType)
-    , _planeswalkerTypes :: Maybe (Set PlaneswalkerType)
-    }
-  deriving (Eq, Ord, Show)
 
-data SpellType = Instant | Sorcery
-  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+-- Object types
+
+data ObjectTypes = ObjectTypes
+  { _supertypes        :: Set Supertype
+  , _artifactTypes     :: Maybe (Set ArtifactType)
+  , _creatureTypes     :: Maybe (Set CreatureType)
+  , _enchantmentTypes  :: Maybe (Set EnchantmentType)
+  , _instantTypes      :: Maybe (Set SpellType)
+  , _landTypes         :: Maybe (Set LandType)
+  , _planeswalkerTypes :: Maybe (Set PlaneswalkerType)
+  , _sorceryTypes      :: Maybe (Set SpellType)
+  } deriving (Eq, Ord, Show)
+
+instance Monoid ObjectTypes where
+  mempty = ObjectTypes mempty mempty mempty mempty mempty mempty mempty mempty
+  x  `mappend` y = ObjectTypes
+    { _supertypes        = _supertypes x        `mappend` _supertypes y
+    , _artifactTypes     = _artifactTypes x     `mappend` _artifactTypes y
+    , _creatureTypes     = _creatureTypes x     `mappend` _creatureTypes y
+    , _enchantmentTypes  = _enchantmentTypes x  `mappend` _enchantmentTypes y
+    , _instantTypes      = _instantTypes x      `mappend` _instantTypes y
+    , _landTypes         = _landTypes x         `mappend` _landTypes y
+    , _planeswalkerTypes = _planeswalkerTypes x `mappend` _planeswalkerTypes y
+    , _sorceryTypes      = _sorceryTypes x      `mappend` _sorceryTypes y
+    }
 
 data Supertype = Basic | Legendary
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
@@ -172,6 +185,9 @@ data CreatureType
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data EnchantmentType = Aura | Curse
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+
+data SpellType = Arcane | Trap
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data LandType = Plains | Island | Swamp | Mountain | Forest | Locus
@@ -364,4 +380,4 @@ type Magic = ViewT (Program Ask)
 data Ask a where
   Ask :: Ref Player -> [Choice] -> Ask Choice
 
-$(mkLabels [''World, ''Player, ''Object, ''Zone, ''Group, ''Action])
+$(mkLabels [''World, ''Player, ''Object, ''Zone, ''ObjectTypes, ''Action])

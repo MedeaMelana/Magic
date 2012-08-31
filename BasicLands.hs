@@ -2,8 +2,9 @@
 
 module BasicLands where
 
-import Types
 import Predicates
+import Types
+import Utils
 
 import Control.Applicative
 import Data.Boolean
@@ -25,14 +26,7 @@ mkBasicLandCard ty color = Card $ \ts rOwner ->
   Object
   { _name = Just (fromString (show ty))
   , _colors = mempty
-  , _group = Permanent
-    { _supertypes         = Set.singleton Basic
-    , _artifactTypes      = Nothing
-    , _creatureTypes      = Nothing
-    , _enchantmentTypes   = Nothing
-    , _landTypes          = Just (Set.singleton ty)
-    , _planeswalkerTypes  = Nothing
-    }
+  , _types = basicType <> objectType ty
   , _zone = Library
   , _owner = rOwner
   , _controller = rOwner
