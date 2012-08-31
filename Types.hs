@@ -14,6 +14,7 @@ import Control.Monad.Identity
 import Control.Monad.Operational
 import Data.Label (mkLabels)
 import Data.IntMap (IntMap)
+import qualified Data.IntMap as IntMap
 import Data.Monoid
 import Data.Set (Set)
 import Data.Text (Text)
@@ -21,10 +22,13 @@ import Data.Text (Text)
 
 type Bag = []
 
-newtype Ref a = Ref Int
+newtype Ref a = Ref Int deriving (Eq, Show, Read)
 type RefMap = IntMap
 type RefSet a = Set (Ref a)
 type WithRef a = (Ref a, a)
+
+(!) :: IntMap a -> Ref a -> a
+m ! Ref k = m IntMap.! k
 
 
 -- | Current game situation.
@@ -102,16 +106,17 @@ data Object = Object
   , _power         :: Maybe Int
   , _toughness     :: Maybe Int
   , _damage        :: Maybe Int
-  , _mustBeBlocked :: Maybe Bool
-  , _mustAttack    :: Maybe Bool
+  --, _mustBeBlocked :: Maybe Bool
+  --, _mustAttack    :: Maybe Bool
 
-  , _indestructible    :: Bool
+  --, _indestructible    :: Bool
 
-  , _play                   :: Action
+  , _play                   :: Ability
   , _staticKeywordAbilities :: Bag StaticKeywordAbility
   , _continuousEffects      :: [ContinuousEffect]  -- special form of static ability
   , _activatedAbilities     :: [Action]
-  --, _triggeredAbilities     :: [Event -> Special StackedEffect]
+  , _triggeredAbilities     :: [Event -> Action]
+  , _replacementEffects     :: [OneShotEffect -> Magic [OneShotEffect]]
   }
 
 type Timestamp = Int
@@ -179,19 +184,27 @@ data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
 
 -- Actions
 
-data Action = Action
+data Ability = Ability
   { _available       :: Ref Player -> View Bool  -- check for cost is implied
   , _manaCost        :: ManaCost
   , _additionalCosts :: [AdditionalCost]
-  , _effect          :: Magic StackItem
+  , _effect          :: Action
   }
+
+data Action
+  = SpecialAction  (Magic [OneShotEffect])
+  | StackingAction (Magic StackItem)
 
 type StackItem = TargetList Target (Magic [OneShotEffect])
 
 data ManaCost = ManaCost
-  { payColoredMana      :: Bag Color
-  , payGenericMana      :: Int
+  { payColoredMana   :: Bag Color
+  , payColorlessMana :: Int
   }
+
+instance Monoid ManaCost where
+  mempty = ManaCost [] 0
+  ManaCost cs1 n1 `mappend` ManaCost cs2 n2 = ManaCost (cs1 ++ cs2) (n1 + n2)
 
 data AdditionalCost
   = TapPermanentCost       (WithRef Object -> Bool)
@@ -324,7 +337,7 @@ xs <?> ok = Test id ok xs
 askTargets :: forall m a. Monad m => ([Target] -> m Target) -> [Target] -> TargetList () a -> m (TargetList Target a)
 askTargets choose = askTargets' (const True)
   where
-    askTargets' :: forall a. (a -> Bool) -> [Target] -> TargetList () a -> m (TargetList Target a)
+    askTargets' :: forall b. (b -> Bool) -> [Target] -> TargetList () b -> m (TargetList Target b)
     askTargets' ok ts scheme =
       case scheme of
         Nil x -> return (Nil x)
