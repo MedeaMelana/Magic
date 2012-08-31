@@ -4,14 +4,15 @@ module Utils where
 
 import Types
 
+import Control.Monad.State (State, execState)
 import Data.Label.Pure
 import Data.Monoid
 import Data.Set (Set)
 import qualified Data.Set as Set
 
 
-mkCard :: (Object -> Object) -> Card
-mkCard f = Card (\ts rOwner zone -> f (object ts rOwner zone))
+mkCard :: State Object () -> Card
+mkCard f = Card (\ts rOwner zone -> execState f (object ts rOwner zone))
 
 object :: Timestamp -> Ref Player -> Zone -> Object
 object ts rOwner zone = Object

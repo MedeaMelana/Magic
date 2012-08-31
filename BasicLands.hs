@@ -22,12 +22,11 @@ mountain = mkBasicLandCard Mountain Red
 forest   = mkBasicLandCard Forest   Green
 
 mkBasicLandCard :: LandType -> Color -> Card
-mkBasicLandCard ty color = mkCard $ \o -> o
-  { _name               = Just (fromString (show ty))
-  , _types              = basicType <> objectType ty
-  , _play               = Just playLand
-  , _activatedAbilities = [tapToAddMana (Just color)]
-  }
+mkBasicLandCard ty color = mkCard $ do
+  name               =: Just (fromString (show ty))
+  types              =: basicType <> objectType ty
+  play               =: Just playLand
+  activatedAbilities =: [tapToAddMana (Just color)]
 
 playLand :: Ability
 playLand rSource rActivator = ClosedAbility
