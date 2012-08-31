@@ -22,7 +22,7 @@ mountain = mkBasicLandCard Mountain Red
 forest   = mkBasicLandCard Forest   Green
 
 mkBasicLandCard :: LandType -> Color -> Card
-mkBasicLandCard ty color = Card $ \ts rOwner zone -> (object ts rOwner zone)
+mkBasicLandCard ty color = mkCard $ \o -> o
   { _name               = Just (fromString (show ty))
   , _types              = basicType <> objectType ty
   , _play               = Just playLand
