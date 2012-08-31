@@ -39,7 +39,7 @@ mkBasicLandCard ty color = Card $ \ts rOwner ->
   , _toughness = Nothing
   , _damage = Nothing
 
-  , _play = defaultSpecialPlay
+  , _play = playLand
   , _staticKeywordAbilities = []
   , _continuousEffects = []
   , _activatedAbilities = [tapToAddMana (Just color)]
@@ -47,8 +47,8 @@ mkBasicLandCard ty color = Card $ \ts rOwner ->
   , _replacementEffects = []
   }
 
-defaultSpecialPlay :: Ability
-defaultSpecialPlay rSource rActivator = ClosedAbility
+playLand :: Ability
+playLand rSource rActivator = ClosedAbility
   { _available = checkObject rSource (isControlledBy rActivator &&* isInZone Hand)
   , _manaCost = mempty
   , _additionalCosts = []
