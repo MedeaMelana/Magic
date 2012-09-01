@@ -2,29 +2,24 @@
 
 module Labels where
 
+import Types
+
 import Prelude hiding ((.), id)
-
-import Control.Arrow (ArrowZero(..), ArrowChoice(..), arr, returnA)
 import Control.Category (Category(..), (>>>))
-import Control.Monad (MonadPlus)
 import Control.Monad.State (MonadState)
-
-import Data.Label (Lens(..))
-import Data.Label.Abstract (lens)
-import Data.Label.Maybe ((:~>))
-import Data.Label.MaybeM (modify)
-import Data.IntMap (IntMap, Key)
+import Data.Label.Pure ((:->), lens)
+import Data.Label.PureM
 import qualified Data.IntMap as IntMap
 
 
-ref :: (ArrowZero (~>), ArrowChoice (~>)) => Key -> Lens (~>) (IntMap a) a
-ref key = lens ((zeroArrow ||| returnA) . arr g) (arr s)
-  where
-    g im = maybe (Left ()) Right (IntMap.lookup key im)
-    s (el, im) = IntMap.insert key el im
+ref :: Ref a -> RefMap a :-> a
+ref key = lens (IntMap.! key) (IntMap.insert key)
 
 (.^) :: Category (~>) => a ~> b -> b ~> c -> a ~> c
 (.^) = (>>>)
 
-(.~) :: (MonadState f m, MonadPlus m) => (f :~> a) -> (a -> a) -> m ()
-(.~) = modify
+(~:) :: MonadState s m => (s :-> a) -> (a -> a) -> m ()
+(~:) = modify
+
+(~:*) :: (Functor f, MonadState s m) => (s :-> f a) -> (a -> a) -> m ()
+l ~:* f = l ~: fmap f

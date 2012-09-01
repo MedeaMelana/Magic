@@ -14,34 +14,27 @@ import Control.Monad.Identity
 import Control.Monad.Operational
 import Data.Label (mkLabels)
 import Data.IntMap (IntMap)
-import qualified Data.IntMap as IntMap
 import Data.Monoid
 import Data.Set (Set)
-import qualified Data.Set as Set
 import Data.Text (Text)
 
 
 type Bag = []
 
-newtype Ref a = Ref Int deriving (Eq, Show, Read)
+type Ref a = Int
 type RefMap = IntMap
 type RefSet a = Set (Ref a)
 type WithRef a = (Ref a, a)
 
-(!) :: IntMap a -> Ref a -> a
-m ! Ref k = m IntMap.! k
-
 
 -- | Current game situation.
 data World = World
-  { _objects      :: RefMap Object
-  , _players      :: RefMap Player
-  , _activePlayer :: Ref Player
-  , _priority     :: Ref Player
-  , _activeStep   :: Step
-  --, _prestack     :: [Special StackedEffect]
-  --, _stack        :: [StackedEffect]
-  , _time         :: Timestamp
+  { _objects       :: RefMap Object
+  , _players       :: RefMap Player
+  , _activePlayer  :: Ref Player
+  , _activeStep    :: Step
+  , _time          :: Timestamp
+  , _turnStructure :: [(Ref Player, [Step])]
   }
 
 
@@ -49,9 +42,8 @@ data World = World
 
 data Step
   = BeginningPhase BeginningStep
-  | PrecombatMainPhase
+  | MainPhase
   | CombatPhase CombatStep
-  | PostcombatMainPhase
   | EndPhase EndStep
   deriving (Eq, Ord, Show, Read)
 
@@ -75,9 +67,12 @@ data EndStep
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data Player = Player
-  { _life     :: Int
-  , _manaPool :: Bag (Maybe Color)
-  } deriving (Eq, Ord, Show)
+  { _life            :: Int
+  , _manaPool        :: Bag (Maybe Color)
+  , _prestack        :: [Magic StackItem]
+  , _maximumHandSize :: Maybe Int
+  , _failedCardDraw  :: Bool  -- [704.5b]
+  }
 
 
 -- Objects
@@ -294,7 +289,7 @@ data OneShotEffect
   | DamagePlayer (Ref Object) (Ref Player) Int Bool Bool  -- source, player, amount, combat damage?, preventable?
   | ShuffleLibrary
   -- | ReorderLibraryCards
-  | DrawCard  -- Drawing is special [120.5]
+  | DrawCard (Ref Player) -- Drawing is special [120.5]
   | DestroyPermanent (Ref Object) Bool  -- target, preventable? -- Destruction is special [701.6b]
   | MoveObject (Ref Object) Zone Zone
   | TapPermanent (Ref Object)
