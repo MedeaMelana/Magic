@@ -8,11 +8,14 @@
 
 module Types where
 
+import IdList (Id, IdList)
+
 import Control.Applicative
 import Control.Monad.Reader
 import Control.Monad.Identity
 import Control.Monad.Operational
 import Data.Label (mkLabels)
+import Data.Label.Pure ((:->))
 import Data.IntMap (IntMap)
 import Data.Monoid
 import Data.Set (Set)
@@ -21,20 +24,23 @@ import Data.Text (Text)
 
 type Bag = []
 
-type Ref a = Int
-type RefMap = IntMap
-type RefSet a = Set (Ref a)
-type WithRef a = (Ref a, a)
+type IdMap = IntMap
+
+type PlayerRef = Id
+type ObjectRef = (ZoneRef, Id)
 
 
 -- | Current game situation.
 data World = World
-  { _objects       :: RefMap Object
-  , _players       :: RefMap Player
-  , _activePlayer  :: Ref Player
+  { _players       :: IdMap Player
+  , _activePlayer  :: PlayerRef
   , _activeStep    :: Step
   , _time          :: Timestamp
-  , _turnStructure :: [(Ref Player, [Step])]
+  , _turnStructure :: [(PlayerRef, [Step])]
+  , _exile         :: IdList Object
+  , _battlefield   :: IdList Object
+  , _stack         :: IdList Object
+  , _command       :: IdList Object
   }
 
 
@@ -70,6 +76,9 @@ data Player = Player
   { _life            :: Int
   , _manaPool        :: Bag (Maybe Color)
   , _prestack        :: [Magic StackItem]
+  , _library         :: IdList Object
+  , _hand            :: IdList Object
+  , _graveyard       :: IdList Object
   , _maximumHandSize :: Maybe Int
   , _failedCardDraw  :: Bool  -- [704.5b]
   }
@@ -79,16 +88,15 @@ data Player = Player
 
 data Card = Card
   -- timestamp, owner (and controller)
-  { enterWorld :: Timestamp -> Ref Player -> Zone -> Object
+  { enterWorld :: Timestamp -> PlayerRef-> Object
   }
 
 data Object = Object
   { _name       :: Maybe Text
   , _colors     :: Set Color
   , _types      :: ObjectTypes
-  , _zone       :: Zone
-  , _owner      :: Ref Player
-  , _controller :: Ref Player
+  , _owner      :: PlayerRef
+  , _controller :: PlayerRef
   , _timestamp  :: Timestamp
   , _counters   :: Bag CounterType
 
@@ -120,8 +128,11 @@ type Timestamp = Int
 data Color = White | Blue | Black | Red | Green
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data Zone = Library | Hand | Stack | Battlefield | Graveyard | Exile
-  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+data ZoneRef = Library PlayerRef | Hand PlayerRef | Battlefield | Graveyard PlayerRef | Stack | Exile
+  deriving (Eq, Ord, Show, Read)
+
+compileZoneRef :: ZoneRef -> World :-> IdList Object
+compileZoneRef = undefined
 
 data TapStatus = Untapped | Tapped
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
@@ -195,7 +206,7 @@ data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
 
 -- Actions
 
-type Ability = Ref Object -> Ref Player -> ClosedAbility
+type Ability = ObjectRef -> PlayerRef -> ClosedAbility
 
 data ClosedAbility = ClosedAbility
   { _available       :: View Bool  -- check for cost is implied
@@ -220,9 +231,9 @@ instance Monoid ManaCost where
   ManaCost cs1 n1 `mappend` ManaCost cs2 n2 = ManaCost (cs1 ++ cs2) (n1 + n2)
 
 data AdditionalCost
-  = TapPermanentCost       (WithRef Object -> Bool)
-  | SacrificePermanentCost (WithRef Object -> Bool)
-  | ExileObjectCost        (WithRef Object -> Bool)
+  = TapPermanentCost       (ObjectRef -> Bool)
+  | SacrificePermanentCost (Object -> Bool)
+  | ExileObjectCost       [ZoneRef] (Object -> Bool)  -- exile matching object from any of the listed zones
   | DiscardCardCost
   | RemoveCounterCost      CounterType
 
@@ -274,36 +285,36 @@ data Event
   = OneShotEffectEvent OneShotEffect
 
   -- Keyword actions [701]
-  | ActivateAbility (Ref Object) Int  -- index of ability
-  | CastSpell (Ref Player) (Ref Object)  -- controller, spell
-  | Counter (Ref Object) (Ref Object)  -- source (spell or ability), target
-  | PlayLand (Ref Object)
-  | RegeneratePermanent (Ref Object)
-  | RevealCard (Ref Object)
+  | ActivateAbility ObjectRef Int  -- index of ability
+  | CastSpell PlayerRef ObjectRef  -- controller, spell
+  | Counter ObjectRef ObjectRef  -- source (spell or ability), target
+  | PlayLand ObjectRef
+  | RegeneratePermanent ObjectRef
+  | RevealCard ObjectRef
   | ChangeStep Step Step  -- old step, new step
-  | LoseGame (Ref Player)
+  | LoseGame PlayerRef
 
 data OneShotEffect
-  = AdjustLife (Ref Player) Int
-  | DamageObject (Ref Object) (Ref Object) Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
-  | DamagePlayer (Ref Object) (Ref Player) Int Bool Bool  -- source, player, amount, combat damage?, preventable?
+  = AdjustLife PlayerRef Int
+  | DamageObject ObjectRef ObjectRef Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
+  | DamagePlayer ObjectRef PlayerRef Int Bool Bool  -- source, player, amount, combat damage?, preventable?
   | ShuffleLibrary
   -- | ReorderLibraryCards
-  | DrawCard (Ref Player) -- Drawing is special [120.5]
-  | DestroyPermanent (Ref Object) Bool  -- target, preventable? -- Destruction is special [701.6b]
-  | MoveObject (Ref Object) Zone Zone
-  | TapPermanent (Ref Object)
-  | UntapPermanent (Ref Object)
-  | AddCounter (Ref Object) CounterType
-  | RemoveCounter (Ref Object) CounterType
+  | DrawCard PlayerRef -- Drawing is special [120.5]
+  | DestroyPermanent ObjectRef Bool  -- target, preventable? -- Destruction is special [701.6b]
+  | MoveObject ObjectRef ZoneRef
+  | TapPermanent ObjectRef
+  | UntapPermanent Id
+  | AddCounter ObjectRef CounterType
+  | RemoveCounter ObjectRef CounterType
   | CreateObject Object  -- create a token, emblem or spell
-  | AddToManaPool (Ref Player) (Maybe Color)
-  | AttachPermanent (Ref Object) (Maybe (Ref Object)) (Maybe (Ref Object))  -- aura/equipment, old target, new target
-  | RemoveFromCombat (Ref Object)
+  | AddToManaPool PlayerRef (Maybe Color)
+  | AttachPermanent ObjectRef (Maybe ObjectRef) (Maybe ObjectRef)  -- aura/equipment, old target, new target
+  | RemoveFromCombat ObjectRef
 
 data Choice
-  = ChoosePlayer (Ref Player)
-  | ChooseObject (Ref Object)
+  = ChoosePlayer PlayerRef
+  | ChooseObject ObjectRef
   | ChooseColor Color
   | ChooseNumber Int
   | Pass
@@ -313,8 +324,8 @@ data Choice
 -- Targets
 
 data Target
-  = TargetPlayer (Ref Player)
-  | TargetObject (Ref Object)
+  = TargetPlayer PlayerRef
+  | TargetObject (World :-> IdList Object) ObjectRef
 
 
 -- Stack items
@@ -373,6 +384,6 @@ type View = ViewT Identity
 type Magic = ViewT (Program Ask)
 
 data Ask a where
-  Ask :: Ref Player -> [Choice] -> Ask Choice
+  Ask :: PlayerRef -> [Choice] -> Ask Choice
 
-$(mkLabels [''World, ''Player, ''Object, ''Zone, ''ObjectTypes, ''Action])
+$(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''Action])

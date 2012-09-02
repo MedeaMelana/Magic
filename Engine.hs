@@ -2,6 +2,7 @@
 
 module Engine where
 
+import qualified IdList
 import Labels
 import Predicates
 import Types
@@ -10,9 +11,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (forever)
 import Control.Monad.State (StateT)
 import Control.Monad.Operational
-import Data.Boolean
 import Data.Ord (comparing)
-import qualified Data.IntMap as IntMap
 import Data.Label.Pure
 import Data.Label.PureM
 import Data.List (sortBy)
@@ -40,8 +39,8 @@ executeStep (BeginningPhase UntapStep) = do
 
   -- [502.2] untap permanents
   rp <- gets activePlayer
-  ros <- filter ((isControlledBy rp &&* isInZone Battlefield) . snd) . IntMap.toList <$> gets objects
-  _ <- for ros $ \(ro, _) -> executeEffect (UntapPermanent ro)
+  ios <- IdList.filter (isControlledBy rp) <$> gets battlefield
+  _ <- for ios $ \(i, _) -> executeEffect (UntapPermanent i)
   return ()
 
 executeStep (BeginningPhase UpkeepStep) = do
@@ -138,19 +137,13 @@ executeEffect e = do
 
 compileEffect :: OneShotEffect -> Engine ()
 compileEffect (UntapPermanent ro) =
-  objects .^ ref ro .^ tapStatus =: Just Untapped
+  battlefield .^ listEl ro .^ tapStatus =: Just Untapped
 compileEffect (DrawCard rp) = do
-  library <- getLibrary rp
-  case library of
-    []          -> players .^ ref rp .^ failedCardDraw =: True
-    (ro, _) : _ -> executeEffect (MoveObject ro Library Hand)
+  lib <- gets (players .^ mapEl rp .^ library)
+  case IdList.toList lib of
+    []          -> players .^ mapEl rp .^ failedCardDraw =: True
+    (ro, _) : _ -> executeEffect (MoveObject (Library rp, ro) (Hand rp))
 compileEffect _ = undefined
-
-getLibrary :: Ref Player -> Engine [WithRef Object]
-getLibrary rp = sortOn (get timestamp . snd) . filter ((isOwnedBy rp &&* isInZone Library) . snd) <$> list objects
-
-list :: (World :-> RefMap a) -> Engine [WithRef a]
-list collection = IntMap.toList <$> gets collection
 
 sortOn :: Ord b => (a -> b) -> [a] -> [a]
 sortOn = sortBy . comparing
