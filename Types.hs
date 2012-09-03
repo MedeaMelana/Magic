@@ -16,7 +16,6 @@ import Control.Monad.Identity
 import Control.Monad.Operational
 import Data.Label (mkLabels)
 import Data.Label.Pure ((:->))
-import Data.IntMap (IntMap)
 import Data.Monoid
 import Data.Set (Set)
 import Data.Text (Text)
@@ -24,15 +23,13 @@ import Data.Text (Text)
 
 type Bag = []
 
-type IdMap = IntMap
-
 type PlayerRef = Id
 type ObjectRef = (ZoneRef, Id)
 
 
 -- | Current game situation.
 data World = World
-  { _players       :: IdMap Player
+  { _players       :: IdList Player
   , _activePlayer  :: PlayerRef
   , _activeStep    :: Step
   , _time          :: Timestamp

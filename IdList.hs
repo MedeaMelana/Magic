@@ -6,12 +6,16 @@ module IdList
 import Prelude hiding (filter)
 import qualified Prelude
 
+import Control.Arrow (second)
 import Control.Monad.Random (MonadRandom)
 import System.Random.Shuffle (shuffleM)
 
 type Id = Int
 
 data IdList a = IdList [(Id, a)] Id
+
+instance Functor IdList where
+  fmap = contents . fmap . second
 
 empty :: IdList a
 empty = IdList [] 0
@@ -32,7 +36,7 @@ remove i = contents (Prelude.filter (\(i', _) -> i /= i'))
 cons :: a -> IdList a -> IdList a
 cons x (IdList ixs i) = IdList ((i, x) : ixs) (succ i)
 
-contents :: ([(Id, a)] -> [(Id, a)]) -> IdList a -> IdList a
+contents :: ([(Id, a)] -> [(Id, b)]) -> IdList a -> IdList b
 contents f (IdList ixs i) = IdList (f ixs) i
 
 toList :: IdList a -> [(Id, a)]

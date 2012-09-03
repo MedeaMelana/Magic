@@ -141,9 +141,9 @@ compileEffect :: OneShotEffect -> Engine ()
 compileEffect (UntapPermanent ro) =
   battlefield .^ listEl ro .^ tapStatus =: Just Untapped
 compileEffect (DrawCard rp) = do
-  lib <- gets (players .^ mapEl rp .^ library)
+  lib <- gets (players .^ listEl rp .^ library)
   case IdList.toList lib of
-    []          -> players .^ mapEl rp .^ failedCardDraw =: True
+    []          -> players .^ listEl rp .^ failedCardDraw =: True
     (ro, _) : _ -> executeEffect (MoveObject (Library rp, ro) (Hand rp))
 compileEffect (MoveObject rObject@(rFromZone, i) rToZone) = do
   mObject <- lookupObject rObject
@@ -153,7 +153,7 @@ compileEffect (MoveObject rObject@(rFromZone, i) rToZone) = do
       compileZoneRef rFromZone ~: IdList.remove i
       compileZoneRef rToZone   ~: IdList.cons object
 compileEffect (ShuffleLibrary rPlayer) = do
-  let libraryLabel = players .^ mapEl rPlayer .^ library
+  let libraryLabel = players .^ listEl rPlayer .^ library
   lib <- gets libraryLabel
   lib' <- lift (IdList.shuffle lib)
   puts libraryLabel lib'
