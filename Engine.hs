@@ -150,6 +150,7 @@ compileEffect (MoveObject rObject@(rFromZone, i) rToZone) = do
   case mObject of
     Nothing -> return ()
     Just object -> do
+      tick >>= puts (compileZoneRef rToZone .^ listEl i .^ timestamp)
       compileZoneRef rFromZone ~: IdList.remove i
       compileZoneRef rToZone   ~: IdList.cons object
 compileEffect (ShuffleLibrary rPlayer) = do
@@ -158,6 +159,12 @@ compileEffect (ShuffleLibrary rPlayer) = do
   lib' <- lift (IdList.shuffle lib)
   puts libraryLabel lib'
 compileEffect _ = undefined
+
+tick :: Engine Timestamp
+tick = do
+  t <- gets time
+  time ~: succ
+  return t
 
 lookupObject :: ObjectRef -> Engine (Maybe Object)
 lookupObject (rz, i) = IdList.get i <$> gets (compileZoneRef rz)
