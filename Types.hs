@@ -85,7 +85,7 @@ data Player = Player
 
 data Card = Card
   -- timestamp, owner (and controller)
-  { enterWorld :: Timestamp -> PlayerRef-> Object
+  { instantiateCard :: Timestamp -> PlayerRef-> Object
   }
 
 data Object = Object

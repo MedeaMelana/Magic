@@ -2,7 +2,7 @@
 
 module IdList
   ( Id, IdList
-  , empty, get, set, remove, cons, toList, filter, shuffle
+  , empty, get, set, remove, cons, fromList, toList, filter, shuffle
   , consM, removeM, shuffleM
   ) where
 
@@ -47,6 +47,9 @@ cons x (IdList ixs i) = (i, IdList ((i, x) : ixs) (succ i))
 
 contents :: ([(Id, a)] -> [(Id, b)]) -> IdList a -> IdList b
 contents f (IdList ixs i) = IdList (f ixs) i
+
+fromList :: [a] -> IdList a
+fromList = foldr (\x xs -> snd (cons x xs)) empty
 
 toList :: IdList a -> [(Id, a)]
 toList (IdList ixs _) = ixs

@@ -2,6 +2,7 @@
 
 module Utils where
 
+import qualified IdList
 import Types
 
 import Control.Monad.State (State, execState)
@@ -12,14 +13,25 @@ import qualified Data.Set as Set
 
 
 mkCard :: State Object () -> Card
-mkCard f = Card (\ts rOwner zone -> execState f (object ts rOwner zone))
+mkCard f = Card (\ts rOwner -> execState f (object ts rOwner))
 
-object :: Timestamp -> Ref Player -> Zone -> Object
-object ts rOwner zone = Object
+player :: Player
+player = Player
+  { _life            = 20
+  , _manaPool        = []
+  , _prestack        = []
+  , _library         = IdList.empty
+  , _hand            = IdList.empty
+  , _graveyard       = IdList.empty
+  , _maximumHandSize = Just 7
+  , _failedCardDraw  = False
+  }
+
+object :: Timestamp -> PlayerRef -> Object
+object ts rOwner = Object
   { _name = Nothing
   , _colors = mempty
   , _types = mempty
-  , _zone = zone
   , _owner = rOwner
   , _controller = rOwner
   , _timestamp = ts

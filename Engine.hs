@@ -6,9 +6,10 @@ import qualified IdList
 import Labels
 import Predicates
 import Types
+import Utils
 
 import Control.Applicative ((<$>))
-import Control.Monad (forever, void)
+import Control.Monad (forever, void, forM_)
 import Control.Monad.Operational
 import Control.Monad.Random (RandT, StdGen)
 import Control.Monad.State (StateT)
@@ -20,6 +21,14 @@ import Data.List (sortBy)
 import Data.Traversable (for)
 
 type Engine = StateT World (RandT StdGen (Program Ask))
+
+
+enterPlayer :: [Card] -> Engine ()
+enterPlayer deck = do
+  playerId <- IdList.consM players player
+  forM_ deck $ \card -> do
+    t <- tick
+    IdList.consM (players .^ listEl playerId .^ library) (instantiateCard card t playerId)
 
 round :: Engine ()
 round = forever $ do
@@ -155,12 +164,12 @@ compileEffect (DrawCard rp) = do
     (ro, _) : _ -> executeEffect (MoveObject (Library rp, ro) (Hand rp))
 
 compileEffect (MoveObject (rFromZone, i) rToZone) = do
-  mObject <- IdList.removeM (compileZoneRef rFromZone) i
-  case mObject of
+  mObj <- IdList.removeM (compileZoneRef rFromZone) i
+  case mObj of
     Nothing     -> return ()
-    Just object -> do
+    Just obj -> do
       t <- tick
-      void (IdList.consM (compileZoneRef rToZone) (set timestamp t object))
+      void (IdList.consM (compileZoneRef rToZone) (set timestamp t obj))
 
 compileEffect (ShuffleLibrary rPlayer) = do
   let libraryLabel = players .^ listEl rPlayer .^ library
