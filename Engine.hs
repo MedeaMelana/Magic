@@ -8,7 +8,7 @@ import Predicates
 import Types
 
 import Control.Applicative ((<$>))
-import Control.Monad (forever)
+import Control.Monad (forever, void)
 import Control.Monad.Operational
 import Control.Monad.Random (RandT, StdGen)
 import Control.Monad.State (StateT)
@@ -145,14 +145,13 @@ compileEffect (DrawCard rp) = do
   case IdList.toList lib of
     []          -> players .^ listEl rp .^ failedCardDraw =: True
     (ro, _) : _ -> executeEffect (MoveObject (Library rp, ro) (Hand rp))
-compileEffect (MoveObject rObject@(rFromZone, i) rToZone) = do
-  mObject <- lookupObject rObject
+compileEffect (MoveObject (rFromZone, i) rToZone) = do
+  mObject <- IdList.removeM (compileZoneRef rFromZone) i
   case mObject of
-    Nothing -> return ()
+    Nothing     -> return ()
     Just object -> do
-      tick >>= puts (compileZoneRef rToZone .^ listEl i .^ timestamp)
-      compileZoneRef rFromZone ~: IdList.remove i
-      compileZoneRef rToZone   ~: IdList.cons object
+      t <- tick
+      void (IdList.consM (compileZoneRef rToZone) (set timestamp t object))
 compileEffect (ShuffleLibrary rPlayer) = do
   let libraryLabel = players .^ listEl rPlayer .^ library
   lib <- gets libraryLabel
@@ -165,9 +164,6 @@ tick = do
   t <- gets time
   time ~: succ
   return t
-
-lookupObject :: ObjectRef -> Engine (Maybe Object)
-lookupObject (rz, i) = IdList.get i <$> gets (compileZoneRef rz)
 
 sortOn :: Ord b => (a -> b) -> [a] -> [a]
 sortOn = sortBy . comparing
