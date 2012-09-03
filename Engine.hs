@@ -143,7 +143,17 @@ compileEffect (DrawCard rp) = do
   case IdList.toList lib of
     []          -> players .^ mapEl rp .^ failedCardDraw =: True
     (ro, _) : _ -> executeEffect (MoveObject (Library rp, ro) (Hand rp))
+compileEffect (MoveObject rObject@(rFromZone, i) rToZone) = do
+  mObject <- lookupObject rObject
+  case mObject of
+    Nothing -> return ()
+    Just object -> do
+      compileZoneRef rFromZone ~: IdList.remove i
+      compileZoneRef rToZone   ~: IdList.cons object
 compileEffect _ = undefined
+
+lookupObject :: ObjectRef -> Engine (Maybe Object)
+lookupObject (rz, i) = IdList.get i <$> gets (compileZoneRef rz)
 
 sortOn :: Ord b => (a -> b) -> [a] -> [a]
 sortOn = sortBy . comparing
