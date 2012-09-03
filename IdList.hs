@@ -1,4 +1,7 @@
-module IdList where
+module IdList
+  ( Id, IdList
+  , empty, get, set, remove, cons, toList, filter
+  ) where
 
 import Prelude hiding (filter)
 import qualified Prelude
