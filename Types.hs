@@ -298,7 +298,7 @@ data OneShotEffect
   = AdjustLife PlayerRef Int
   | DamageObject ObjectRef ObjectRef Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
   | DamagePlayer ObjectRef PlayerRef Int Bool Bool  -- source, player, amount, combat damage?, preventable?
-  | ShuffleLibrary
+  | ShuffleLibrary PlayerRef
   -- | ReorderLibraryCards
   | DrawCard PlayerRef -- Drawing is special [120.5]
   | DestroyPermanent ObjectRef Bool  -- target, preventable? -- Destruction is special [701.6b]

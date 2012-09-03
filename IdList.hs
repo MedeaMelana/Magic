@@ -1,10 +1,13 @@
 module IdList
   ( Id, IdList
-  , empty, get, set, remove, cons, toList, filter
+  , empty, get, set, remove, cons, toList, filter, shuffle
   ) where
 
 import Prelude hiding (filter)
 import qualified Prelude
+
+import Control.Monad.Random (MonadRandom)
+import System.Random.Shuffle (shuffleM)
 
 type Id = Int
 
@@ -37,3 +40,8 @@ toList (IdList ixs _) = ixs
 
 filter :: (a -> Bool) -> IdList a -> [(Id, a)]
 filter f = Prelude.filter (f . snd) . toList
+
+shuffle :: MonadRandom m => IdList a -> m (IdList a)
+shuffle (IdList ixs ni) = do
+  ixs' <- shuffleM ixs
+  return (IdList ixs' ni)

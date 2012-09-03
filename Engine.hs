@@ -9,15 +9,17 @@ import Types
 
 import Control.Applicative ((<$>))
 import Control.Monad (forever)
-import Control.Monad.State (StateT)
 import Control.Monad.Operational
+import Control.Monad.Random (RandT, StdGen)
+import Control.Monad.State (StateT)
+import Control.Monad.Trans (lift)
 import Data.Ord (comparing)
-import Data.Label.Pure
-import Data.Label.PureM
+import Data.Label.Pure (set)
+import Data.Label.PureM (gets, puts, (=:))
 import Data.List (sortBy)
 import Data.Traversable (for)
 
-type Engine = StateT World (Program Ask)
+type Engine = StateT World (RandT StdGen (Program Ask))
 
 round :: Engine ()
 round = forever $ do
@@ -150,6 +152,11 @@ compileEffect (MoveObject rObject@(rFromZone, i) rToZone) = do
     Just object -> do
       compileZoneRef rFromZone ~: IdList.remove i
       compileZoneRef rToZone   ~: IdList.cons object
+compileEffect (ShuffleLibrary rPlayer) = do
+  let libraryLabel = players .^ mapEl rPlayer .^ library
+  lib <- gets libraryLabel
+  lib' <- lift (IdList.shuffle lib)
+  puts libraryLabel lib'
 compileEffect _ = undefined
 
 lookupObject :: ObjectRef -> Engine (Maybe Object)
