@@ -34,6 +34,9 @@ nextStep = do
   activeStep    =: s
   return s
 
+
+-- Execution of steps
+
 executeStep :: Step -> Engine ()
 
 executeStep (BeginningPhase UntapStep) = do
@@ -137,14 +140,20 @@ executeEffect e = do
   -- TODO apply replacement effects
   compileEffect e
 
+
+-- Compilation of effects
+
 compileEffect :: OneShotEffect -> Engine ()
+
 compileEffect (UntapPermanent ro) =
   battlefield .^ listEl ro .^ tapStatus =: Just Untapped
+
 compileEffect (DrawCard rp) = do
   lib <- gets (players .^ listEl rp .^ library)
   case IdList.toList lib of
     []          -> players .^ listEl rp .^ failedCardDraw =: True
     (ro, _) : _ -> executeEffect (MoveObject (Library rp, ro) (Hand rp))
+
 compileEffect (MoveObject (rFromZone, i) rToZone) = do
   mObject <- IdList.removeM (compileZoneRef rFromZone) i
   case mObject of
@@ -152,12 +161,15 @@ compileEffect (MoveObject (rFromZone, i) rToZone) = do
     Just object -> do
       t <- tick
       void (IdList.consM (compileZoneRef rToZone) (set timestamp t object))
+
 compileEffect (ShuffleLibrary rPlayer) = do
   let libraryLabel = players .^ listEl rPlayer .^ library
   lib <- gets libraryLabel
   lib' <- lift (IdList.shuffle lib)
   puts libraryLabel lib'
+
 compileEffect _ = undefined
+
 
 tick :: Engine Timestamp
 tick = do
