@@ -13,7 +13,7 @@ import IdList (Id, IdList)
 import Control.Applicative
 import Control.Monad.Reader
 import Control.Monad.Identity
-import Control.Monad.Operational
+import qualified Control.Monad.Operational as Operational
 import Data.Label (mkLabels)
 import Data.Label.Pure ((:->))
 import Data.Monoid
@@ -309,14 +309,6 @@ data OneShotEffect
   | AttachPermanent ObjectRef (Maybe ObjectRef) (Maybe ObjectRef)  -- aura/equipment, old target, new target
   | RemoveFromCombat ObjectRef
 
-data Choice
-  = ChoosePlayer PlayerRef
-  | ChooseObject ObjectRef
-  | ChooseColor Color
-  | ChooseNumber Int
-  | Pass
-  | Concede
-
 
 -- Targets
 
@@ -378,9 +370,9 @@ askTargets choose = askTargets' (const True)
 type ViewT = ReaderT World
 type View = ViewT Identity
 
-type Magic = ViewT (Program Ask)
+type Magic = ViewT (Operational.Program Ask)
 
 data Ask a where
-  Ask :: PlayerRef -> [Choice] -> Ask Choice
+  AskKeepHand :: PlayerRef -> Ask Bool
 
 $(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''Action])

@@ -2,6 +2,7 @@
 
 module Engine where
 
+import IdList (Id)
 import qualified IdList
 import Labels
 import Predicates
@@ -9,8 +10,8 @@ import Types
 import Utils
 
 import Control.Applicative ((<$>))
-import Control.Monad (forever, void, forM_)
-import Control.Monad.Operational
+import Control.Monad (forever, void, forM_, replicateM_)
+import qualified Control.Monad.Operational as Operational
 import Control.Monad.Random (RandT, StdGen)
 import Control.Monad.State (StateT)
 import Control.Monad.Trans (lift)
@@ -18,9 +19,10 @@ import Data.Ord (comparing)
 import Data.Label.Pure (set)
 import Data.Label.PureM (gets, puts, (=:))
 import Data.List (sortBy)
+import Data.Maybe (catMaybes)
 import Data.Traversable (for)
 
-type Engine = StateT World (RandT StdGen (Program Ask))
+type Engine = StateT World (RandT StdGen (Operational.Program Ask))
 
 
 enterPlayer :: [Card] -> Engine ()
@@ -29,6 +31,26 @@ enterPlayer deck = do
   forM_ deck $ \card -> do
     t <- tick
     IdList.consM (players .^ listEl playerId .^ library) (instantiateCard card t playerId)
+
+drawOpeningHands :: [PlayerRef] -> Int -> Engine ()
+drawOpeningHands [] _ =
+  return ()
+drawOpeningHands playerIds 0 =
+  forM_ playerIds shuffleLibrary
+drawOpeningHands playerIds handSize = do
+  mulliganingPlayers <-
+    for playerIds $ \playerId -> do
+      moveAllObjects (Hand playerId) (Library playerId)
+      shuffleLibrary playerId
+      replicateM_ handSize (drawCard playerId)
+      keepHand <- liftQuestion (AskKeepHand playerId)
+      if keepHand
+        then return Nothing
+        else return (Just playerId)
+  drawOpeningHands (catMaybes mulliganingPlayers) (handSize - 1)
+
+liftQuestion :: Ask a -> Engine a
+liftQuestion = lift . lift . Operational.singleton
 
 round :: Engine ()
 round = forever $ do
@@ -153,30 +175,10 @@ executeEffect e = do
 -- Compilation of effects
 
 compileEffect :: OneShotEffect -> Engine ()
-
-compileEffect (UntapPermanent ro) =
-  battlefield .^ listEl ro .^ tapStatus =: Just Untapped
-
-compileEffect (DrawCard rp) = do
-  lib <- gets (players .^ listEl rp .^ library)
-  case IdList.toList lib of
-    []          -> players .^ listEl rp .^ failedCardDraw =: True
-    (ro, _) : _ -> executeEffect (MoveObject (Library rp, ro) (Hand rp))
-
-compileEffect (MoveObject (rFromZone, i) rToZone) = do
-  mObj <- IdList.removeM (compileZoneRef rFromZone) i
-  case mObj of
-    Nothing     -> return ()
-    Just obj -> do
-      t <- tick
-      void (IdList.consM (compileZoneRef rToZone) (set timestamp t obj))
-
-compileEffect (ShuffleLibrary rPlayer) = do
-  let libraryLabel = players .^ listEl rPlayer .^ library
-  lib <- gets libraryLabel
-  lib' <- lift (IdList.shuffle lib)
-  puts libraryLabel lib'
-
+compileEffect (UntapPermanent i) = untapPermanent i
+compileEffect (DrawCard rp) = drawCard rp
+compileEffect (MoveObject rObj rToZone) = moveObject rObj rToZone
+compileEffect (ShuffleLibrary rPlayer) = shuffleLibrary rPlayer
 compileEffect _ = undefined
 
 
@@ -185,6 +187,37 @@ tick = do
   t <- gets time
   time ~: succ
   return t
+
+untapPermanent :: Id -> Engine ()
+untapPermanent ro = battlefield .^ listEl ro .^ tapStatus =: Just Untapped
+
+drawCard :: PlayerRef -> Engine ()
+drawCard rp = do
+  lib <- gets (players .^ listEl rp .^ library)
+  case IdList.toList lib of
+    []          -> players .^ listEl rp .^ failedCardDraw =: True
+    (ro, _) : _ -> executeEffect (MoveObject (Library rp, ro) (Hand rp))
+
+moveObject :: ObjectRef -> ZoneRef -> Engine ()
+moveObject (rFromZone, i) rToZone = do
+  mObj <- IdList.removeM (compileZoneRef rFromZone) i
+  case mObj of
+    Nothing     -> return ()
+    Just obj -> do
+      t <- tick
+      void (IdList.consM (compileZoneRef rToZone) (set timestamp t obj))
+
+moveAllObjects :: ZoneRef -> ZoneRef -> Engine ()
+moveAllObjects rFromZone rToZone = do
+  objectIds <- map fst . IdList.toList <$> gets (compileZoneRef rFromZone)
+  forM_ objectIds $ \i -> moveObject (rFromZone, i) rToZone
+
+shuffleLibrary :: PlayerRef -> Engine ()
+shuffleLibrary rPlayer = do
+  let libraryLabel = players .^ listEl rPlayer .^ library
+  lib <- gets libraryLabel
+  lib' <- lift (IdList.shuffle lib)
+  puts libraryLabel lib'
 
 sortOn :: Ord b => (a -> b) -> [a] -> [a]
 sortOn = sortBy . comparing
