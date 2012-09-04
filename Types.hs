@@ -285,7 +285,8 @@ data Event
   | PlayLand ObjectRef
   | RegeneratePermanent ObjectRef
   | RevealCard ObjectRef
-  | ChangeStep Step Step  -- old step, new step
+  | BeginStep Step
+  | EndStep Step
   | LoseGame PlayerRef
 
 data OneShotEffect

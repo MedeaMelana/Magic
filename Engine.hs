@@ -55,7 +55,10 @@ liftQuestion = lift . lift . Operational.singleton
 round :: Engine ()
 round = forever $ do
   players ~:* set manaPool []
-  nextStep >>= executeStep
+  step <- nextStep
+  raise (BeginStep step)
+  executeStep step
+  raise (EndStep step)
 
 nextStep :: Engine Step
 nextStep = do
@@ -64,6 +67,11 @@ nextStep = do
   activePlayer  =: rp
   activeStep    =: s
   return s
+
+raise :: Event -> Engine ()
+raise _ = do
+  -- TODO handle triggered abilities
+  return ()
 
 
 -- Execution of steps
