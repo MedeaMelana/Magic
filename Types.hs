@@ -128,9 +128,6 @@ data Color = White | Blue | Black | Red | Green
 data ZoneRef = Library PlayerRef | Hand PlayerRef | Battlefield | Graveyard PlayerRef | Stack | Exile
   deriving (Eq, Ord, Show, Read)
 
-compileZoneRef :: ZoneRef -> World :-> IdList Object
-compileZoneRef = undefined
-
 data TapStatus = Untapped | Tapped
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 

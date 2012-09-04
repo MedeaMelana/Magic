@@ -2,7 +2,9 @@
 
 module Utils where
 
+import IdList (IdList)
 import qualified IdList
+import Labels
 import Types
 
 import Control.Monad.State (State, execState)
@@ -94,3 +96,14 @@ instance ObjectType PlaneswalkerType where
 
 objectType :: ObjectType a => a -> ObjectTypes
 objectType ty = set objectTypeLabel (Just (Set.singleton ty)) mempty
+
+compileZoneRef :: ZoneRef -> World :-> IdList Object
+compileZoneRef z =
+  case z of
+    Library p   -> players .^ listEl p .^ library
+    Hand p      -> players .^ listEl p .^ hand
+    Battlefield -> battlefield
+    Graveyard p -> players .^ listEl p .^ graveyard
+    Stack       -> stack
+    Exile       -> exile
+
