@@ -2,15 +2,14 @@
 
 module BasicLands where
 
+import Labels
 import Predicates
 import Types
 import Utils
 
 import Control.Applicative
-import Data.Boolean
 import Data.Label.PureM
 import Data.Monoid
-import Data.Set as Set
 import Data.String
 
 
@@ -30,19 +29,25 @@ mkBasicLandCard ty color = mkCard $ do
 
 playLand :: Ability
 playLand rSource rActivator = ClosedAbility
-  { _available = checkObject rSource (isControlledBy rActivator &&* isInZone Hand)
+  { _available =
+      case rSource of
+        (Hand _, _) -> checkObject rSource (isControlledBy rActivator)
+        _           -> return False
   , _manaCost = mempty
   , _additionalCosts = []
-  , _effect = SpecialAction (return [MoveObject rSource Library Battlefield])
+  , _effect = SpecialAction (return [MoveObject rSource Battlefield])
   }
 
 tapToAddMana :: Maybe Color -> Ability
 tapToAddMana mc rSource rActivator = ClosedAbility
-  { _available = checkObject rSource (isControlledBy rActivator &&* isInZone Battlefield)
+  { _available =
+      case rSource of
+        (Battlefield, _) -> checkObject rSource (isControlledBy rActivator)
+        _                -> return False
   , _manaCost = mempty
   , _additionalCosts = []
   , _effect = SpecialAction (return [AddToManaPool rActivator mc])
   }
 
-checkObject :: Ref Object -> (Object -> Bool) -> View Bool
-checkObject ref ok = ok . (! ref) <$> asks objects
+checkObject :: ObjectRef -> (Object -> Bool) -> View Bool
+checkObject (rZone, i) ok = ok <$> asks (compileZoneRef rZone .^ listEl i)
