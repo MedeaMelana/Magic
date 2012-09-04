@@ -61,38 +61,38 @@ legendaryType :: ObjectTypes
 legendaryType = mempty { _supertypes = Set.singleton Legendary }
 
 artifactType :: ObjectTypes
-artifactType = mempty { _artifactTypes = Just mempty }
+artifactType = mempty { _artifactSubtypes = Just mempty }
 
 enchantmentType :: ObjectTypes
-enchantmentType = mempty { _enchantmentTypes = Just mempty }
+enchantmentType = mempty { _enchantmentSubtypes = Just mempty }
 
 instantType :: ObjectTypes
-instantType = mempty { _instantTypes = Just mempty }
+instantType = mempty { _instantSubtypes = Just mempty }
 
 landType :: ObjectTypes
-landType = mempty { _landTypes = Just mempty }
+landType = mempty { _landSubtypes = Just mempty }
 
 sorceryType :: ObjectTypes
-sorceryType = mempty { _sorceryTypes = Just mempty }
+sorceryType = mempty { _sorcerySubtypes = Just mempty }
 
 
 class ObjectType a where
   objectTypeLabel :: ObjectTypes :-> Maybe (Set a)
 
-instance ObjectType ArtifactType where
-  objectTypeLabel = artifactTypes
+instance ObjectType ArtifactSubtype where
+  objectTypeLabel = artifactSubtypes
 
-instance ObjectType CreatureType where
-  objectTypeLabel = creatureTypes
+instance ObjectType CreatureSubtype where
+  objectTypeLabel = creatureSubtypes
 
-instance ObjectType EnchantmentType where
-  objectTypeLabel = enchantmentTypes
+instance ObjectType EnchantmentSubtype where
+  objectTypeLabel = enchantmentSubtypes
 
-instance ObjectType LandType where
-  objectTypeLabel = landTypes
+instance ObjectType LandSubtype where
+  objectTypeLabel = landSubtypes
 
-instance ObjectType PlaneswalkerType where
-  objectTypeLabel = planeswalkerTypes
+instance ObjectType PlaneswalkerSubtype where
+  objectTypeLabel = planeswalkerSubtypes
 
 objectType :: ObjectType a => a -> ObjectTypes
 objectType ty = set objectTypeLabel (Just (Set.singleton ty)) mempty

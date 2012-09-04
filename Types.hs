@@ -139,36 +139,36 @@ data CounterType
 -- Object types
 
 data ObjectTypes = ObjectTypes
-  { _supertypes        :: Set Supertype
-  , _artifactTypes     :: Maybe (Set ArtifactType)
-  , _creatureTypes     :: Maybe (Set CreatureType)
-  , _enchantmentTypes  :: Maybe (Set EnchantmentType)
-  , _instantTypes      :: Maybe (Set SpellType)
-  , _landTypes         :: Maybe (Set LandType)
-  , _planeswalkerTypes :: Maybe (Set PlaneswalkerType)
-  , _sorceryTypes      :: Maybe (Set SpellType)
+  { _supertypes           :: Set Supertype
+  , _artifactSubtypes     :: Maybe (Set ArtifactSubtype)
+  , _creatureSubtypes     :: Maybe (Set CreatureSubtype)
+  , _enchantmentSubtypes  :: Maybe (Set EnchantmentSubtype)
+  , _instantSubtypes      :: Maybe (Set SpellSubtype)
+  , _landSubtypes         :: Maybe (Set LandSubtype)
+  , _planeswalkerSubtypes :: Maybe (Set PlaneswalkerSubtype)
+  , _sorcerySubtypes      :: Maybe (Set SpellSubtype)
   } deriving (Eq, Ord, Show)
 
 instance Monoid ObjectTypes where
   mempty = ObjectTypes mempty mempty mempty mempty mempty mempty mempty mempty
   x  `mappend` y = ObjectTypes
-    { _supertypes        = _supertypes x        `mappend` _supertypes y
-    , _artifactTypes     = _artifactTypes x     `mappend` _artifactTypes y
-    , _creatureTypes     = _creatureTypes x     `mappend` _creatureTypes y
-    , _enchantmentTypes  = _enchantmentTypes x  `mappend` _enchantmentTypes y
-    , _instantTypes      = _instantTypes x      `mappend` _instantTypes y
-    , _landTypes         = _landTypes x         `mappend` _landTypes y
-    , _planeswalkerTypes = _planeswalkerTypes x `mappend` _planeswalkerTypes y
-    , _sorceryTypes      = _sorceryTypes x      `mappend` _sorceryTypes y
+    { _supertypes           = _supertypes x           `mappend` _supertypes y
+    , _artifactSubtypes     = _artifactSubtypes x     `mappend` _artifactSubtypes y
+    , _creatureSubtypes     = _creatureSubtypes x     `mappend` _creatureSubtypes y
+    , _enchantmentSubtypes  = _enchantmentSubtypes x  `mappend` _enchantmentSubtypes y
+    , _instantSubtypes      = _instantSubtypes x      `mappend` _instantSubtypes y
+    , _landSubtypes         = _landSubtypes x         `mappend` _landSubtypes y
+    , _planeswalkerSubtypes = _planeswalkerSubtypes x `mappend` _planeswalkerSubtypes y
+    , _sorcerySubtypes      = _sorcerySubtypes x      `mappend` _sorcerySubtypes y
     }
 
 data Supertype = Basic | Legendary
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data ArtifactType = Equipment
+data ArtifactSubtype = Equipment
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data CreatureType
+data CreatureSubtype
   -- Races
   = Boar
   | Human
@@ -184,16 +184,16 @@ data CreatureType
   | Shaman
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data EnchantmentType = Aura | Curse
+data EnchantmentSubtype = Aura | Curse
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data SpellType = Arcane | Trap
+data SpellSubtype = Arcane | Trap
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data LandType = Plains | Island | Swamp | Mountain | Forest | Locus
+data LandSubtype = Plains | Island | Swamp | Mountain | Forest | Locus
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data PlaneswalkerType = Chandra | Elspeth | Garruk | Gideon | Jace
+data PlaneswalkerSubtype = Chandra | Elspeth | Garruk | Gideon | Jace
   | Koth | Liliana | Sorin | Tezzeret | Venser | Karn 
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
