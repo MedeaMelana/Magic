@@ -1,2 +1,2 @@
 run:
-	ghci -Wall M12
+	ghci -Wall Engine
