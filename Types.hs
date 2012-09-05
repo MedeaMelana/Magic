@@ -307,6 +307,8 @@ data OneShotEffect
   | AttachPermanent ObjectRef (Maybe ObjectRef) (Maybe ObjectRef)  -- aura/equipment, old target, new target
   | RemoveFromCombat ObjectRef
 
+data PriorityAction = PlayCard ObjectRef
+
 
 -- Targets
 
@@ -371,6 +373,7 @@ type View = ViewT Identity
 type Magic = ViewT (Operational.Program Ask)
 
 data Ask a where
-  AskKeepHand :: PlayerRef -> Ask Bool
+  AskKeepHand       :: PlayerRef -> Ask Bool
+  AskPriorityAction :: PlayerRef -> [PriorityAction] -> Ask PriorityAction
 
 $(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''Action])

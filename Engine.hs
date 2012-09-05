@@ -7,16 +7,17 @@ import qualified IdList
 import Labels
 import Predicates
 import Types
-import Utils
+import Utils hiding (object)
 
 import Control.Applicative ((<$>))
 import Control.Monad (forever, void, forM_, replicateM_)
 import qualified Control.Monad.Operational as Operational
 import Control.Monad.Random (RandT, StdGen)
-import Control.Monad.State (StateT)
+import Control.Monad.Reader (runReaderT)
+import Control.Monad.State (StateT, get)
 import Control.Monad.Trans (lift)
 import Data.Ord (comparing)
-import Data.Label.Pure (set)
+import Data.Label.Pure (set, (:->))
 import Data.Label.PureM (gets, puts, (=:))
 import Data.List (sortBy)
 import Data.Maybe (catMaybes)
@@ -236,4 +237,34 @@ offerPriority = do
   -- TODO empty prestacks in APNAP order
   -- TODO offer available actions to players in APNAP order
   -- TODO when everyone passes, return
+  playerIds <- apnap
+  forM_ playerIds $ \p -> do
+    actions       <- collectActions p
+    PlayCard rObj <- liftQuestion (AskPriorityAction p actions)
+    Just ability  <- gets (object rObj .^ play)
+    executeAction ability rObj p
   return ()
+
+object :: ObjectRef -> World :-> Object
+object (zoneRef, i) = compileZoneRef zoneRef .^ listEl i
+
+collectActions :: PlayerRef -> Engine [PriorityAction]
+collectActions = undefined
+
+executeAction :: Ability -> ObjectRef -> PlayerRef -> Engine ()
+executeAction ability rSource activatorId = do
+  let closedAbility = ability rSource activatorId
+  -- TODO pay costs
+  case _effect closedAbility of
+    SpecialAction m -> executeMagic m >>= mapM_ executeEffect
+    StackingAction _ -> return ()
+
+executeMagic :: Magic a -> Engine a
+executeMagic m = get >>= lift . lift . runReaderT m
+
+-- | Returns player IDs in APNAP order (active player, non-active player).
+apnap :: Engine [PlayerRef]
+apnap = do
+  activePlayerId <- gets activePlayer
+  (ps, qs) <- break (== activePlayerId) . IdList.ids <$> gets players
+  return (qs ++ ps)

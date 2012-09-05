@@ -2,7 +2,7 @@
 
 module IdList
   ( Id, IdList
-  , empty, get, set, remove, cons, fromList, toList, filter, shuffle
+  , empty, get, set, remove, cons, fromList, toList, ids, filter, shuffle
   , consM, removeM, shuffleM
   ) where
 
@@ -53,6 +53,9 @@ fromList = foldr (\x xs -> snd (cons x xs)) empty
 
 toList :: IdList a -> [(Id, a)]
 toList (IdList ixs _) = ixs
+
+ids :: IdList a -> [Id]
+ids = map fst . toList
 
 filter :: (a -> Bool) -> IdList a -> [(Id, a)]
 filter f = Prelude.filter (f . snd) . toList
