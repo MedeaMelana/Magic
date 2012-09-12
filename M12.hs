@@ -2,129 +2,39 @@
 
 module M12 where
 
-import Types
-import Labels
-import Predicates
+import Core
 import Utils
 
 import Control.Applicative
-import Control.Monad (when)
-import Data.Boolean
-import qualified Data.IntMap as IntMap
-import Data.Label.MaybeM
-import Data.Maybe (catMaybes)
-import Data.Monoid
-import Data.Set (Set)
-import qualified Data.Set as Set
-import Data.Text (Text)
+import Data.Label.PureM ((=:))
 
 
--- doomblade :: Card
--- doomblade =
---   mkInstant "Doomblade" [PayMana [Just Black, Nothing]] $
---     \rSelf rOwner -> do
---       let crit = notB (hasColor Black) &&* isOnBattlefield
---       rTarget <- targetCreature crit
---       stack rSelf $ do
---         o <- gets (object rTarget)
---         when (crit o) $ object rTarget .^ zone =: Graveyard
--- 
-goblinFireslinger :: Card
-goblinFireslinger = Card
-  { enterWorld = \timestamp rOwner rSelf -> Object
-    { _name = Just "Goblin Fireslinger"
-    , _colors = colorsFromCost cost
-    , _group = Permanent
-      { _supertypes = Set.empty
-      , _creatureTypes = Set.fromList [Goblin, Warrior]
-      }
-    , _zone = Library
-    , _owner = rOwner
-    , _controller = rOwner
-    
-    , _power = 1
-    , _toughness = 1
-    , _damage = 0
-    
-    , _activatedAbilities =
-      [ Action
-        { _available = \rp ->
-            (isInZone Battlefield &&* isControlledBy rp) <$>
-            gets (object rSelf)
-        , _cost = mempty { tapPermanents = [\(r, _) -> r == rSelf] }
-        , _effect = do
-            rt <- targetPlayer
-            stack rSelf $ player rt .^ life .~ subtract 1
-        }
-      ]
-    , _play = Action
-      { _available = \rp ->
-          (isInZone Hand &&* isControlledBy rp) <$>
-          gets (object rSelf)
-      , _cost = cost
-      , _effect = stack rSelf $
-          object rSelf .^ zone =: Battlefield Untapped
-      }
-    , _timestamp = timestamp
-    , _staticAbilities = []
-    , _counters = []
-    , _continuousEffects = []
-    }
-  }
-  where
-    cost = mempty { payColoredMana = [Red] }
+shock :: Card
+shock = mkCard $ do
+  name  =: Just "Shock"
+  types =: instantType
+  play  =: (Just $ \rSelf rActivator ->
+    ClosedAbility
+      { _available =
+          case rSelf of
+            (Hand rp, _) -> return (rp == rActivator)
+            _            -> return False
+      , _manaCost = ManaCost [Red] 0
+      , _additionalCosts = []
+      , _effect = StackingAction (shockEffect rSelf rActivator)
+      })
 
--- stack :: Ref Object -> Magic () -> Magic ()
--- stack r a = raise $ move r (Stack a)
-
--- move :: Ref Object -> Zone -> Magic ()
--- move r z = do
---   object r .^ zone =: z
---   object r .^ effects =: []
---   object r .^ counters =: []  -- [121.2]
---   stamp >>= puts (object r .^ timestamp)  -- [613.6c]
-
--- target :: (Object -> Bool) -> Magic (Ref Object)
--- target = undefined
--- 
--- targetCreature :: (Object -> Bool) -> Magic (Ref Object)
--- targetCreature = undefined
--- 
--- targetPlayer :: Magic (Ref Player)
--- targetPlayer = targetPlayer' (const True)
--- 
--- targetOpponent :: Ref Player -> Magic (Ref Player)
--- targetOpponent rController = targetPlayer' (\(rp, _) -> rp /= rController)
--- 
--- targetPlayer' :: (WithRef Player -> Bool) -> Magic (Ref Player)
--- targetPlayer' f = do
---   rpps <- IntMap.toList <$> gets players
---   choose [ (TargetPlayer rp, rp) | rpp@(rp, _) <- rpps, f rpp ]
--- 
--- mkInstant :: Text -> [Cost] -> (Ref Player -> Ref Object ->
---   Magic ()) -> Card
--- mkInstant name cost effect = Card
---   { enterWorld = \timestamp rOwner rSelf -> Object
---     { _name = Just name
---     , _colors = colorsFromCost cost
---     , _group = Spell Instant
---     , _zone = Library
---     , _owner = rOwner
---     , _controller = rOwner
---     , _activatedAbilities = []
---     , _play = Action
---       { _available = \rp ->
---         (isInHand &&* isControlledBy rp) <$>
---         gets (object rSelf)
---       , _cost = cost
---       , _effect = stack rSelf (effect rOwner rSelf)
---       }
---     , _timestamp = timestamp
---     , _staticAbilities = []
---     , _counters = []
---     , _effects = []
---     }
---   }
-
-colorsFromCost :: Cost -> Set Color
-colorsFromCost = Set.fromList . payColoredMana
+shockEffect :: ObjectRef -> PlayerRef -> Magic StackItem
+shockEffect rSelf rActivator = do
+  -- TODO check for hexproof
+  -- TODO check for protection
+  -- TODO realise rSelf is sometimes in hand, sometimes on the stack
+  let ok t = case t of
+              TargetObject (Battlefield, _) -> return True
+              TargetPlayer _                -> return True
+              _                             -> return False
+  ts <- askMagicTargets rActivator (singleTarget <?> ok)
+  let f t = case t of
+              TargetObject or -> return [WillSimpleEffect (DamageObject rSelf or 2 False True)]
+              TargetPlayer pr -> return [WillSimpleEffect (DamagePlayer rSelf pr 2 False True)]
+  return (f <$> ts)
