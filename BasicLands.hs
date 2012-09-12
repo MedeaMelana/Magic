@@ -2,9 +2,9 @@
 
 module BasicLands where
 
+import Core
 import Labels
 import Predicates
-import Types
 import Utils
 
 import Control.Applicative
@@ -20,7 +20,7 @@ swamp    = mkBasicLandCard Swamp    Black
 mountain = mkBasicLandCard Mountain Red
 forest   = mkBasicLandCard Forest   Green
 
-mkBasicLandCard :: LandType -> Color -> Card
+mkBasicLandCard :: LandSubtype -> Color -> Card
 mkBasicLandCard ty color = mkCard $ do
   name               =: Just (fromString (show ty))
   types              =: basicType <> objectType ty
@@ -35,7 +35,7 @@ playLand rSource rActivator = ClosedAbility
         _           -> return False
   , _manaCost = mempty
   , _additionalCosts = []
-  , _effect = SpecialAction (return [MoveObject rSource Battlefield])
+  , _effect = SpecialAction (return [WillSimpleEffect (PlayLand rSource)])
   }
 
 tapToAddMana :: Maybe Color -> Ability
@@ -46,7 +46,8 @@ tapToAddMana mc rSource rActivator = ClosedAbility
         _                -> return False
   , _manaCost = mempty
   , _additionalCosts = []
-  , _effect = SpecialAction (return [AddToManaPool rActivator mc])
+  -- TODO require cost: tap self
+  , _effect = SpecialAction (return [WillSimpleEffect (AddToManaPool rActivator mc)])
   }
 
 checkObject :: ObjectRef -> (Object -> Bool) -> View Bool

@@ -7,7 +7,6 @@ import IdList (Id)
 import qualified IdList
 import Labels
 import Predicates
-import Types
 import Utils hiding (object)
 
 import Control.Applicative ((<$>))

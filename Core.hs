@@ -1,7 +1,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Core where
+module Core
+  ( compileZoneRef
+  , evaluate, singleTarget, (<?>), askMagicTargets, allTargets
+  , module Types
+  ) where
 
 import IdList (IdList)
 import qualified IdList

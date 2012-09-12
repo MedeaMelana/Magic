@@ -308,6 +308,7 @@ data SimpleOneShotEffect
   | AddToManaPool PlayerRef (Maybe Color)
   | AttachPermanent ObjectRef (Maybe ObjectRef) (Maybe ObjectRef)  -- aura/equipment, old target, new target
   | RemoveFromCombat ObjectRef
+  | PlayLand ObjectRef
 
 data PriorityAction = PlayCard ObjectRef
 
