@@ -15,7 +15,6 @@ import Control.Monad.Reader
 import Control.Monad.Identity
 import qualified Control.Monad.Operational as Operational
 import Data.Label (mkLabels)
-import Data.Label.Pure ((:->))
 import Data.Monoid
 import Data.Set (Set)
 import Data.Text (Text)
@@ -125,7 +124,7 @@ type Timestamp = Int
 data Color = White | Blue | Black | Red | Green
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data ZoneRef = Library PlayerRef | Hand PlayerRef | Battlefield | Graveyard PlayerRef | Stack | Exile
+data ZoneRef = Library PlayerRef | Hand PlayerRef | Battlefield | Graveyard PlayerRef | Stack | Exile | Command
   deriving (Eq, Ord, Show, Read)
 
 data TapStatus = Untapped | Tapped
@@ -276,20 +275,24 @@ data Layer
 
 -- | Events triggered abilities watch for.
 data Event
-  = OneShotEffectEvent OneShotEffect
+  = DidSimpleEffect SimpleOneShotEffect
+  | DidMoveObject ZoneRef ObjectRef  -- old zone, new zone/id
 
   -- Keyword actions [701]
-  | ActivateAbility ObjectRef Int  -- index of ability
-  | CastSpell PlayerRef ObjectRef  -- controller, spell
-  | Counter ObjectRef ObjectRef  -- source (spell or ability), target
-  | PlayLand ObjectRef
-  | RegeneratePermanent ObjectRef
-  | RevealCard ObjectRef
-  | BeginStep Step
-  | EndStep Step
-  | LoseGame PlayerRef
+  | DidActivateAbility ObjectRef Int  -- index of ability
+  | DidCastSpell PlayerRef ObjectRef  -- controller, spell
+  | DidCounter ObjectRef ObjectRef  -- source (spell or ability), target
+  | DidPlayLand ObjectRef
+  | DidRevealCard ObjectRef
+  | DidBeginStep Step
+  | WillEndStep Step
+  | DidLoseGame PlayerRef
 
 data OneShotEffect
+  = WillSimpleEffect SimpleOneShotEffect
+  | WillMoveObject ObjectRef ZoneRef Object  -- current zone/id, new zone, suggested form
+
+data SimpleOneShotEffect
   = AdjustLife PlayerRef Int
   | DamageObject ObjectRef ObjectRef Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
   | DamagePlayer ObjectRef PlayerRef Int Bool Bool  -- source, player, amount, combat damage?, preventable?
@@ -297,7 +300,6 @@ data OneShotEffect
   -- | ReorderLibraryCards
   | DrawCard PlayerRef -- Drawing is special [120.5]
   | DestroyPermanent ObjectRef Bool  -- target, preventable? -- Destruction is special [701.6b]
-  | MoveObject ObjectRef ZoneRef
   | TapPermanent ObjectRef
   | UntapPermanent Id
   | AddCounter ObjectRef CounterType
@@ -314,7 +316,7 @@ data PriorityAction = PlayCard ObjectRef
 
 data Target
   = TargetPlayer PlayerRef
-  | TargetObject (World :-> IdList Object) ObjectRef
+  | TargetObject ObjectRef
 
 
 -- Stack items
@@ -322,7 +324,7 @@ data Target
 data TargetList t a where
   Nil  :: a -> TargetList t a
   Snoc :: TargetList t (Target -> a) -> t -> TargetList t a
-  Test :: (x -> a) -> (x -> Bool) -> TargetList t x -> TargetList t a
+  Test :: (x -> a) -> (x -> View Bool) -> TargetList t x -> TargetList t a
 
 instance Functor (TargetList t) where
   fmap f (Nil x)        = Nil (f x)
@@ -335,35 +337,6 @@ instance Applicative (TargetList t) where
   xs <*> Snoc ys t = Snoc ((.) <$> xs <*> ys) t
   xs <*> Test f ok ys = Test fst snd ((\g x -> (g (f x), ok x)) <$> xs <*> ys)
 
-evaluate :: TargetList Target a -> ([Target], a)
-evaluate (Nil x)       = ([], x)
-evaluate (Snoc xs t)   = (ts ++ [t], f t) where (ts, f) = evaluate xs
-evaluate (Test f _ xs) = (ts,        f x) where (ts, x) = evaluate xs
-
-singleTarget :: TargetList () Target
-singleTarget = Snoc (Nil id) ()
-
-infixl 4 <?>
-(<?>) :: TargetList t a -> (a -> Bool) -> TargetList t a
-xs <?> ok = Test id ok xs
-
-askTargets :: forall m a. Monad m => ([Target] -> m Target) -> [Target] -> TargetList () a -> m (TargetList Target a)
-askTargets choose = askTargets' (const True)
-  where
-    askTargets' :: forall b. (b -> Bool) -> [Target] -> TargetList () b -> m (TargetList Target b)
-    askTargets' ok ts scheme =
-      case scheme of
-        Nil x -> return (Nil x)
-        Snoc xs () -> do
-          xs' <- askTargets choose ts xs
-          let (_, f) = evaluate xs'
-          let eligibleTargets = filter (ok . f) ts
-          chosen <- choose eligibleTargets
-          return (Snoc xs' chosen)
-        Test f ok' scheme' -> do
-          z <- askTargets' (\x -> ok (f x) && ok' x) ts scheme'
-          return (f <$> z)
-
 
 -- Monads
 
@@ -375,5 +348,9 @@ type Magic = ViewT (Operational.Program Ask)
 data Ask a where
   AskKeepHand       :: PlayerRef -> Ask Bool
   AskPriorityAction :: PlayerRef -> [PriorityAction] -> Ask PriorityAction
+  AskTarget         :: PlayerRef -> [Target] -> Ask Target
+
+view :: View a -> Magic a
+view v = ReaderT $ return . runIdentity . runReaderT v
 
 $(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''Action])

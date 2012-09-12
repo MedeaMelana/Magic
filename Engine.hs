@@ -2,6 +2,7 @@
 
 module Engine where
 
+import Core
 import IdList (Id)
 import qualified IdList
 import Labels
@@ -57,9 +58,9 @@ round :: Engine ()
 round = forever $ do
   players ~:* set manaPool []
   step <- nextStep
-  raise (BeginStep step)
+  raise (DidBeginStep step)
   executeStep step
-  raise (EndStep step)
+  raise (WillEndStep step)
 
 nextStep :: Engine Step
 nextStep = do
@@ -85,7 +86,7 @@ executeStep (BeginningPhase UntapStep) = do
   -- [502.2] untap permanents
   rp <- gets activePlayer
   ios <- IdList.filter (isControlledBy rp) <$> gets battlefield
-  _ <- for ios $ \(i, _) -> executeEffect (UntapPermanent i)
+  _ <- for ios $ \(i, _) -> executeEffect (WillSimpleEffect (UntapPermanent i))
   return ()
 
 executeStep (BeginningPhase UpkeepStep) = do
@@ -96,7 +97,7 @@ executeStep (BeginningPhase UpkeepStep) = do
 
 executeStep (BeginningPhase DrawStep) = do
   -- [504.1]
-  DrawCard <$> gets activePlayer >>= executeEffect
+  WillSimpleEffect . DrawCard <$> gets activePlayer >>= executeEffect
 
   -- TODO [504.2]  handle triggers
 
@@ -184,11 +185,15 @@ executeEffect e = do
 -- Compilation of effects
 
 compileEffect :: OneShotEffect -> Engine ()
-compileEffect (UntapPermanent i) = untapPermanent i
-compileEffect (DrawCard rp) = drawCard rp
-compileEffect (MoveObject rObj rToZone) = moveObject rObj rToZone
-compileEffect (ShuffleLibrary rPlayer) = shuffleLibrary rPlayer
-compileEffect _ = undefined
+compileEffect (WillSimpleEffect e) = compileSimpleEffect e
+compileEffect (WillMoveObject rObj rToZone obj) = moveObject rObj rToZone obj
+
+compileSimpleEffect :: SimpleOneShotEffect -> Engine ()
+compileSimpleEffect (UntapPermanent i) = untapPermanent i
+compileSimpleEffect (DrawCard rp) = drawCard rp
+compileSimpleEffect (ShuffleLibrary rPlayer) = shuffleLibrary rPlayer
+compileSimpleEffect _ = undefined
+
 
 
 tick :: Engine Timestamp
@@ -205,21 +210,21 @@ drawCard rp = do
   lib <- gets (players .^ listEl rp .^ library)
   case IdList.toList lib of
     []          -> players .^ listEl rp .^ failedCardDraw =: True
-    (ro, _) : _ -> executeEffect (MoveObject (Library rp, ro) (Hand rp))
+    (ro, o) : _ -> executeEffect (WillMoveObject (Library rp, ro) (Hand rp) o)
 
-moveObject :: ObjectRef -> ZoneRef -> Engine ()
-moveObject (rFromZone, i) rToZone = do
+moveObject :: ObjectRef -> ZoneRef -> Object -> Engine ()
+moveObject (rFromZone, i) rToZone obj = do
   mObj <- IdList.removeM (compileZoneRef rFromZone) i
   case mObj of
-    Nothing     -> return ()
-    Just obj -> do
+    Nothing -> return ()
+    Just _  -> do
       t <- tick
       void (IdList.consM (compileZoneRef rToZone) (set timestamp t obj))
 
 moveAllObjects :: ZoneRef -> ZoneRef -> Engine ()
 moveAllObjects rFromZone rToZone = do
-  objectIds <- map fst . IdList.toList <$> gets (compileZoneRef rFromZone)
-  forM_ objectIds $ \i -> moveObject (rFromZone, i) rToZone
+  ois <- IdList.toList <$> gets (compileZoneRef rFromZone)
+  forM_ ois $ \(i, o) -> moveObject (rFromZone, i) rToZone o
 
 shuffleLibrary :: PlayerRef -> Engine ()
 shuffleLibrary rPlayer = do
