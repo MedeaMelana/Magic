@@ -2,11 +2,11 @@
 
 module IdList
   ( Id, IdList
-  , empty, get, set, remove, cons, fromList, toList, ids, filter, shuffle
+  , empty, head, get, set, remove, cons, fromList, toList, ids, filter, shuffle
   , consM, removeM, shuffleM
   ) where
 
-import Prelude hiding (filter)
+import Prelude hiding (filter, head)
 import qualified Prelude
 
 import Control.Arrow (second)
@@ -26,6 +26,10 @@ instance Functor IdList where
 empty :: IdList a
 empty = IdList [] 0
 
+head :: IdList a -> Maybe (Id, a)
+head (IdList (ix : _) _) = Just ix
+head _ = undefined
+
 get :: Id -> IdList a -> Maybe a
 get i (IdList ixs _) = lookup i ixs
 
@@ -41,6 +45,10 @@ remove i l =
   case get i l of
     Just x  -> Just (x, contents (Prelude.filter (\(i', _) -> i /= i')) l)
     Nothing -> Nothing
+
+pop :: IdList a -> Maybe (a, IdList a)
+pop (IdList ((_, x) : ixs) i) = Just (x, IdList ixs i)
+pop _ = Nothing
 
 cons :: a -> IdList a -> (Id, IdList a)
 cons x (IdList ixs i) = (i, IdList ((i, x) : ixs) (succ i))

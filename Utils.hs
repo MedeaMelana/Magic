@@ -38,6 +38,7 @@ object ts rOwner = Object
   , _counters = mempty
 
   , _tapStatus = Nothing
+  , _stackItem = Nothing
 
   , _power = Nothing
   , _toughness = Nothing

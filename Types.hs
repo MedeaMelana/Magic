@@ -100,7 +100,7 @@ data Object = Object
   , _tapStatus :: Maybe TapStatus
 
   -- for spells on the stack
-  --, _pendingEffect :: Maybe StackedEffect
+  , _stackItem :: Maybe StackItem
 
   -- for creatures on the battlefield
   , _power         :: Maybe Int
@@ -348,7 +348,7 @@ type Magic = ViewT (Operational.Program Ask)
 
 data Ask a where
   AskKeepHand       :: PlayerRef -> Ask Bool
-  AskPriorityAction :: PlayerRef -> [PriorityAction] -> Ask PriorityAction
+  AskPriorityAction :: PlayerRef -> [PriorityAction] -> Ask (Maybe PriorityAction)
   AskTarget         :: PlayerRef -> [Target] -> Ask Target
 
 view :: View a -> Magic a

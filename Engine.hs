@@ -96,7 +96,8 @@ executeStep (BeginningPhase UpkeepStep) = do
 
 executeStep (BeginningPhase DrawStep) = do
   -- [504.1]
-  WillSimpleEffect . DrawCard <$> gets activePlayer >>= executeEffect
+  ap <- gets activePlayer
+  executeEffect (WillSimpleEffect (DrawCard ap))
 
   -- TODO [504.2]  handle triggers
 
@@ -237,17 +238,38 @@ sortOn = sortBy . comparing
 
 offerPriority :: Engine ()
 offerPriority = do
-  -- TODO check state-based actions
-  -- TODO empty prestacks in APNAP order
-  -- TODO offer available actions to players in APNAP order
-  -- TODO when everyone passes, return
-  playerIds <- apnap
-  forM_ playerIds $ \p -> do
-    actions       <- collectActions p
-    PlayCard rObj <- liftQuestion (AskPriorityAction p actions)
-    Just ability  <- gets (object rObj .^ play)
-    executeAction ability rObj p
-  return ()
+    -- TODO do this in a loop
+    checkSBAs
+    emptyPrestacks
+    mAction <- apnap >>= offerPriority'
+    case mAction of
+      Just action -> do
+        -- TODO execute actions
+        offerPriority
+      Nothing -> do
+        st <- gets stack
+        case IdList.head st of
+          Nothing -> return ()
+          Just (i, _) -> do
+            resolve i
+            offerPriority
+  where
+    offerPriority' (p:ps) = do
+      actions <- collectActions p
+      mAction <- liftQuestion (AskPriorityAction p actions)
+      case mAction of
+        Just action -> return (Just action)
+        Nothing -> offerPriority' ps
+    offerPriority' [] = return Nothing
+
+checkSBAs :: Engine ()
+checkSBAs = undefined
+
+emptyPrestacks :: Engine ()
+emptyPrestacks = undefined
+
+resolve :: Id -> Engine ()
+resolve = undefined
 
 object :: ObjectRef -> World :-> Object
 object (zoneRef, i) = compileZoneRef zoneRef .^ listEl i
