@@ -88,7 +88,7 @@ type PlayerRef = Id
 type ObjectRef = (ZoneRef, Id)
 
 data ZoneRef = Library PlayerRef | Hand PlayerRef | Battlefield | Graveyard PlayerRef | Stack | Exile | Command
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show)
 
 
 

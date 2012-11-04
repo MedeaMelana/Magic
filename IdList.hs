@@ -32,7 +32,8 @@ import System.Random.Shuffle (shuffleM)
 -- TYPES
 
 
-type Id = Int
+newtype Id = Id Int
+  deriving (Eq, Show, Ord)
 
 data IdList a = IdList [(Id, a)] Id
 
@@ -45,7 +46,7 @@ instance Functor IdList where
 
 
 empty :: IdList a
-empty = IdList [] 0
+empty = IdList [] (Id 0)
 
 fromList :: [a] -> IdList a
 fromList = foldr (\x xs -> snd (cons x xs)) empty
@@ -91,7 +92,7 @@ remove i l =
 --pop _ = Nothing
 
 cons :: a -> IdList a -> (Id, IdList a)
-cons x (IdList ixs i) = (i, IdList ((i, x) : ixs) (succ i))
+cons x (IdList ixs (Id i)) = (Id i, IdList ((Id i, x) : ixs) (Id (succ i)))
 
 contents :: ([(Id, a)] -> [(Id, b)]) -> IdList a -> IdList b
 contents f (IdList ixs i) = IdList (f ixs) i
