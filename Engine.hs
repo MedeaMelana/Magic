@@ -282,8 +282,7 @@ checkSBAs = do
 
           -- [704.5f]
           let hasNonPositiveToughness = maybe False (<= 0) (get toughness o)
-          when hasNonPositiveToughness $ executeEffect $
-            WillMoveObject (Battlefield, i) (Graveyard (get owner o)) o
+          when hasNonPositiveToughness $ executeEffect (willDie i o)
 
           -- [704.5g]
           -- [704.5h]
@@ -294,6 +293,9 @@ checkSBAs = do
           when (hasLethalDamage || get deathtouched o) $ executeEffect $
             WillSimpleEffect (DestroyPermanent (Battlefield, i) True)
 
+        -- [704.5i]
+        when (o `hasTypes` planeswalkerType && countCountersOfType Loyalty o == 0) $
+          executeEffect (willDie i o)
 
 
 emptyPrestacks :: Engine ()

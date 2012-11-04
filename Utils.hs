@@ -2,6 +2,7 @@
 
 module Utils where
 
+import IdList (Id)
 import qualified IdList
 import Types
 
@@ -75,6 +76,9 @@ instantType = mempty { _instantSubtypes = Just mempty }
 landType :: ObjectTypes
 landType = mempty { _landSubtypes = Just mempty }
 
+planeswalkerType :: ObjectTypes
+planeswalkerType = mempty { _planeswalkerSubtypes = Just mempty }
+
 sorceryType :: ObjectTypes
 sorceryType = mempty { _sorcerySubtypes = Just mempty }
 
@@ -102,3 +106,10 @@ objectType ty = set objectTypeLabel (Just (Set.singleton ty)) mempty
 
 hasTypes :: Object -> ObjectTypes -> Bool
 hasTypes o t = t `isObjectTypesSubsetOf` _types o
+
+
+countCountersOfType :: CounterType -> Object -> Int
+countCountersOfType ty o = length (filter (== ty) (get counters o))
+
+willDie :: Id -> Object -> OneShotEffect
+willDie i o = WillMoveObject (Battlefield, i) (Graveyard (get owner o)) o
