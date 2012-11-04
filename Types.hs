@@ -394,7 +394,6 @@ data Event
   | DidRevealCard ObjectRef
   | DidBeginStep Step
   | WillEndStep Step
-  | DidLoseGame PlayerRef
 
 data OneShotEffect
   = WillSimpleEffect SimpleOneShotEffect
@@ -417,6 +416,7 @@ data SimpleOneShotEffect
   | AttachPermanent ObjectRef (Maybe ObjectRef) (Maybe ObjectRef)  -- aura/equipment, old target, new target
   | RemoveFromCombat ObjectRef
   | PlayLand ObjectRef
+  | LoseGame PlayerRef
 
 
 

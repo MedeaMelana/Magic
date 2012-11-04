@@ -17,6 +17,7 @@ import Control.Monad.Reader (runReaderT)
 import Control.Monad.State (StateT)
 import qualified Control.Monad.State as State
 import Control.Monad.Trans (lift)
+import Control.Monad.Writer (tell, execWriterT)
 import Data.Ord (comparing)
 import Data.Label.Pure (get, set, (:->))
 import Data.Label.PureM (gets, puts, (=:))
@@ -179,8 +180,7 @@ executeStep (EndPhase CleanupStep) = do
 executeEffect :: OneShotEffect -> Engine ()
 executeEffect e = do
   -- TODO trigger abilities
-  -- TODO apply replacement effects
-  compileEffect e
+  applyReplacementEffects [e] >>= mapM_ compileEffect
 
 
 -- Compilation of effects
@@ -265,6 +265,12 @@ offerPriority = do
 
 checkSBAs :: Engine ()
 checkSBAs = do
+  sbas <- collectSBAs
+  sbas' <- applyReplacementEffects sbas
+  forM_ sbas' executeEffect
+
+collectSBAs :: Engine [OneShotEffect]
+collectSBAs = execWriterT $ do
     checkPlayers
     checkBattlefield
     -- TODO [704.5d]
@@ -278,12 +284,13 @@ checkSBAs = do
       -- [704.5b]
       -- TODO [704.5c]
       -- TODO [704.5t]
-      ips <- IdList.toList <$> gets players
+      ips <- IdList.toList <$> lift (gets players)
       forM_ ips $ \(i,p) -> do
-        when (get life p <= 0 || get failedCardDraw p) (loseGame i)
+        when (get life p <= 0 || get failedCardDraw p) $
+          tell [WillSimpleEffect (LoseGame i)]
 
     checkBattlefield = do
-      ios <- IdList.toList <$> gets battlefield
+      ios <- IdList.toList <$> lift (gets battlefield)
       forM_ ios $ \(i,o) -> do
 
         -- Check creatures
@@ -291,7 +298,7 @@ checkSBAs = do
 
           -- [704.5f]
           let hasNonPositiveToughness = maybe False (<= 0) (get toughness o)
-          when hasNonPositiveToughness $ executeEffect (willDie i o)
+          when hasNonPositiveToughness $ tell [willDie i o]
 
           -- [704.5g]
           -- [704.5h]
@@ -299,12 +306,12 @@ checkSBAs = do
                 case (get toughness o, get damage o) of
                   (Just t, Just d) -> t > 0 && d >= t
                   _                -> False
-          when (hasLethalDamage || get deathtouched o) $ executeEffect $
-            WillSimpleEffect (DestroyPermanent (Battlefield, i) True)
+          when (hasLethalDamage || get deathtouched o) $
+            tell [WillSimpleEffect (DestroyPermanent (Battlefield, i) True)]
 
         -- [704.5i]
         when (o `hasTypes` planeswalkerType && countCountersOfType Loyalty o == 0) $
-          executeEffect (willDie i o)
+          tell [willDie i o]
 
       -- TODO [704.5j]
       -- TODO [704.5k]
@@ -322,9 +329,6 @@ emptyPrestacks = undefined
 resolve :: Id -> Engine ()
 resolve = undefined
 
-loseGame :: Id -> Engine ()
-loseGame = undefined
-
 object :: ObjectRef -> World :-> Object
 object (zoneRef, i) = compileZoneRef zoneRef .^ listEl i
 
@@ -338,6 +342,9 @@ executeAction ability rSource activatorId = do
   case _effect closedAbility of
     SpecialAction m -> executeMagic m >>= mapM_ executeEffect
     StackingAction _ -> return ()
+
+applyReplacementEffects :: [OneShotEffect] -> Engine [OneShotEffect]
+applyReplacementEffects = return  -- TODO
 
 executeMagic :: Magic a -> Engine a
 executeMagic m = State.get >>= lift . lift . runReaderT m
