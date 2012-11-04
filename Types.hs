@@ -383,7 +383,7 @@ data PriorityAction = PlayCard ObjectRef
 
 -- | Events triggered abilities watch for.
 data Event
-  = DidSimpleEffect SimpleOneShotEffect
+  = Did SimpleOneShotEffect
   | DidMoveObject ZoneRef ObjectRef  -- old zone, new zone/id
 
   -- Keyword actions [701]
@@ -396,7 +396,7 @@ data Event
   | WillEndStep Step
 
 data OneShotEffect
-  = WillSimpleEffect SimpleOneShotEffect
+  = Will SimpleOneShotEffect
   | WillMoveObject ObjectRef ZoneRef Object  -- current zone/id, new zone, suggested form
 
 data SimpleOneShotEffect

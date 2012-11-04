@@ -35,6 +35,6 @@ shockEffect rSelf rActivator = do
               _                             -> return False
   ts <- askMagicTargets rActivator (singleTarget <?> ok)
   let f t = case t of
-              TargetObject or -> return [WillSimpleEffect (DamageObject rSelf or 2 False True)]
-              TargetPlayer pr -> return [WillSimpleEffect (DamagePlayer rSelf pr 2 False True)]
+              TargetObject or -> return [Will (DamageObject rSelf or 2 False True)]
+              TargetPlayer pr -> return [Will (DamagePlayer rSelf pr 2 False True)]
   return (f <$> ts)

@@ -87,7 +87,7 @@ executeStep (BeginningPhase UntapStep) = do
   -- [502.2] untap permanents
   rp <- gets activePlayer
   ios <- IdList.filter (isControlledBy rp) <$> gets battlefield
-  _ <- for ios $ \(i, _) -> executeEffect (WillSimpleEffect (UntapPermanent i))
+  _ <- for ios $ \(i, _) -> executeEffect (Will (UntapPermanent i))
   return ()
 
 executeStep (BeginningPhase UpkeepStep) = do
@@ -99,7 +99,7 @@ executeStep (BeginningPhase UpkeepStep) = do
 executeStep (BeginningPhase DrawStep) = do
   -- [504.1]
   ap <- gets activePlayer
-  executeEffect (WillSimpleEffect (DrawCard ap))
+  executeEffect (Will (DrawCard ap))
 
   -- TODO [504.2]  handle triggers
 
@@ -186,7 +186,7 @@ executeEffect e = do
 -- Compilation of effects
 
 compileEffect :: OneShotEffect -> Engine ()
-compileEffect (WillSimpleEffect e) = compileSimpleEffect e
+compileEffect (Will e) = compileSimpleEffect e
 compileEffect (WillMoveObject rObj rToZone obj) = moveObject rObj rToZone obj
 
 compileSimpleEffect :: SimpleOneShotEffect -> Engine ()
@@ -287,7 +287,7 @@ collectSBAs = execWriterT $ do
       ips <- IdList.toList <$> lift (gets players)
       forM_ ips $ \(i,p) -> do
         when (get life p <= 0 || get failedCardDraw p) $
-          tell [WillSimpleEffect (LoseGame i)]
+          tell [Will (LoseGame i)]
 
     checkBattlefield = do
       ios <- IdList.toList <$> lift (gets battlefield)
@@ -307,7 +307,7 @@ collectSBAs = execWriterT $ do
                   (Just t, Just d) -> t > 0 && d >= t
                   _                -> False
           when (hasLethalDamage || get deathtouched o) $
-            tell [WillSimpleEffect (DestroyPermanent (Battlefield, i) True)]
+            tell [Will (DestroyPermanent (Battlefield, i) True)]
 
         -- [704.5i]
         when (o `hasTypes` planeswalkerType && countCountersOfType Loyalty o == 0) $
