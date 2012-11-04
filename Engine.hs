@@ -267,8 +267,17 @@ checkSBAs :: Engine ()
 checkSBAs = do
     checkPlayers
     checkBattlefield
+    -- TODO [704.5d]
+    -- TODO [704.5e]
+    -- TODO [704.5u]
+    -- TODO [704.5v]
+    -- TODO [704.5w]
   where
     checkPlayers = do
+      -- [704.5a]
+      -- [704.5b]
+      -- TODO [704.5c]
+      -- TODO [704.5t]
       ips <- IdList.toList <$> gets players
       forM_ ips $ \(i,p) -> do
         when (get life p <= 0 || get failedCardDraw p) (loseGame i)
@@ -296,6 +305,15 @@ checkSBAs = do
         -- [704.5i]
         when (o `hasTypes` planeswalkerType && countCountersOfType Loyalty o == 0) $
           executeEffect (willDie i o)
+
+      -- TODO [704.5j]
+      -- TODO [704.5k]
+      -- TODO [704.5m]
+      -- TODO [704.5n]
+      -- TODO [704.5p]
+      -- TODO [704.5q]
+      -- TODO [704.5r]
+      -- TODO [704.5s]
 
 
 emptyPrestacks :: Engine ()
