@@ -62,6 +62,9 @@ legendaryType = mempty { _supertypes = Set.singleton Legendary }
 artifactType :: ObjectTypes
 artifactType = mempty { _artifactSubtypes = Just mempty }
 
+creatureType :: ObjectTypes
+creatureType = mempty { _creatureSubtypes = Just mempty }
+
 enchantmentType :: ObjectTypes
 enchantmentType = mempty { _enchantmentSubtypes = Just mempty }
 
@@ -95,3 +98,6 @@ instance ObjectType PlaneswalkerSubtype where
 
 objectType :: ObjectType a => a -> ObjectTypes
 objectType ty = set objectTypeLabel (Just (Set.singleton ty)) mempty
+
+hasTypes :: Object -> ObjectTypes -> Bool
+hasTypes o t = t `isObjectTypesSubsetOf` _types o

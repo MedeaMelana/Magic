@@ -17,6 +17,7 @@ import qualified Control.Monad.Operational as Operational
 import Data.Label (mkLabels)
 import Data.Monoid
 import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.Text (Text)
 
 
@@ -160,6 +161,22 @@ instance Monoid ObjectTypes where
     , _planeswalkerSubtypes = _planeswalkerSubtypes x `mappend` _planeswalkerSubtypes y
     , _sorcerySubtypes      = _sorcerySubtypes x      `mappend` _sorcerySubtypes y
     }
+
+isObjectTypesSubsetOf :: ObjectTypes -> ObjectTypes -> Bool
+isObjectTypesSubsetOf x y =
+    _supertypes x           `Set.isSubsetOf`  _supertypes y &&
+    _artifactSubtypes x     `isMaybeSubsetOf` _artifactSubtypes y &&
+    _creatureSubtypes x     `isMaybeSubsetOf` _creatureSubtypes y &&
+    _enchantmentSubtypes x  `isMaybeSubsetOf` _enchantmentSubtypes y &&
+    _instantSubtypes x      `isMaybeSubsetOf` _instantSubtypes y &&
+    _landSubtypes x         `isMaybeSubsetOf` _landSubtypes y &&
+    _planeswalkerSubtypes x `isMaybeSubsetOf` _planeswalkerSubtypes y &&
+    _sorcerySubtypes x      `isMaybeSubsetOf` _sorcerySubtypes y
+  where
+    isMaybeSubsetOf :: Ord a => Maybe (Set a) -> Maybe (Set a) -> Bool
+    Nothing `isMaybeSubsetOf` _ = True
+    Just _  `isMaybeSubsetOf` Nothing = False
+    Just x'  `isMaybeSubsetOf` Just y' = x' `Set.isSubsetOf` y'
 
 data Supertype = Basic | Legendary
   deriving (Eq, Ord, Show, Read, Enum, Bounded)

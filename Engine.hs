@@ -10,14 +10,15 @@ import Predicates
 import Utils hiding (object)
 
 import Control.Applicative ((<$>))
-import Control.Monad (forever, void, forM_, replicateM_)
+import Control.Monad (forever, void, forM_, replicateM_, when)
 import qualified Control.Monad.Operational as Operational
 import Control.Monad.Random (RandT, StdGen)
 import Control.Monad.Reader (runReaderT)
-import Control.Monad.State (StateT, get)
+import Control.Monad.State (StateT)
+import qualified Control.Monad.State as State
 import Control.Monad.Trans (lift)
 import Data.Ord (comparing)
-import Data.Label.Pure (set, (:->))
+import Data.Label.Pure (get, set, (:->))
 import Data.Label.PureM (gets, puts, (=:))
 import Data.List (sortBy)
 import Data.Maybe (catMaybes)
@@ -263,7 +264,25 @@ offerPriority = do
     offerPriority' [] = return Nothing
 
 checkSBAs :: Engine ()
-checkSBAs = undefined
+checkSBAs = do
+    checkPlayers
+    checkBattlefield
+  where
+    checkPlayers = do
+      ips <- IdList.toList <$> gets players
+      forM_ ips $ \(i,p) -> do
+        when (get life p <= 0 || get failedCardDraw p) (loseGame i)
+
+    checkBattlefield = do
+      ios <- IdList.toList <$> gets battlefield
+      forM_ ios $ \(i,o) -> do
+        when (creatureToughnessNonPositive o) $
+          replaceAndExecute $
+            WillMoveObject (Battlefield, i) (Graveyard (get owner o)) o
+
+    creatureToughnessNonPositive o =
+      o `hasTypes` creatureType &&
+      maybe False (<= 0) (get toughness o)
 
 emptyPrestacks :: Engine ()
 emptyPrestacks = undefined
@@ -271,11 +290,17 @@ emptyPrestacks = undefined
 resolve :: Id -> Engine ()
 resolve = undefined
 
+loseGame :: Id -> Engine ()
+loseGame = undefined
+
 object :: ObjectRef -> World :-> Object
 object (zoneRef, i) = compileZoneRef zoneRef .^ listEl i
 
 collectActions :: PlayerRef -> Engine [PriorityAction]
 collectActions = undefined
+
+replaceAndExecute :: OneShotEffect -> Engine ()
+replaceAndExecute = undefined
 
 executeAction :: Ability -> ObjectRef -> PlayerRef -> Engine ()
 executeAction ability rSource activatorId = do
@@ -286,7 +311,7 @@ executeAction ability rSource activatorId = do
     StackingAction _ -> return ()
 
 executeMagic :: Magic a -> Engine a
-executeMagic m = get >>= lift . lift . runReaderT m
+executeMagic m = State.get >>= lift . lift . runReaderT m
 
 -- | Returns player IDs in APNAP order (active player, non-active player).
 apnap :: Engine [PlayerRef]
