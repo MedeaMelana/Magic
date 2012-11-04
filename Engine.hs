@@ -286,11 +286,12 @@ checkSBAs = do
             WillMoveObject (Battlefield, i) (Graveyard (get owner o)) o
 
           -- [704.5g]
+          -- [704.5h]
           let hasLethalDamage =
                 case (get toughness o, get damage o) of
                   (Just t, Just d) -> t > 0 && d >= t
                   _                -> False
-          when hasLethalDamage $ executeEffect $
+          when (hasLethalDamage || get deathtouched o) $ executeEffect $
             WillSimpleEffect (DestroyPermanent (Battlefield, i) True)
 
 

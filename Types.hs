@@ -28,7 +28,7 @@ module Types (
       name, colors, types, owner, controller, timestamp, counters,
       tapStatus,
       stackItem,
-      power, toughness, damage,
+      power, toughness, damage, deathtouched,
       play, staticKeywordAbilities, continuousEffects, activatedAbilities, triggeredAbilities, replacementEffects,
 
     -- * Object properties
@@ -184,6 +184,7 @@ data Object = Object
   , _power         :: Maybe Int
   , _toughness     :: Maybe Int
   , _damage        :: Maybe Int
+  , _deathtouched  :: Bool
   --, _mustBeBlocked :: Maybe Bool
   --, _mustAttack    :: Maybe Bool
 

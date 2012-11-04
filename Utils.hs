@@ -43,6 +43,7 @@ object ts rOwner = Object
   , _power = Nothing
   , _toughness = Nothing
   , _damage = Nothing
+  , _deathtouched = False
 
   , _play = Nothing
   , _staticKeywordAbilities = []
