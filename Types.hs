@@ -6,7 +6,59 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Types where
+module Types (
+    -- * Data structures
+    Bag,
+
+    -- * Reference types
+    PlayerRef, ObjectRef, ZoneRef(..),
+
+    -- * World
+    World(..), players, activePlayer, activeStep, time, turnStructure, exile, battlefield, stack, command,
+
+    -- * Turn structure
+    Step(..), BeginningStep(..), CombatStep(..), EndStep(..),
+
+    -- * Players
+    Player(..), life, manaPool, prestack, library, hand, graveyard, maximumHandSize, failedCardDraw,
+
+    -- * Objects
+    Card(..),
+    Object(..),
+      name, colors, types, owner, controller, timestamp, counters,
+      tapStatus,
+      stackItem,
+      power, toughness, damage,
+      play, staticKeywordAbilities, continuousEffects, activatedAbilities, triggeredAbilities, replacementEffects,
+
+    -- * Object properties
+    Timestamp, Color(..), TapStatus(..), CounterType(..),
+
+    -- * Object types
+    ObjectTypes(..), supertypes, artifactSubtypes, creatureSubtypes,
+      enchantmentSubtypes, instantSubtypes, landSubtypes,
+      planeswalkerSubtypes, sorcerySubtypes,
+      isObjectTypesSubsetOf,
+    Supertype(..), ArtifactSubtype(..), CreatureSubtype(..),
+    EnchantmentSubtype(..), SpellSubtype(..), LandSubtype(..),
+    PlaneswalkerSubtype(..),
+
+    -- * Abilities
+    Ability, ClosedAbility(..), Action(..), StackItem, ManaCost(..), AdditionalCost(..),
+    StaticKeywordAbility(..), ContinuousEffect(..), Layer(..),
+    PriorityAction(..),
+
+    -- * Events
+    Event(..), OneShotEffect(..), SimpleOneShotEffect(..),
+
+    -- * Targets
+    Target(..), TargetList(..),
+
+    -- * Monads
+    ViewT, View, Magic,
+    view,
+    Ask(..)
+  ) where
 
 import IdList (Id, IdList)
 
@@ -21,10 +73,26 @@ import qualified Data.Set as Set
 import Data.Text (Text)
 
 
+
+-- DATA STRUCTURES
+
+
 type Bag = []
+
+
+
+-- REFERENCE TYPES
+
 
 type PlayerRef = Id
 type ObjectRef = (ZoneRef, Id)
+
+data ZoneRef = Library PlayerRef | Hand PlayerRef | Battlefield | Graveyard PlayerRef | Stack | Exile | Command
+  deriving (Eq, Ord, Show, Read)
+
+
+
+-- WORLD
 
 
 -- | Current game situation.
@@ -41,7 +109,9 @@ data World = World
   }
 
 
--- Steps and phases
+
+-- TURN STRUCTURE
+
 
 data Step
   = BeginningPhase BeginningStep
@@ -69,6 +139,11 @@ data EndStep
   | CleanupStep
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
+
+
+-- PLAYERS
+
+
 data Player = Player
   { _life            :: Int
   , _manaPool        :: Bag (Maybe Color)
@@ -81,7 +156,9 @@ data Player = Player
   }
 
 
--- Objects
+
+-- OBJECTS
+
 
 data Card = Card
   -- timestamp, owner (and controller)
@@ -120,13 +197,15 @@ data Object = Object
   , _replacementEffects     :: [OneShotEffect -> Magic [OneShotEffect]]
   }
 
+
+
+-- OBJECT PROPERTIES
+
+
 type Timestamp = Int
 
 data Color = White | Blue | Black | Red | Green
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
-
-data ZoneRef = Library PlayerRef | Hand PlayerRef | Battlefield | Graveyard PlayerRef | Stack | Exile | Command
-  deriving (Eq, Ord, Show, Read)
 
 data TapStatus = Untapped | Tapped
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
@@ -136,7 +215,9 @@ data CounterType
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 
--- Object types
+
+-- OBJECT TYPES
+
 
 data ObjectTypes = ObjectTypes
   { _supertypes           :: Set Supertype
@@ -214,7 +295,9 @@ data PlaneswalkerSubtype = Chandra | Elspeth | Garruk | Gideon | Jace
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 
--- Actions
+
+-- ABILITIES
+
 
 type Ability = ObjectRef -> PlayerRef -> ClosedAbility
 
@@ -290,6 +373,13 @@ data Layer
   | LayerRules   -- rules-affecting effects
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
+data PriorityAction = PlayCard ObjectRef
+
+
+
+-- EVENTS
+
+
 -- | Events triggered abilities watch for.
 data Event
   = DidSimpleEffect SimpleOneShotEffect
@@ -327,17 +417,15 @@ data SimpleOneShotEffect
   | RemoveFromCombat ObjectRef
   | PlayLand ObjectRef
 
-data PriorityAction = PlayCard ObjectRef
 
 
--- Targets
+-- TARGETS
+
 
 data Target
   = TargetPlayer PlayerRef
   | TargetObject ObjectRef
 
-
--- Stack items
 
 data TargetList t a where
   Nil  :: a -> TargetList t a
@@ -356,7 +444,9 @@ instance Applicative (TargetList t) where
   xs <*> Test f ok ys = Test fst snd ((\g x -> (g (f x), ok x)) <$> xs <*> ys)
 
 
--- Monads
+
+-- MONADS
+
 
 type ViewT = ReaderT World
 type View = ViewT Identity
