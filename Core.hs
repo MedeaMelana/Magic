@@ -3,7 +3,7 @@
 
 module Core
   ( compileZoneRef
-  , evaluate, singleTarget, (<?>), askMagicTargets, allTargets
+  , evaluateTargetList, singleTarget, (<?>), askMagicTargets, allTargets
   , module Types
   ) where
 
@@ -31,10 +31,10 @@ compileZoneRef z =
     Exile       -> exile
     Command     -> command
 
-evaluate :: TargetList Target a -> ([Target], a)
-evaluate (Nil x)       = ([], x)
-evaluate (Snoc xs t)   = (ts ++ [t], f t) where (ts, f) = evaluate xs
-evaluate (Test f _ xs) = (ts,        f x) where (ts, x) = evaluate xs
+evaluateTargetList :: TargetList Target a -> ([Target], a)
+evaluateTargetList (Nil x)       = ([], x)
+evaluateTargetList (Snoc xs t)   = (ts ++ [t], f t) where (ts, f) = evaluateTargetList xs
+evaluateTargetList (Test f _ xs) = (ts,        f x) where (ts, x) = evaluateTargetList xs
 
 singleTarget :: TargetList () Target
 singleTarget = Snoc (Nil id) ()
@@ -52,7 +52,7 @@ askTargets choose = askTargets' (const (return True))
         Nil x -> return (Nil x)
         Snoc xs () -> do
           xs' <- askTargets choose ts xs
-          let (_, f) = evaluate xs'
+          let (_, f) = evaluateTargetList xs'
           eligibleTargets <- view (filterM (ok . f) ts)
           chosen <- choose eligibleTargets
           return (Snoc xs' chosen)

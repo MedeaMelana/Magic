@@ -241,7 +241,7 @@ offerPriority :: Engine ()
 offerPriority = do
     -- TODO do this in a loop
     checkSBAs
-    emptyPrestacks
+    processPrestacks
     mAction <- apnap >>= offerPriority'
     case mAction of
       Just action -> do
@@ -255,7 +255,7 @@ offerPriority = do
             resolve i
             offerPriority
   where
-    offerPriority' (p:ps) = do
+    offerPriority' ((p, _):ps) = do
       actions <- collectActions p
       mAction <- liftQuestion (AskPriorityAction p actions)
       case mAction of
@@ -322,12 +322,29 @@ collectSBAs = execWriterT $ do
       -- TODO [704.5r]
       -- TODO [704.5s]
 
-
-emptyPrestacks :: Engine ()
-emptyPrestacks = undefined
+-- | Ask players to put pending items on the stack in APNAP order. [405.3]
+processPrestacks :: Engine ()
+processPrestacks = do
+  ips <- apnap
+  forM_ ips $ \(i,p) -> do
+    let pending = get prestack p
+    when (not (null pending)) $ do
+      pending' <- liftQuestion (AskReorder i pending)
+      forM_ pending' $ \mkStackObject -> do
+        stackObject <- executeMagic mkStackObject
+        stack ~: IdList.cons stackObject
 
 resolve :: Id -> Engine ()
-resolve = undefined
+resolve i = do
+  o <- gets (stack .^ listEl i)
+  let Just item = get stackItem o
+  let (_, mkEffects) = evaluateTargetList item
+  executeMagic mkEffects >>= mapM_ executeEffect
+  -- if the object is now still on the stack, move it to the appropriate zone
+  let o' = set stackItem Nothing o
+  if (o `hasTypes` instantType || o `hasTypes` sorceryType)
+    then moveObject (Stack, i) (Graveyard (get controller o)) o'
+    else moveObject (Stack, i) Battlefield o'
 
 object :: ObjectRef -> World :-> Object
 object (zoneRef, i) = compileZoneRef zoneRef .^ listEl i
@@ -350,8 +367,8 @@ executeMagic :: Magic a -> Engine a
 executeMagic m = State.get >>= lift . lift . runReaderT m
 
 -- | Returns player IDs in APNAP order (active player, non-active player).
-apnap :: Engine [PlayerRef]
+apnap :: Engine [(PlayerRef, Player)]
 apnap = do
   activePlayerId <- gets activePlayer
-  (ps, qs) <- break (== activePlayerId) . IdList.ids <$> gets players
+  (ps, qs) <- break ((== activePlayerId) . fst) . IdList.toList <$> gets players
   return (qs ++ ps)

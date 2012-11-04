@@ -12,7 +12,7 @@ module IdList (
     head, get, toList, ids,
 
     -- * Modifying
-    set, remove, cons, filter, shuffle,
+    set, remove, cons, cons', filter, shuffle,
     consM, removeM, shuffleM
 
   ) where
@@ -49,7 +49,7 @@ empty :: IdList a
 empty = IdList [] (Id 0)
 
 fromList :: [a] -> IdList a
-fromList = foldr (\x xs -> snd (cons x xs)) empty
+fromList = foldr (\x xs -> snd (cons' x xs)) empty
 
 
 
@@ -91,8 +91,11 @@ remove i l =
 --pop (IdList ((_, x) : ixs) i) = Just (x, IdList ixs i)
 --pop _ = Nothing
 
-cons :: a -> IdList a -> (Id, IdList a)
-cons x (IdList ixs (Id i)) = (Id i, IdList ((Id i, x) : ixs) (Id (succ i)))
+cons :: a -> IdList a -> IdList a
+cons x xs = snd (cons' x xs)
+
+cons' :: a -> IdList a -> (Id, IdList a)
+cons' x (IdList ixs (Id i)) = (Id i, IdList ((Id i, x) : ixs) (Id (succ i)))
 
 contents :: ([(Id, a)] -> [(Id, b)]) -> IdList a -> IdList b
 contents f (IdList ixs i) = IdList (f ixs) i
@@ -115,6 +118,6 @@ removeM label i = do
 consM :: MonadState s m => (s :-> IdList a) -> a -> m Id
 consM label x = do
   list <- gets label
-  let (i, list') = cons x list
+  let (i, list') = cons' x list
   puts label list'
   return i

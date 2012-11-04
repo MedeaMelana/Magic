@@ -147,7 +147,7 @@ data EndStep
 data Player = Player
   { _life            :: Int
   , _manaPool        :: Bag (Maybe Color)
-  , _prestack        :: [Magic StackItem]
+  , _prestack        :: [Magic Object]
   , _library         :: IdList Object
   , _hand            :: IdList Object
   , _graveyard       :: IdList Object
@@ -458,6 +458,7 @@ data Ask a where
   AskKeepHand       :: PlayerRef -> Ask Bool
   AskPriorityAction :: PlayerRef -> [PriorityAction] -> Ask (Maybe PriorityAction)
   AskTarget         :: PlayerRef -> [Target] -> Ask Target
+  AskReorder          :: PlayerRef -> [a] -> Ask [a]
 
 view :: View a -> Magic a
 view v = ReaderT $ return . runIdentity . runReaderT v
