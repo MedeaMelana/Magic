@@ -406,7 +406,7 @@ data SimpleOneShotEffect
   | ShuffleLibrary PlayerRef
   -- | ReorderLibraryCards
   | DrawCard PlayerRef -- Drawing is special [120.5]
-  | DestroyPermanent ObjectRef Bool  -- target, preventable? -- Destruction is special [701.6b]
+  | DestroyPermanent ObjectRef Bool  -- target, regenerate allowed? -- Destruction is special [701.6b]
   | TapPermanent ObjectRef
   | UntapPermanent Id
   | AddCounter ObjectRef CounterType

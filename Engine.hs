@@ -276,13 +276,24 @@ checkSBAs = do
     checkBattlefield = do
       ios <- IdList.toList <$> gets battlefield
       forM_ ios $ \(i,o) -> do
-        when (creatureToughnessNonPositive o) $
-          replaceAndExecute $
+
+        -- Check creatures
+        when (o `hasTypes` creatureType) $ do
+
+          -- [704.5f]
+          let hasNonPositiveToughness = maybe False (<= 0) (get toughness o)
+          when hasNonPositiveToughness $ executeEffect $
             WillMoveObject (Battlefield, i) (Graveyard (get owner o)) o
 
-    creatureToughnessNonPositive o =
-      o `hasTypes` creatureType &&
-      maybe False (<= 0) (get toughness o)
+          -- [704.5g]
+          let hasLethalDamage =
+                case (get toughness o, get damage o) of
+                  (Just t, Just d) -> t > 0 && d >= t
+                  _                -> False
+          when hasLethalDamage $ executeEffect $
+            WillSimpleEffect (DestroyPermanent (Battlefield, i) True)
+
+
 
 emptyPrestacks :: Engine ()
 emptyPrestacks = undefined
@@ -298,9 +309,6 @@ object (zoneRef, i) = compileZoneRef zoneRef .^ listEl i
 
 collectActions :: PlayerRef -> Engine [PriorityAction]
 collectActions = undefined
-
-replaceAndExecute :: OneShotEffect -> Engine ()
-replaceAndExecute = undefined
 
 executeAction :: Ability -> ObjectRef -> PlayerRef -> Engine ()
 executeAction ability rSource activatorId = do
