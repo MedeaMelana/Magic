@@ -180,7 +180,7 @@ executeStep (EndPhase CleanupStep) = do
 executeEffect :: OneShotEffect -> Engine ()
 executeEffect e = do
   -- TODO trigger abilities
-  applyReplacementEffects [e] >>= mapM_ compileEffect
+  applyReplacementEffects e >>= mapM_ compileEffect
 
 
 -- Compilation of effects
@@ -266,7 +266,7 @@ offerPriority = do
 checkSBAs :: Engine ()
 checkSBAs = do
   sbas <- collectSBAs
-  sbas' <- applyReplacementEffects sbas
+  sbas' <- concat <$> for sbas applyReplacementEffects
   forM_ sbas' executeEffect
 
 collectSBAs :: Engine [OneShotEffect]
@@ -343,8 +343,8 @@ executeAction ability rSource activatorId = do
     SpecialAction m -> executeMagic m >>= mapM_ executeEffect
     StackingAction _ -> return ()
 
-applyReplacementEffects :: [OneShotEffect] -> Engine [OneShotEffect]
-applyReplacementEffects = return  -- TODO
+applyReplacementEffects :: OneShotEffect -> Engine [OneShotEffect]
+applyReplacementEffects = return . (: [])  -- TODO
 
 executeMagic :: Magic a -> Engine a
 executeMagic m = State.get >>= lift . lift . runReaderT m
