@@ -350,7 +350,13 @@ object :: ObjectRef -> World :-> Object
 object (zoneRef, i) = compileZoneRef zoneRef .^ listEl i
 
 collectActions :: PlayerRef -> Engine [PriorityAction]
-collectActions = undefined
+collectActions p = do
+  objects <- executeMagic allObjects
+  execWriterT $ do
+    for objects $ \(r,o) -> do
+      let Just playAbility = get play o
+      ok <- lift $ executeMagic (view (get available (playAbility r p)))
+      when ok (tell [PlayCard r])
 
 executeAction :: Ability -> ObjectRef -> PlayerRef -> Engine ()
 executeAction ability rSource activatorId = do

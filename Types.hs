@@ -44,7 +44,9 @@ module Types (
     PlaneswalkerSubtype(..),
 
     -- * Abilities
-    Ability, ClosedAbility(..), Action(..), StackItem, ManaCost(..), AdditionalCost(..),
+    Ability,
+    ClosedAbility(..), available, manaCost, additionalCosts, effect,
+    Action(..), StackItem, ManaCost(..), AdditionalCost(..),
     StaticKeywordAbility(..), ContinuousEffect(..), Layer(..),
     PriorityAction(..),
 
@@ -463,4 +465,4 @@ data Ask a where
 view :: View a -> Magic a
 view v = ReaderT $ return . runIdentity . runReaderT v
 
-$(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''Action])
+$(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''Action, ''ClosedAbility])

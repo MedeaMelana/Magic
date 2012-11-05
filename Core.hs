@@ -3,7 +3,7 @@
 
 module Core
   ( compileZoneRef
-  , evaluateTargetList, singleTarget, (<?>), askMagicTargets, allTargets
+  , evaluateTargetList, singleTarget, (<?>), askMagicTargets, allTargets, allObjects
   , module Types
   ) where
 
@@ -74,3 +74,12 @@ allTargets = do
     os <- IdList.ids <$> asks (compileZoneRef zr)
     return (map (\o -> (zr, o)) os)
   return (map TargetPlayer ps ++ map TargetObject (concat oss))
+
+allObjects :: Magic [(ObjectRef, Object)]
+allObjects = do
+  ps <- IdList.ids <$> asks players
+  let zrs = [Exile, Battlefield, Stack, Command] ++
+            [ z p | z <- [Library, Hand, Graveyard], p <- ps ]
+  fmap concat $ forM zrs $ \zr -> do
+    ios <- IdList.toList <$> asks (compileZoneRef zr)
+    return (map (\(i,o) -> ((zr,i),o)) ios)
