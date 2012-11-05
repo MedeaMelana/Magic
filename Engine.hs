@@ -355,8 +355,12 @@ collectActions p = do
   execWriterT $ do
     for objects $ \(r,o) -> do
       let Just playAbility = get play o
-      ok <- lift $ executeMagic (view (get available (playAbility r p)))
-      when ok (tell [PlayCard r])
+      playAbilityOk <- lift $ executeMagic (view (get available (playAbility r p)))
+      when playAbilityOk (tell [PlayCard r])
+
+      for (get activatedAbilities o) $ \ability -> do
+        abilityOk <- lift $ executeMagic (view (get available (ability r p)))
+        when abilityOk (tell [ActivateAbility ability])
 
 executeAction :: Ability -> ObjectRef -> PlayerRef -> Engine ()
 executeAction ability rSource activatorId = do

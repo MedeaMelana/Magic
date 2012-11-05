@@ -376,7 +376,9 @@ data Layer
   | LayerRules   -- rules-affecting effects
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-data PriorityAction = PlayCard ObjectRef
+data PriorityAction
+  = PlayCard ObjectRef
+  | ActivateAbility Ability
 
 
 
