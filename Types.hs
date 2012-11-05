@@ -404,17 +404,17 @@ data SimpleOneShotEffect
   | DamageObject ObjectRef ObjectRef Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
   | DamagePlayer ObjectRef PlayerRef Int Bool Bool  -- source, player, amount, combat damage?, preventable?
   | ShuffleLibrary PlayerRef
-  -- | ReorderLibraryCards
+  -- ReorderLibraryCards
   | DrawCard PlayerRef -- Drawing is special [120.5]
-  | DestroyPermanent ObjectRef Bool  -- target, regenerate allowed? -- Destruction is special [701.6b]
-  | TapPermanent ObjectRef
-  | UntapPermanent Id
+  | DestroyPermanent Id Bool  -- object on battlefield, regenerate allowed?
+  | TapPermanent Id  -- object on battlefield
+  | UntapPermanent Id  -- object on battlefield
   | AddCounter ObjectRef CounterType
   | RemoveCounter ObjectRef CounterType
   | CreateObject Object  -- create a token, emblem or spell
   | AddToManaPool PlayerRef (Maybe Color)
   | AttachPermanent ObjectRef (Maybe ObjectRef) (Maybe ObjectRef)  -- aura/equipment, old target, new target
-  | RemoveFromCombat ObjectRef
+  | RemoveFromCombat Id
   | PlayLand ObjectRef
   | LoseGame PlayerRef
 

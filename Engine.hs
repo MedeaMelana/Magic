@@ -307,7 +307,7 @@ collectSBAs = execWriterT $ do
                   (Just t, Just d) -> t > 0 && d >= t
                   _                -> False
           when (hasLethalDamage || get deathtouched o) $
-            tell [Will (DestroyPermanent (Battlefield, i) True)]
+            tell [Will (DestroyPermanent i True)]
 
         -- [704.5i]
         when (o `hasTypes` planeswalkerType && countCountersOfType Loyalty o == 0) $
