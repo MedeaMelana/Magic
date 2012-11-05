@@ -10,7 +10,7 @@ import Predicates
 import Utils hiding (object)
 
 import Control.Applicative ((<$>))
-import Control.Monad (forever, void, forM_, replicateM_, when)
+import Control.Monad (forever, forM_, replicateM_, when)
 import qualified Control.Monad.Operational as Operational
 import Control.Monad.Random (RandT, StdGen)
 import Control.Monad.Reader (runReaderT)
@@ -177,9 +177,9 @@ executeStep (EndPhase CleanupStep) = do
   -- TODO [514.3]  handle triggers; check state-based actions; possibly offer priority
   return ()
 
+-- | Execute a one-shot effect, applying replacement effects and triggering abilities.
 executeEffect :: OneShotEffect -> Engine ()
 executeEffect e = do
-  -- TODO trigger abilities
   applyReplacementEffects e >>= mapM_ compileEffect
 
 
@@ -204,14 +204,24 @@ tick = do
   return t
 
 untapPermanent :: Id -> Engine ()
-untapPermanent ro = battlefield .^ listEl ro .^ tapStatus =: Just Untapped
+untapPermanent i = do
+  Just ts <- gets (battlefield .^ listEl i .^ tapStatus)
+  case ts of
+    Untapped -> return ()
+    Tapped -> do
+      battlefield .^ listEl i .^ tapStatus =: Just Untapped
+      raise (Did (UntapPermanent i))
 
 drawCard :: PlayerRef -> Engine ()
 drawCard rp = do
   lib <- gets (players .^ listEl rp .^ library)
   case IdList.toList lib of
-    []          -> players .^ listEl rp .^ failedCardDraw =: True
-    (ro, o) : _ -> executeEffect (WillMoveObject (Library rp, ro) (Hand rp) o)
+    []          -> do
+      players .^ listEl rp .^ failedCardDraw =: True
+    (ro, o) : _ -> do
+      executeEffect (WillMoveObject (Library rp, ro) (Hand rp) o)
+      -- TODO Only raise event if card was actually moved
+      raise (Did (DrawCard rp))
 
 moveObject :: ObjectRef -> ZoneRef -> Object -> Engine ()
 moveObject (rFromZone, i) rToZone obj = do
@@ -220,7 +230,8 @@ moveObject (rFromZone, i) rToZone obj = do
     Nothing -> return ()
     Just _  -> do
       t <- tick
-      void (IdList.consM (compileZoneRef rToZone) (set timestamp t obj))
+      newId <- IdList.consM (compileZoneRef rToZone) (set timestamp t obj)
+      raise (DidMoveObject rFromZone (rToZone, newId))
 
 moveAllObjects :: ZoneRef -> ZoneRef -> Engine ()
 moveAllObjects rFromZone rToZone = do
@@ -233,6 +244,7 @@ shuffleLibrary rPlayer = do
   lib <- gets libraryLabel
   lib' <- lift (IdList.shuffle lib)
   puts libraryLabel lib'
+  raise (Did (ShuffleLibrary rPlayer))
 
 sortOn :: Ord b => (a -> b) -> [a] -> [a]
 sortOn = sortBy . comparing
