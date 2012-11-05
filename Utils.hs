@@ -111,5 +111,5 @@ hasTypes o t = t `isObjectTypesSubsetOf` _types o
 countCountersOfType :: CounterType -> Object -> Int
 countCountersOfType ty o = length (filter (== ty) (get counters o))
 
-willDie :: Id -> Object -> OneShotEffect
-willDie i o = WillMoveObject (Battlefield, i) (Graveyard (get owner o)) o
+willMoveToGraveyard :: Id -> Object -> OneShotEffect
+willMoveToGraveyard i o = WillMoveObject (Battlefield, i) (Graveyard (get owner o)) o

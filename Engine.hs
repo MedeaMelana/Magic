@@ -298,7 +298,7 @@ collectSBAs = execWriterT $ do
 
           -- [704.5f]
           let hasNonPositiveToughness = maybe False (<= 0) (get toughness o)
-          when hasNonPositiveToughness $ tell [willDie i o]
+          when hasNonPositiveToughness $ tell [willMoveToGraveyard i o]
 
           -- [704.5g]
           -- [704.5h]
@@ -311,7 +311,7 @@ collectSBAs = execWriterT $ do
 
         -- [704.5i]
         when (o `hasTypes` planeswalkerType && countCountersOfType Loyalty o == 0) $
-          tell [willDie i o]
+          tell [willMoveToGraveyard i o]
 
       -- TODO [704.5j]
       -- TODO [704.5k]
