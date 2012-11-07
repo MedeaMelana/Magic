@@ -179,12 +179,14 @@ executeStep (EndPhase CleanupStep) = do
   return ()
 
 -- | Execute a one-shot effect, applying replacement effects and triggering abilities.
+-- TODO Return [Event] what actually happened
 executeEffect :: OneShotEffect -> Engine ()
 executeEffect e = applyReplacementEffects e >>= mapM_ compileEffect
 
 
 -- Compilation of effects
 
+-- TODO Return [Event] what actually happened
 compileEffect :: OneShotEffect -> Engine ()
 compileEffect e =
   case e of
