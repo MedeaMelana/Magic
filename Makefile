@@ -1,5 +1,5 @@
 run:
-	ghci -Wall Engine M12
+	ghci -Wall Engine M12 BasicLands
 
 docs:
 	cabal haddock

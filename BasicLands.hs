@@ -6,6 +6,7 @@ import Core
 import Labels
 import Predicates
 import Utils
+import Types
 
 import Control.Applicative
 import Data.Label.PureM
@@ -35,7 +36,7 @@ playLand rSource rActivator = ClosedAbility
         _           -> return False
   , _manaCost = mempty
   , _additionalCosts = []
-  , _effect = SpecialAction (return [WillSimpleEffect (PlayLand rSource)])
+  , _effect = SpecialAction (return [Will (PlayLand rSource)])
   }
 
 tapToAddMana :: Maybe Color -> Ability
@@ -47,7 +48,7 @@ tapToAddMana mc rSource rActivator = ClosedAbility
   , _manaCost = mempty
   , _additionalCosts = []
   -- TODO require cost: tap self
-  , _effect = SpecialAction (return [WillSimpleEffect (AddToManaPool rActivator mc)])
+  , _effect = SpecialAction (return [Will (AddToManaPool rActivator mc)])
   }
 
 checkObject :: ObjectRef -> (Object -> Bool) -> View Bool
