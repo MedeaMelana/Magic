@@ -1,4 +1,13 @@
-module Events where
+module Events (
+    -- * Types
+    Event(..), OneShotEffect(..), SimpleOneShotEffect(..),
+
+    -- * Executing effects
+    executeEffect, raise, applyReplacementEffects, compileEffect,
+
+    -- * Specific effects
+    untapPermanent, drawCard, moveObject, moveAllObjects, shuffleLibrary, tick
+  ) where
 
 import Core
 import IdList (Id)
