@@ -186,14 +186,13 @@ executeEffect e = applyReplacementEffects e >>= mapM_ compileEffect
 -- Compilation of effects
 
 compileEffect :: OneShotEffect -> Engine ()
-compileEffect (Will e) = compileSimpleEffect e
-compileEffect (WillMoveObject rObj rToZone obj) = moveObject rObj rToZone obj
-
-compileSimpleEffect :: SimpleOneShotEffect -> Engine ()
-compileSimpleEffect (UntapPermanent i) = untapPermanent i
-compileSimpleEffect (DrawCard rp) = drawCard rp
-compileSimpleEffect (ShuffleLibrary rPlayer) = shuffleLibrary rPlayer
-compileSimpleEffect _ = undefined
+compileEffect e =
+  case e of
+    WillMoveObject rObj rToZone obj -> moveObject rObj rToZone obj
+    Will (UntapPermanent i)         -> untapPermanent i
+    Will (DrawCard rp)              -> drawCard rp
+    Will (ShuffleLibrary rPlayer)   -> shuffleLibrary rPlayer
+    _ -> undefined
 
 
 
