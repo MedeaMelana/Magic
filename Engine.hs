@@ -18,11 +18,12 @@ import Control.Monad.State (StateT)
 import qualified Control.Monad.State as State
 import Control.Monad.Trans (lift)
 import Control.Monad.Writer (tell, execWriterT)
+import Data.Either (partitionEithers)
 import Data.Ord (comparing)
 import Data.Label.Pure (get, set, (:->))
 import Data.Label.PureM (gets, puts, (=:))
 import Data.List (sortBy)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, isJust)
 import Data.Traversable (for)
 
 type Engine = StateT World (RandT StdGen (Operational.Program Ask))
@@ -179,8 +180,7 @@ executeStep (EndPhase CleanupStep) = do
 
 -- | Execute a one-shot effect, applying replacement effects and triggering abilities.
 executeEffect :: OneShotEffect -> Engine ()
-executeEffect e = do
-  applyReplacementEffects e >>= mapM_ compileEffect
+executeEffect e = applyReplacementEffects e >>= mapM_ compileEffect
 
 
 -- Compilation of effects
@@ -382,8 +382,50 @@ executeAction ability rSource activatorId = do
     SpecialAction m -> executeMagic m >>= mapM_ executeEffect
     StackingAction _ -> return ()
 
+-- [616] Interaction of Replacement and/or Prevention Effects
+-- TODO Handle multiple effects (in a single event) at once, to be able to adhere
+-- to APNAP order; see http://draw3cards.com/questions/9618
 applyReplacementEffects :: OneShotEffect -> Engine [OneShotEffect]
-applyReplacementEffects = return . (: [])  -- TODO
+applyReplacementEffects effect = do
+    objects <- map snd <$> executeMagic allObjects
+    go (concatMap (get replacementEffects) objects) effect
+  where
+    go :: [ReplacementEffect] -> OneShotEffect -> Engine [OneShotEffect]
+    go availableEffects effectToReplace = do
+      p <- affectedPlayer effectToReplace
+      let (notApplicable, applicable) =
+            partitionEithers $ map (\f -> maybe (Left f) (\m -> Right (f, m)) (f effectToReplace)) availableEffects
+      if null applicable
+        then return [effectToReplace]
+        else do
+          ((chosen, mReplacements), notChosen) <-
+            liftQuestion (AskPickReplacementEffect p applicable)
+          replacements <- executeMagic mReplacements
+          -- TODO Resolve replacements in affected player APNAP order.
+          fmap concat $ for replacements (go (map fst notChosen ++ notApplicable))
+
+-- [616.1] The affected player chooses which replacement effect to apply first.
+affectedPlayer :: OneShotEffect -> Engine PlayerRef
+affectedPlayer e =
+  case e of
+    WillMoveObject o _ _          -> controllerOf o
+    Will (AdjustLife p _)         -> return p
+    Will (DamageObject _ o _ _ _) -> controllerOf o
+    Will (DamagePlayer _ p _ _ _) -> return p
+    Will (ShuffleLibrary p)       -> return p
+    Will (DrawCard p)             -> return p
+    Will (DestroyPermanent i _)   -> controllerOf (Battlefield, i)
+    Will (TapPermanent i)         -> controllerOf (Battlefield, i)
+    Will (UntapPermanent i)       -> controllerOf (Battlefield, i)
+    Will (AddCounter o _)         -> controllerOf o
+    Will (RemoveCounter o _)      -> controllerOf o
+    Will (CreateObject o)         -> return (get controller o)
+    Will (AddToManaPool p _)      -> return p
+    Will (AttachPermanent o _ _)  -> controllerOf o  -- debatable
+    Will (RemoveFromCombat i)     -> controllerOf (Battlefield, i)
+    Will (PlayLand o)             -> controllerOf o
+    Will (LoseGame p)             -> return p
+  where controllerOf o = gets (object o .^ controller)
 
 executeMagic :: Magic a -> Engine a
 executeMagic m = State.get >>= lift . lift . runReaderT m

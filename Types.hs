@@ -48,6 +48,7 @@ module Types (
     ClosedAbility(..), available, manaCost, additionalCosts, effect,
     Action(..), StackItem, ManaCost(..), AdditionalCost(..),
     StaticKeywordAbility(..), ContinuousEffect(..), Layer(..),
+    ReplacementEffect,
     PriorityAction(..),
 
     -- * Events
@@ -197,7 +198,7 @@ data Object = Object
   , _continuousEffects      :: [ContinuousEffect]  -- special form of static ability
   , _activatedAbilities     :: [Ability]
   , _triggeredAbilities     :: [Event -> Action]
-  , _replacementEffects     :: [OneShotEffect -> Magic [OneShotEffect]]
+  , _replacementEffects     :: [ReplacementEffect]
   }
 
 
@@ -376,6 +377,8 @@ data Layer
   | LayerRules   -- rules-affecting effects
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
+type ReplacementEffect = OneShotEffect -> Maybe (Magic [OneShotEffect])
+
 data PriorityAction
   = PlayCard ObjectRef
   | ActivateAbility Ability
@@ -463,6 +466,9 @@ data Ask a where
   AskPriorityAction :: PlayerRef -> [PriorityAction] -> Ask (Maybe PriorityAction)
   AskTarget         :: PlayerRef -> [Target] -> Ask Target
   AskReorder          :: PlayerRef -> [a] -> Ask [a]
+  AskPickReplacementEffect :: PlayerRef -> [(ReplacementEffect, Magic [OneShotEffect])] -> Ask (Pick (ReplacementEffect, Magic [OneShotEffect]))
+
+type Pick a = (a, [a])
 
 view :: View a -> Magic a
 view v = ReaderT $ return . runIdentity . runReaderT v
