@@ -3,6 +3,7 @@
 module M12 where
 
 import Core
+import Types
 import Utils
 
 import Control.Applicative
