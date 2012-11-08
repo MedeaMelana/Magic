@@ -2,7 +2,7 @@ name:               Magic
 version:            0.1
 -- synopsis:
 -- description:
--- license:
+license:            BSD3
 homepage:           https://github.com/MedeaMelana/Magic
 bug-reports:        https://github.com/MedeaMelana/Magic/issues
 license-file:       LICENSE
