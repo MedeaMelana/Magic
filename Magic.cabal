@@ -3,6 +3,8 @@ version:            0.1
 -- synopsis:
 -- description:
 -- license:
+homepage:           https://github.com/MedeaMelana/Magic
+bug-reports:        https://github.com/MedeaMelana/Magic/issues
 license-file:       LICENSE
 author:             Martijn van Steenbergen
 maintainer:         martijn@van.steenbergen.nl
