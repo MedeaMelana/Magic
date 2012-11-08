@@ -7,6 +7,7 @@ import Events
 import IdList (Id)
 import qualified IdList
 import Labels
+import ObjectTypes
 import Predicates
 import Types
 import Utils hiding (object)

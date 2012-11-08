@@ -4,6 +4,7 @@ module M12 where
 
 import Core
 import Types
+import ObjectTypes
 import Utils
 
 import Control.Applicative

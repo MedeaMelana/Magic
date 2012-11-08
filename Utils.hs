@@ -9,10 +9,8 @@ import Types
 import Control.Monad.State (State, execState)
 import Data.Label.Pure
 import Data.List (sortBy)
-import Data.Monoid
+import Data.Monoid (mempty)
 import Data.Ord (comparing)
-import Data.Set (Set)
-import qualified Data.Set as Set
 
 
 mkCard :: State Object () -> Card
@@ -55,59 +53,6 @@ object ts rOwner = Object
   , _triggeredAbilities = []
   , _replacementEffects = []
   }
-
-
-basicType :: ObjectTypes
-basicType = mempty { _supertypes = Set.singleton Basic }
-
-legendaryType :: ObjectTypes
-legendaryType = mempty { _supertypes = Set.singleton Legendary }
-
-artifactType :: ObjectTypes
-artifactType = mempty { _artifactSubtypes = Just mempty }
-
-creatureType :: ObjectTypes
-creatureType = mempty { _creatureSubtypes = Just mempty }
-
-enchantmentType :: ObjectTypes
-enchantmentType = mempty { _enchantmentSubtypes = Just mempty }
-
-instantType :: ObjectTypes
-instantType = mempty { _instantSubtypes = Just mempty }
-
-landType :: ObjectTypes
-landType = mempty { _landSubtypes = Just mempty }
-
-planeswalkerType :: ObjectTypes
-planeswalkerType = mempty { _planeswalkerSubtypes = Just mempty }
-
-sorceryType :: ObjectTypes
-sorceryType = mempty { _sorcerySubtypes = Just mempty }
-
-
-class ObjectType a where
-  objectTypeLabel :: ObjectTypes :-> Maybe (Set a)
-
-instance ObjectType ArtifactSubtype where
-  objectTypeLabel = artifactSubtypes
-
-instance ObjectType CreatureSubtype where
-  objectTypeLabel = creatureSubtypes
-
-instance ObjectType EnchantmentSubtype where
-  objectTypeLabel = enchantmentSubtypes
-
-instance ObjectType LandSubtype where
-  objectTypeLabel = landSubtypes
-
-instance ObjectType PlaneswalkerSubtype where
-  objectTypeLabel = planeswalkerSubtypes
-
-objectType :: ObjectType a => a -> ObjectTypes
-objectType ty = set objectTypeLabel (Just (Set.singleton ty)) mempty
-
-hasTypes :: Object -> ObjectTypes -> Bool
-hasTypes o t = t `isObjectTypesSubsetOf` _types o
 
 
 countCountersOfType :: CounterType -> Object -> Int

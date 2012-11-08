@@ -4,6 +4,7 @@ module BasicLands where
 
 import Core
 import Labels
+import ObjectTypes
 import Predicates
 import Utils
 import Types
