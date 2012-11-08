@@ -9,6 +9,7 @@ import qualified Magic.IdList as IdList
 import Magic.Labels
 import Magic.ObjectTypes
 import Magic.Predicates
+import Magic.Target
 import Magic.Types
 import Magic.Utils hiding (object)
 

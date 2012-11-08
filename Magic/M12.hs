@@ -2,9 +2,9 @@
 
 module Magic.M12 where
 
-import Magic.Core
 import Magic.Types
 import Magic.ObjectTypes
+import Magic.Target
 import Magic.Utils
 
 import Control.Applicative

@@ -23,6 +23,7 @@ library
                     Magic.M12,
                     Magic.ObjectTypes,
                     Magic.Predicates,
+                    Magic.Target
                     Magic.Types,
                     Magic.Utils
   -- other-modules:
