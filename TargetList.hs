@@ -129,3 +129,5 @@ test0 = snd . evaluate <$> askTargets chooseIO [TargetCreature 0, TargetCreature
 
 test1 :: [(Target, Target)]
 test1 = snd . evaluate <$> askTargets id [TargetCreature 0, TargetCreature 1] arcTrailTargets
+
+-- testing travis
