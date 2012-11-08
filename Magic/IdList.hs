@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module IdList (
+module Magic.IdList (
 
     -- * Types
     Id, IdList,

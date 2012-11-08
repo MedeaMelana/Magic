@@ -1,16 +1,16 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Engine where
+module Magic.Engine where
 
-import Core
-import Events
-import IdList (Id)
-import qualified IdList
-import Labels
-import ObjectTypes
-import Predicates
-import Types
-import Utils hiding (object)
+import Magic.Core
+import Magic.Events
+import Magic.IdList (Id)
+import qualified Magic.IdList as IdList
+import Magic.Labels
+import Magic.ObjectTypes
+import Magic.Predicates
+import Magic.Types
+import Magic.Utils hiding (object)
 
 import Control.Applicative ((<$>))
 import Control.Monad (forever, forM_, replicateM_, when)

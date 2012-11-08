@@ -1,17 +1,27 @@
-name:                Magic
-version:             0.1
+name:               Magic
+version:            0.1
 -- synopsis:
 -- description:
 -- license:
-license-file:        LICENSE
-author:              Martijn van Steenbergen
-maintainer:          martijn@van.steenbergen.nl
+license-file:       LICENSE
+author:             Martijn van Steenbergen
+maintainer:         martijn@van.steenbergen.nl
 -- copyright:
-category:            Game
-build-type:          Simple
-cabal-version:       >=1.8
+category:           Game
+build-type:         Simple
+cabal-version:      >=1.8
 
 library
-  exposed-modules:     BasicLands, Core, Engine, Events, IdList, Labels, M12, Predicates, TargetList, Types, Utils
+  exposed-modules:  Magic.BasicLands,
+                    Magic.Core,
+                    Magic.Engine,
+                    Magic.Events,
+                    Magic.IdList,
+                    Magic.Labels,
+                    Magic.M12,
+                    Magic.ObjectTypes,
+                    Magic.Predicates,
+                    Magic.Types,
+                    Magic.Utils
   -- other-modules:
   build-depends:       base ==4.5.*, fclabels ==1.1.*, operational ==0.2.*, mtl ==2.1.*, MonadRandom ==0.1.*, random-shuffle ==0.0.*, containers ==0.4.*, text ==0.11.*

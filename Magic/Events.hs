@@ -1,4 +1,4 @@
-module Events (
+module Magic.Events (
     -- * Types
     Event(..), OneShotEffect(..), SimpleOneShotEffect(..),
 
@@ -9,11 +9,11 @@ module Events (
     untapPermanent, drawCard, moveObject, moveAllObjects, shuffleLibrary, tick
   ) where
 
-import Core
-import IdList (Id)
-import qualified IdList
-import Labels
-import Types
+import Magic.Core
+import Magic.IdList (Id)
+import qualified Magic.IdList as IdList
+import Magic.Labels
+import Magic.Types
 
 import Control.Applicative ((<$>))
 import Control.Monad (forM_,)

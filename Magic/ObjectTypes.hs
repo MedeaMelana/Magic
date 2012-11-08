@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module ObjectTypes (
+module Magic.ObjectTypes (
     -- * Convenient type sets
     basicType, legendaryType,
     artifactType, creatureType, enchantmentType, instantType, landType,
@@ -10,7 +10,7 @@ module ObjectTypes (
     ObjectType(..), objectType, hasTypes,
   ) where
 
-import Types
+import Magic.Types
 
 import Data.Label.Pure (set, (:->))
 import Data.Monoid (mempty)

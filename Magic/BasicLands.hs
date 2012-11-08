@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module BasicLands where
+module Magic.BasicLands where
 
-import Core
-import Labels
-import ObjectTypes
-import Predicates
-import Utils
-import Types
+import Magic.Core
+import Magic.Labels
+import Magic.ObjectTypes
+import Magic.Predicates
+import Magic.Utils
+import Magic.Types
 
 import Control.Applicative
 import Data.Label.PureM

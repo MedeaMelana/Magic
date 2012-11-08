@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module M12 where
+module Magic.M12 where
 
-import Core
-import Types
-import ObjectTypes
-import Utils
+import Magic.Core
+import Magic.Types
+import Magic.ObjectTypes
+import Magic.Utils
 
 import Control.Applicative
 import Data.Label.PureM ((=:))

@@ -1,7 +1,10 @@
 run:
-	ghci -Wall Engine M12 BasicLands
+	ghci -Wall Magic.Engine Magic.M12 Magic.BasicLands
 
-docs:
+configure:
+	cabal configure
+
+docs: configure
 	cabal haddock
 
 opendocs: docs

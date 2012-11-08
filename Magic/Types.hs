@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Types (
+module Magic.Types (
     -- * Data structures
     Bag,
 
@@ -63,7 +63,7 @@ module Types (
     Ask(..)
   ) where
 
-import IdList (Id, IdList)
+import Magic.IdList (Id, IdList)
 
 import Control.Applicative
 import Control.Monad.Identity

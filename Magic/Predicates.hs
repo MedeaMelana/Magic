@@ -1,6 +1,6 @@
-module Predicates where
+module Magic.Predicates where
 
-import Types
+import Magic.Types
 
 import Data.Label
 import qualified Data.Set as Set

@@ -1,17 +1,17 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Core
+module Magic.Core
   --( compileZoneRef
   --, evaluateTargetList, singleTarget, (<?>), askMagicTargets, allTargets, allObjects
   --, module Types
   --)
   where
 
-import IdList (IdList)
-import qualified IdList
-import Labels
-import Types
+import Magic.IdList (IdList)
+import qualified Magic.IdList as IdList
+import Magic.Labels
+import Magic.Types
 
 import Control.Applicative
 import qualified Control.Monad.Operational as Operational

@@ -1,9 +1,9 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Labels where
+module Magic.Labels where
 
-import IdList (Id, IdList)
-import qualified IdList
+import Magic.IdList (Id, IdList)
+import qualified Magic.IdList as IdList
 
 import Prelude hiding ((.), id)
 import Control.Category (Category(..), (>>>))

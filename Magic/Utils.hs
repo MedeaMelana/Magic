@@ -1,10 +1,10 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Utils where
+module Magic.Utils where
 
-import IdList (Id)
-import qualified IdList
-import Types
+import Magic.IdList (Id)
+import qualified Magic.IdList as IdList
+import Magic.Types
 
 import Control.Monad.State (State, execState)
 import Data.Label.Pure
