@@ -1,3 +1,5 @@
+[![Build Status](https://secure.travis-ci.org/MedeaMelana/Magic.png?branch=master)](https://travis-ci.org/MedeaMelana/Magic)
+
 # Magic: The Gathering in Haskell
 
 A Haskell implementation of the rules of Wizards of the Coast's Magic: The
