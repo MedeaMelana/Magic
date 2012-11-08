@@ -8,7 +8,9 @@ import Types
 
 import Control.Monad.State (State, execState)
 import Data.Label.Pure
+import Data.List (sortBy)
 import Data.Monoid
+import Data.Ord (comparing)
 import Data.Set (Set)
 import qualified Data.Set as Set
 
@@ -113,3 +115,6 @@ countCountersOfType ty o = length (filter (== ty) (get counters o))
 
 willMoveToGraveyard :: Id -> Object -> OneShotEffect
 willMoveToGraveyard i o = WillMoveObject (Battlefield, i) (Graveyard (get owner o)) o
+
+sortOn :: Ord b => (a -> b) -> [a] -> [a]
+sortOn = sortBy . comparing

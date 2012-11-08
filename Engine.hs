@@ -15,10 +15,8 @@ import Control.Applicative ((<$>))
 import Control.Monad (forever, forM_, replicateM_, when)
 import Control.Monad.Trans (lift)
 import Control.Monad.Writer (tell, execWriterT)
-import Data.Ord (comparing)
 import Data.Label.Pure (get, set)
 import Data.Label.PureM (gets, (=:))
-import Data.List (sortBy)
 import Data.Maybe (catMaybes)
 import Data.Traversable (for)
 
@@ -170,9 +168,6 @@ executeStep (EndPhase CleanupStep) = do
 
 
 
-
-sortOn :: Ord b => (a -> b) -> [a] -> [a]
-sortOn = sortBy . comparing
 
 offerPriority :: Engine ()
 offerPriority = do
