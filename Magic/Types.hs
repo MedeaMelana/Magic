@@ -38,7 +38,6 @@ module Magic.Types (
     ObjectTypes(..), supertypes, artifactSubtypes, creatureSubtypes,
       enchantmentSubtypes, instantSubtypes, landSubtypes,
       planeswalkerSubtypes, sorcerySubtypes,
-      isObjectTypesSubsetOf,
     Supertype(..), ArtifactSubtype(..), CreatureSubtype(..),
     EnchantmentSubtype(..), SpellSubtype(..), LandSubtype(..),
     PlaneswalkerSubtype(..),
@@ -249,22 +248,6 @@ instance Monoid ObjectTypes where
     , _sorcerySubtypes      = _sorcerySubtypes x      `mappend` _sorcerySubtypes y
     }
 
-isObjectTypesSubsetOf :: ObjectTypes -> ObjectTypes -> Bool
-isObjectTypesSubsetOf x y =
-    _supertypes x           `Set.isSubsetOf`  _supertypes y &&
-    _artifactSubtypes x     `isMaybeSubsetOf` _artifactSubtypes y &&
-    _creatureSubtypes x     `isMaybeSubsetOf` _creatureSubtypes y &&
-    _enchantmentSubtypes x  `isMaybeSubsetOf` _enchantmentSubtypes y &&
-    _instantSubtypes x      `isMaybeSubsetOf` _instantSubtypes y &&
-    _landSubtypes x         `isMaybeSubsetOf` _landSubtypes y &&
-    _planeswalkerSubtypes x `isMaybeSubsetOf` _planeswalkerSubtypes y &&
-    _sorcerySubtypes x      `isMaybeSubsetOf` _sorcerySubtypes y
-  where
-    isMaybeSubsetOf :: Ord a => Maybe (Set a) -> Maybe (Set a) -> Bool
-    Nothing `isMaybeSubsetOf` _ = True
-    Just _  `isMaybeSubsetOf` Nothing = False
-    Just x'  `isMaybeSubsetOf` Just y' = x' `Set.isSubsetOf` y'
-
 data Supertype = Basic | Legendary
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
@@ -390,7 +373,7 @@ data PriorityAction
 -- EVENTS
 
 
--- | Events triggered abilities watch for.
+-- | Events are caused by various actions in the game. They describe something that has just happened, such as executing a 'OneShotEffect', progressing to the next step or phases, casting spells, et cetera. Events form the input for triggered abilities.
 data Event
   = Did SimpleOneShotEffect
   | DidMoveObject ZoneRef ObjectRef  -- old zone, new zone/id
@@ -404,10 +387,12 @@ data Event
   | DidBeginStep Step
   | WillEndStep Step
 
+-- | A one-shot effect causes a mutation in the game's state. A value of @OneShotEffect@ describes something that is about to happen. When one-shot effects are executed, they may be replaced or prevented by replacement effects, and cause an 'Event' to be raised, triggering abilities.
 data OneShotEffect
   = Will SimpleOneShotEffect
   | WillMoveObject ObjectRef ZoneRef Object  -- current zone/id, new zone, suggested form
 
+-- | A one-shot effect is simple if its fields contain enough information to serve as an 'Event' unchanged, using the 'Did' constructor.
 data SimpleOneShotEffect
   = AdjustLife PlayerRef Int
   | DamageObject ObjectRef ObjectRef Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?

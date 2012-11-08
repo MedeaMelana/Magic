@@ -58,8 +58,5 @@ object ts rOwner = Object
 countCountersOfType :: CounterType -> Object -> Int
 countCountersOfType ty o = length (filter (== ty) (get counters o))
 
-willMoveToGraveyard :: Id -> Object -> OneShotEffect
-willMoveToGraveyard i o = WillMoveObject (Battlefield, i) (Graveyard (get owner o)) o
-
 sortOn :: Ord b => (a -> b) -> [a] -> [a]
 sortOn = sortBy . comparing

@@ -1,11 +1,18 @@
 module Magic.Events (
     -- * Types
-    Event(..), OneShotEffect(..), SimpleOneShotEffect(..),
+    OneShotEffect(..), SimpleOneShotEffect(..), Event(..),
+
+    -- * Constructing specific one-shot effects
+    willMoveToGraveyard,
 
     -- * Executing effects
-    executeEffect, raise, applyReplacementEffects, compileEffect,
+    executeEffect, raise, applyReplacementEffects,
 
-    -- * Specific effects
+    -- * Compiling effects
+    -- | These functions all immediately execute their effect, bypassing any
+    -- replacement effects that might apply to them. They will cause triggered
+    -- abilities to trigger.
+    compileEffect,
     untapPermanent, drawCard, moveObject, moveAllObjects, shuffleLibrary, tick
   ) where
 
@@ -25,11 +32,24 @@ import Data.Traversable (for)
 
 
 
+-- CONSTRUCTING SPECIFIC ONE-SHOT EFFECTS
+
+
+-- | Effect that moves the specified object on the battlefield to its owner's graveyard.
+willMoveToGraveyard :: Id -> Object -> OneShotEffect
+willMoveToGraveyard i o = WillMoveObject (Battlefield, i) (Graveyard (get owner o)) o
+
+
+
+-- EXECUTING EFFECTS
+
+
 -- | Execute a one-shot effect, applying replacement effects and triggering abilities.
 -- TODO Return [Event] what actually happened
 executeEffect :: OneShotEffect -> Engine ()
 executeEffect e = applyReplacementEffects e >>= mapM_ compileEffect
 
+-- | Raise an event, triggering abilities.
 raise :: Event -> Engine ()
 raise _ = do
   -- TODO handle triggered abilities
@@ -82,11 +102,14 @@ affectedPlayer e =
   where controllerOf o = gets (object o .^ controller)
 
 
--- Compilation of effects
 
--- TODO Return [Event] what actually happened
+-- COMPILATION OF EFFECTS
+
+
+-- | Compile and execute an effect.
 compileEffect :: OneShotEffect -> Engine ()
 compileEffect e =
+  -- TODO Return [Event] what actually happened
   case e of
     WillMoveObject rObj rToZone obj -> moveObject rObj rToZone obj
     Will (UntapPermanent i)         -> untapPermanent i
@@ -94,6 +117,7 @@ compileEffect e =
     Will (ShuffleLibrary rPlayer)   -> shuffleLibrary rPlayer
     _ -> undefined
 
+-- | Cause a permanent on the battlefield to untap. If it was previously tapped, a 'Did' 'UntapPermanent' event is raised.
 untapPermanent :: Id -> Engine ()
 untapPermanent i = do
   Just ts <- gets (battlefield .^ listEl i .^ tapStatus)
@@ -103,6 +127,7 @@ untapPermanent i = do
       battlefield .^ listEl i .^ tapStatus =: Just Untapped
       raise (Did (UntapPermanent i))
 
+-- | Cause the given player to draw a card. If a card was actually drawn, a 'Did' 'DrawCard' event is raised. If not, the player loses the game the next time state-based actions are checked.
 drawCard :: PlayerRef -> Engine ()
 drawCard rp = do
   lib <- gets (players .^ listEl rp .^ library)
@@ -114,6 +139,7 @@ drawCard rp = do
       -- TODO Only raise event if card was actually moved
       raise (Did (DrawCard rp))
 
+-- | Cause an object to move from one zone to another in the specified form. If the object was actually moved, a 'DidMoveObject' event is raised.
 moveObject :: ObjectRef -> ZoneRef -> Object -> Engine ()
 moveObject (rFromZone, i) rToZone obj = do
   mObj <- IdList.removeM (compileZoneRef rFromZone) i
@@ -124,11 +150,13 @@ moveObject (rFromZone, i) rToZone obj = do
       newId <- IdList.consM (compileZoneRef rToZone) (set timestamp t obj)
       raise (DidMoveObject rFromZone (rToZone, newId))
 
+-- | @moveAllObjects z1 z2@ moves all objects from zone @z1@ to zone @z2@, raising a 'DidMoveObject' event for every object that was moved this way.
 moveAllObjects :: ZoneRef -> ZoneRef -> Engine ()
 moveAllObjects rFromZone rToZone = do
   ois <- IdList.toList <$> gets (compileZoneRef rFromZone)
   forM_ ois $ \(i, o) -> moveObject (rFromZone, i) rToZone o
 
+-- | Shuffle a player's library. A 'ShuffleLibrary' event is raised.
 shuffleLibrary :: PlayerRef -> Engine ()
 shuffleLibrary rPlayer = do
   let libraryLabel = players .^ listEl rPlayer .^ library
