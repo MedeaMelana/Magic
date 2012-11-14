@@ -61,7 +61,7 @@ fromListWithId f = foldr (\x xs -> snd (cons' (\i -> f i x) xs)) empty
 
 head :: IdList a -> Maybe (Id, a)
 head (IdList (ix : _) _) = Just ix
-head _ = undefined
+head _ = Nothing
 
 get :: Id -> IdList a -> Maybe a
 get i (IdList ixs _) = lookup i ixs
