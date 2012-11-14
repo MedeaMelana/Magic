@@ -6,7 +6,7 @@ module Magic.IdList (
     Id, IdList,
 
     -- * Construction
-    empty, fromList,
+    empty, fromList, fromListWithId,
 
     -- * Querying
     head, get, toList, ids,
@@ -49,7 +49,10 @@ empty :: IdList a
 empty = IdList [] (Id 0)
 
 fromList :: [a] -> IdList a
-fromList = foldr (\x xs -> snd (cons' x xs)) empty
+fromList = foldr (\x xs -> snd (cons' (const x) xs)) empty
+
+fromListWithId :: (Id -> a -> b) -> [a] -> IdList b
+fromListWithId f = foldr (\x xs -> snd (cons' (\i -> f i x) xs)) empty
 
 
 
@@ -92,10 +95,10 @@ remove i l =
 --pop _ = Nothing
 
 cons :: a -> IdList a -> IdList a
-cons x xs = snd (cons' x xs)
+cons x xs = snd (cons' (const x) xs)
 
-cons' :: a -> IdList a -> (Id, IdList a)
-cons' x (IdList ixs (Id i)) = (Id i, IdList ((Id i, x) : ixs) (Id (succ i)))
+cons' :: (Id -> a) -> IdList a -> (Id, IdList a)
+cons' f (IdList ixs newId@(Id i)) = (newId, IdList ((Id i, f newId) : ixs) (Id (succ i)))
 
 contents :: ([(Id, a)] -> [(Id, b)]) -> IdList a -> IdList b
 contents f (IdList ixs i) = IdList (f ixs) i
@@ -118,6 +121,6 @@ removeM label i = do
 consM :: MonadState s m => (s :-> IdList a) -> a -> m Id
 consM label x = do
   list <- gets label
-  let (i, list') = cons' x list
+  let (i, list') = cons' (const x) list
   puts label list'
   return i
