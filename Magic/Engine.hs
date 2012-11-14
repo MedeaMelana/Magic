@@ -21,10 +21,15 @@ import Data.Label.Pure (get, set)
 import Data.Label.PureM (gets, (=:))
 import Data.Maybe (catMaybes)
 import Data.Traversable (for)
+import Prelude hiding (round)
 
 
+runFullGame :: [Deck] -> Engine ()
+runFullGame decks = do
+  forM_ decks enterPlayer
+  forever round
 
-enterPlayer :: [Card] -> Engine ()
+enterPlayer :: Deck -> Engine ()
 enterPlayer deck = do
   playerId <- IdList.consM players player
   forM_ deck $ \card -> do

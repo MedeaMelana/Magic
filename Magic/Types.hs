@@ -23,7 +23,7 @@ module Magic.Types (
     Player(..), life, manaPool, prestack, library, hand, graveyard, maximumHandSize, failedCardDraw,
 
     -- * Objects
-    Card(..),
+    Card(..), Deck,
     Object(..),
       name, colors, types, owner, controller, timestamp, counters,
       tapStatus,
@@ -168,6 +168,8 @@ data Card = Card
   -- timestamp, owner (and controller)
   { instantiateCard :: Timestamp -> PlayerRef-> Object
   }
+
+type Deck = [Card]
 
 data Object = Object
   { _name       :: Maybe Text
