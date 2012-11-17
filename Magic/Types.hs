@@ -59,7 +59,7 @@ module Magic.Types (
     -- * Monads
     ViewT, View, Magic, Engine,
     view,
-    Ask(..)
+    AskedQuestion(..), Question(..)
   ) where
 
 import Magic.IdList (Id, IdList)
@@ -151,7 +151,7 @@ data EndStep
 data Player = Player
   { _life            :: Int
   , _manaPool        :: Bag (Maybe Color)
-  , _prestack        :: [Magic Object]
+  , _prestack        :: [Magic Object]  -- for triggered abilities
   , _library         :: IdList Object
   , _hand            :: IdList Object
   , _graveyard       :: IdList Object
@@ -448,16 +448,18 @@ instance Applicative (TargetList t) where
 type ViewT = ReaderT World
 type View = ViewT Identity
 
-type Magic = ViewT (Operational.Program Ask)
+type Magic = ViewT (Operational.Program AskedQuestion)
 
-type Engine = StateT World (RandT StdGen (Operational.Program Ask))
+type Engine = StateT World (RandT StdGen (Operational.Program AskedQuestion))
 
-data Ask a where
-  AskKeepHand       :: PlayerRef -> Ask Bool
-  AskPriorityAction :: PlayerRef -> [PriorityAction] -> Ask (Maybe PriorityAction)
-  AskTarget         :: PlayerRef -> [Target] -> Ask Target
-  AskReorder          :: PlayerRef -> [a] -> Ask [a]
-  AskPickReplacementEffect :: PlayerRef -> [(ReplacementEffect, Magic [OneShotEffect])] -> Ask (Pick (ReplacementEffect, Magic [OneShotEffect]))
+data AskedQuestion a = AskedQuestion PlayerRef World (Question a)
+
+data Question a where
+  AskKeepHand              :: Question Bool
+  AskPriorityAction        :: [PriorityAction] -> Question (Maybe PriorityAction)
+  AskTarget                :: [Target] -> Question Target
+  AskReorder               :: [a] -> Question [a]
+  AskPickReplacementEffect :: [(ReplacementEffect, Magic [OneShotEffect])] -> Question (Pick (ReplacementEffect, Magic [OneShotEffect]))
 
 type Pick a = (a, [a])
 

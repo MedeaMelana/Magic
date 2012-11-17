@@ -73,7 +73,7 @@ applyReplacementEffects effect = do
         then return [effectToReplace]
         else do
           ((chosen, mReplacements), notChosen) <-
-            liftQuestion (AskPickReplacementEffect p applicable)
+            liftEngineQuestion p (AskPickReplacementEffect applicable)
           replacements <- executeMagic mReplacements
           -- TODO Resolve replacements in affected player APNAP order.
           fmap concat $ for replacements (go (map fst notChosen ++ notApplicable))

@@ -16,7 +16,7 @@ import Magic.Types
 import Control.Applicative
 import qualified Control.Monad.Operational as Operational
 import Control.Monad (forM)
-import Control.Monad.Reader (runReaderT)
+import Control.Monad.Reader (runReaderT, ask)
 import qualified Control.Monad.State as State
 import Control.Monad.Trans (lift)
 import Data.Label.Pure ((:->))
@@ -43,8 +43,13 @@ allObjects = do
     ios <- IdList.toList <$> asks (compileZoneRef zr)
     return (map (\(i,o) -> ((zr,i),o)) ios)
 
-liftQuestion :: Ask a -> Engine a
-liftQuestion = lift . lift . Operational.singleton
+liftQuestion :: PlayerRef -> Question a -> Magic a
+liftQuestion p q = do
+  world <- ask
+  lift (Operational.singleton (AskedQuestion p world q))
+
+liftEngineQuestion :: PlayerRef -> Question a -> Engine a
+liftEngineQuestion p q = executeMagic (liftQuestion p q)
 
 executeMagic :: Magic a -> Engine a
 executeMagic m = State.get >>= lift . lift . runReaderT m

@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TupleSections #-}
 
 module Magic.Engine where
 
@@ -24,17 +25,60 @@ import Data.Traversable (for)
 import Prelude hiding (round)
 
 
-runFullGame :: [Deck] -> Engine ()
-runFullGame decks = do
-  forM_ decks enterPlayer
-  forever round
 
-enterPlayer :: Deck -> Engine ()
-enterPlayer deck = do
-  playerId <- IdList.consM players player
-  forM_ deck $ \card -> do
-    t <- tick
-    IdList.consM (players .^ listEl playerId .^ library) (instantiateCard card t playerId)
+newWorld :: [Deck] -> World
+newWorld decks = World
+    { _players       = ps
+    , _activePlayer  = head playerIds
+    , _activeStep    = BeginningPhase UntapStep
+    , _time          = 0
+    , _turnStructure = ts
+    , _exile         = IdList.empty
+    , _battlefield   = IdList.empty
+    , _stack         = IdList.empty
+    , _command       = IdList.empty
+    }
+  where
+    ps = IdList.fromListWithId (\i deck -> newPlayer i deck) decks
+    playerIds = IdList.ids ps
+    ts = case playerIds of
+          -- 103.7a. In a two-player game, the player who plays first skips the draw step of his or her first turn.
+          [p1, p2] -> (p1, removeFirst (== BeginningPhase DrawStep) turnSteps)
+                        : cycle [(p2, turnSteps), (p1, turnSteps)]
+          _        -> cycle (map (, turnSteps) playerIds)
+
+removeFirst :: (a -> Bool) -> [a] -> [a]
+removeFirst notOk xs = as ++ bs
+  where
+    (as, _ : bs) = break notOk xs
+
+turnSteps :: [Step]
+turnSteps =
+  [ BeginningPhase UntapStep
+  , BeginningPhase UpkeepStep
+  , BeginningPhase DrawStep
+  , MainPhase
+  , CombatPhase BeginningOfCombatStep
+  , CombatPhase DeclareAttackersStep
+  , CombatPhase DeclareBlockersStep
+  , CombatPhase CombatDamageStep
+  , CombatPhase EndOfCombatStep
+  , MainPhase
+  , EndPhase EndOfTurnStep
+  , EndPhase CleanupStep
+  ]
+
+newPlayer :: PlayerRef -> Deck -> Player
+newPlayer i deck = Player
+  { _life = 20
+  , _manaPool = []
+  , _prestack = []
+  , _library = IdList.fromList (map (\card -> instantiateCard card 0 i) deck)
+  , _hand = IdList.empty
+  , _graveyard = IdList.empty
+  , _maximumHandSize = Just 7
+  , _failedCardDraw = False
+  }
 
 drawOpeningHands :: [PlayerRef] -> Int -> Engine ()
 drawOpeningHands [] _ =
@@ -47,19 +91,22 @@ drawOpeningHands playerIds handSize = do
       moveAllObjects (Hand playerId) (Library playerId)
       shuffleLibrary playerId
       replicateM_ handSize (drawCard playerId)
-      keepHand <- liftQuestion (AskKeepHand playerId)
+      keepHand <- liftEngineQuestion playerId AskKeepHand
       if keepHand
         then return Nothing
         else return (Just playerId)
   drawOpeningHands (catMaybes mulliganingPlayers) (handSize - 1)
 
-round :: Engine ()
-round = forever $ do
-  players ~:* set manaPool []
-  step <- nextStep
-  raise (DidBeginStep step)
-  executeStep step
-  raise (WillEndStep step)
+fullGame :: Engine ()
+fullGame = do
+  ps <- IdList.ids <$> gets players
+  drawOpeningHands ps 7
+  forever $ do
+    players ~:* set manaPool []
+    step <- nextStep
+    raise (DidBeginStep step)
+    executeStep step
+    raise (WillEndStep step)
 
 nextStep :: Engine Step
 nextStep = do
@@ -196,7 +243,7 @@ offerPriority = do
   where
     offerPriority' ((p, _):ps) = do
       actions <- collectActions p
-      mAction <- liftQuestion (AskPriorityAction p actions)
+      mAction <- liftEngineQuestion p (AskPriorityAction actions)
       case mAction of
         Just action -> return (Just action)
         Nothing -> offerPriority' ps
@@ -268,7 +315,7 @@ processPrestacks = do
   forM_ ips $ \(i,p) -> do
     let pending = get prestack p
     when (not (null pending)) $ do
-      pending' <- liftQuestion (AskReorder i pending)
+      pending' <- liftEngineQuestion i (AskReorder pending)
       forM_ pending' $ \mkStackObject -> do
         stackObject <- executeMagic mkStackObject
         stack ~: IdList.cons stackObject
