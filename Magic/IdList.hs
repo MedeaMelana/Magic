@@ -12,7 +12,7 @@ module Magic.IdList (
     head, get, toList, ids,
 
     -- * Modifying
-    set, remove, cons, cons', filter, shuffle,
+    set, remove, cons, cons', snoc, snoc', filter, shuffle,
     consM, removeM, shuffleM
 
   ) where
@@ -52,10 +52,10 @@ empty :: IdList a
 empty = IdList [] (Id 0)
 
 fromList :: [a] -> IdList a
-fromList = foldr (\x xs -> snd (cons' (const x) xs)) empty
+fromList = foldr (\x xs -> snd (snoc' (const x) xs)) empty
 
 fromListWithId :: (Id -> a -> b) -> [a] -> IdList b
-fromListWithId f = foldr (\x xs -> snd (cons' (\i -> f i x) xs)) empty
+fromListWithId f = foldr (\x xs -> snd (snoc' (\i -> f i x) xs)) empty
 
 
 
@@ -102,6 +102,12 @@ cons x xs = snd (cons' (const x) xs)
 
 cons' :: (Id -> a) -> IdList a -> (Id, IdList a)
 cons' f (IdList ixs newId@(Id i)) = (newId, IdList ((Id i, f newId) : ixs) (Id (succ i)))
+
+snoc :: a -> IdList a -> IdList a
+snoc x xs = snd (snoc' (const x) xs)
+
+snoc' :: (Id -> a) -> IdList a -> (Id, IdList a)
+snoc' f (IdList ixs newId@(Id i)) = (newId, IdList (ixs ++ [(Id i, f newId)]) (Id (succ i)))
 
 contents :: ([(Id, a)] -> [(Id, b)]) -> IdList a -> IdList b
 contents f (IdList ixs i) = IdList (f ixs) i

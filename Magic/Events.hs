@@ -3,7 +3,7 @@ module Magic.Events (
     OneShotEffect(..), SimpleOneShotEffect(..), Event(..),
 
     -- * Constructing specific one-shot effects
-    willMoveToGraveyard,
+    willMoveToGraveyard, willMoveToBattlefield,
 
     -- * Executing effects
     executeEffect, raise, applyReplacementEffects,
@@ -27,7 +27,7 @@ import Control.Monad (forM_,)
 import Control.Monad.Trans (lift)
 import Data.Either (partitionEithers)
 import Data.Label.Pure (get, set)
-import Data.Label.PureM (gets, puts, (=:))
+import Data.Label.PureM (asks, gets, puts, (=:))
 import Data.Traversable (for)
 
 
@@ -38,6 +38,12 @@ import Data.Traversable (for)
 -- | Effect that moves the specified object on the battlefield to its owner's graveyard.
 willMoveToGraveyard :: Id -> Object -> OneShotEffect
 willMoveToGraveyard i o = WillMoveObject (Battlefield, i) (Graveyard (get owner o)) o
+
+willMoveToBattlefield :: ObjectRef -> View OneShotEffect
+willMoveToBattlefield r = do
+  o <- asks (object r)
+  let o' = o { _tapStatus = Just Untapped }
+  return (WillMoveObject r Battlefield o)
 
 
 

@@ -4,6 +4,7 @@ module Magic.BasicLands where
 
 import Magic.Core
 import Magic.Labels
+import Magic.Events
 import Magic.ObjectTypes
 import Magic.Predicates
 import Magic.Utils
@@ -33,11 +34,15 @@ playLand :: Ability
 playLand rSource rActivator = ClosedAbility
   { _available =
       case rSource of
-        (Hand _, _) -> checkObject rSource (isControlledBy rActivator)
+        (Hand _, _) -> do
+          control <- checkObject rSource (isControlledBy rActivator)
+          ap <- asks activePlayer
+          step <- asks activeStep
+          return (control && ap == rActivator && step == MainPhase)
         _           -> return False
   , _manaCost = mempty
   , _additionalCosts = []
-  , _effect = SpecialAction (return [Will (PlayLand rSource)])
+  , _effect = SpecialAction ((:[]) <$> view (willMoveToBattlefield rSource))
   }
 
 tapToAddMana :: Maybe Color -> Ability
@@ -47,8 +52,7 @@ tapToAddMana mc rSource rActivator = ClosedAbility
         (Battlefield, _) -> checkObject rSource (isControlledBy rActivator)
         _                -> return False
   , _manaCost = mempty
-  , _additionalCosts = []
-  -- TODO require cost: tap self
+  , _additionalCosts = [TapSpecificPermanentCost rSource]
   , _effect = SpecialAction (return [Will (AddToManaPool rActivator mc)])
   }
 

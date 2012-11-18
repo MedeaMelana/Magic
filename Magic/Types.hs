@@ -315,9 +315,9 @@ instance Monoid ManaCost where
   ManaCost cs1 n1 `mappend` ManaCost cs2 n2 = ManaCost (cs1 ++ cs2) (n1 + n2)
 
 data AdditionalCost
-  = TapPermanentCost       (ObjectRef -> Bool)
+  = TapSpecificPermanentCost ObjectRef
   | SacrificePermanentCost (Object -> Bool)
-  | ExileObjectCost       [ZoneRef] (Object -> Bool)  -- exile matching object from any of the listed zones
+  | ExileObjectCost        [ZoneRef] (Object -> Bool)  -- exile matching object from any of the listed zones
   | DiscardCardCost
   | RemoveCounterCost      CounterType
 

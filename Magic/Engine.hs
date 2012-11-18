@@ -348,7 +348,7 @@ collectActions p = do
 executeAction :: Ability -> ObjectRef -> PlayerRef -> Engine ()
 executeAction ability rSource activatorId = do
   let closedAbility = ability rSource activatorId
-  -- TODO pay costs
+  forM_ (get additionalCosts closedAbility) (payAdditionalCost activatorId)
   case _effect closedAbility of
     SpecialAction m -> executeMagic m >>= mapM_ executeEffect
     StackingAction _ -> return ()
@@ -362,6 +362,19 @@ executePriorityAction p a =
     ActivateAbility r i -> do
       abilities <- gets (object r .^ activatedAbilities)
       executeAction (abilities !! i) r p
+
+canPayAdditionalCosts :: PlayerRef -> [AdditionalCost] -> Engine Bool
+canPayAdditionalCosts _ [] = return True
+canPayAdditionalCosts p (c:cs) =
+  case c of
+    TapSpecificPermanentCost ro -> do
+      ts <- gets (object ro .^ tapStatus)
+      return (ts == Just Untapped)
+
+payAdditionalCost :: PlayerRef -> AdditionalCost -> Engine ()
+payAdditionalCost p c =
+  case c of
+    TapSpecificPermanentCost ro -> object ro .^ tapStatus =: Just Tapped
 
 -- | Returns player IDs in APNAP order (active player, non-active player).
 apnap :: Engine [(PlayerRef, Player)]
