@@ -115,7 +115,8 @@ compileEffect e =
     Will (UntapPermanent i)         -> untapPermanent i
     Will (DrawCard rp)              -> drawCard rp
     Will (ShuffleLibrary rPlayer)   -> shuffleLibrary rPlayer
-    _ -> undefined
+    Will (PlayLand ro)              -> playLand ro
+    _ -> error "compileEffect: effect not implemented"
 
 -- | Cause a permanent on the battlefield to untap. If it was previously tapped, a 'Did' 'UntapPermanent' event is raised.
 untapPermanent :: Id -> Engine ()
@@ -164,6 +165,9 @@ shuffleLibrary rPlayer = do
   lib' <- lift (IdList.shuffle lib)
   puts libraryLabel lib'
   raise (Did (ShuffleLibrary rPlayer))
+
+playLand :: ObjectRef -> Engine ()
+playLand ro = gets (object ro) >>= moveObject ro Battlefield
 
 tick :: Engine Timestamp
 tick = do
