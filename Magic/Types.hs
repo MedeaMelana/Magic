@@ -368,7 +368,7 @@ type ReplacementEffect = OneShotEffect -> Maybe (Magic [OneShotEffect])
 
 data PriorityAction
   = PlayCard ObjectRef
-  | ActivateAbility Ability
+  | ActivateAbility ObjectRef Int  -- index into field
 
 
 

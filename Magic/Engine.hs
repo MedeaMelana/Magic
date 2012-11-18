@@ -230,8 +230,8 @@ offerPriority = do
     processPrestacks
     mAction <- apnap >>= offerPriority'
     case mAction of
-      Just action -> do
-        -- TODO execute actions
+      Just (p, action) -> do
+        executePriorityAction p action
         offerPriority
       Nothing -> do
         st <- gets stack
@@ -245,7 +245,7 @@ offerPriority = do
       actions <- collectActions p
       mAction <- liftEngineQuestion p (AskPriorityAction actions)
       case mAction of
-        Just action -> return (Just action)
+        Just action -> return (Just (p, action))
         Nothing -> offerPriority' ps
     offerPriority' [] = return Nothing
 
@@ -341,9 +341,9 @@ collectActions p = do
       playAbilityOk <- lift $ executeMagic (view (get available (playAbility r p)))
       when playAbilityOk (tell [PlayCard r])
 
-      for (get activatedAbilities o) $ \ability -> do
+      for (zip [0..] (get activatedAbilities o)) $ \(i, ability) -> do
         abilityOk <- lift $ executeMagic (view (get available (ability r p)))
-        when abilityOk (tell [ActivateAbility ability])
+        when abilityOk (tell [ActivateAbility r i])
 
 executeAction :: Ability -> ObjectRef -> PlayerRef -> Engine ()
 executeAction ability rSource activatorId = do
@@ -353,6 +353,15 @@ executeAction ability rSource activatorId = do
     SpecialAction m -> executeMagic m >>= mapM_ executeEffect
     StackingAction _ -> return ()
 
+executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
+executePriorityAction p a =
+  case a of
+    PlayCard r -> do
+      Just ability <- gets (object r .^ play)
+      executeAction ability r p
+    ActivateAbility r i -> do
+      abilities <- gets (object r .^ activatedAbilities)
+      executeAction (abilities !! i) r p
 
 -- | Returns player IDs in APNAP order (active player, non-active player).
 apnap :: Engine [(PlayerRef, Player)]
