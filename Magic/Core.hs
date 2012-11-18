@@ -56,3 +56,6 @@ executeMagic m = State.get >>= lift . lift . runReaderT m
 
 object :: ObjectRef -> World :-> Object
 object (zoneRef, i) = compileZoneRef zoneRef .^ listEl i
+
+player :: PlayerRef -> World :-> Player
+player i = players .^ listEl i

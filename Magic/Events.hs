@@ -116,6 +116,7 @@ compileEffect e =
     Will (DrawCard rp)              -> drawCard rp
     Will (ShuffleLibrary rPlayer)   -> shuffleLibrary rPlayer
     Will (PlayLand ro)              -> playLand ro
+    Will (AddToManaPool p mc)       -> addToManaPool p mc
     _ -> error "compileEffect: effect not implemented"
 
 -- | Cause a permanent on the battlefield to untap. If it was previously tapped, a 'Did' 'UntapPermanent' event is raised.
@@ -168,6 +169,11 @@ shuffleLibrary rPlayer = do
 
 playLand :: ObjectRef -> Engine ()
 playLand ro = gets (object ro) >>= moveObject ro Battlefield
+
+addToManaPool :: PlayerRef -> Maybe Color -> Engine ()
+addToManaPool p mc = do
+  player p .^ manaPool ~: (mc :)
+  raise (Did (AddToManaPool p mc))
 
 tick :: Engine Timestamp
 tick = do
