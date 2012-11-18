@@ -33,12 +33,15 @@ import System.Random.Shuffle (shuffleM)
 
 
 newtype Id = Id Int
-  deriving (Eq, Show, Ord)
+  deriving (Eq, Ord)
 
 data IdList a = IdList [(Id, a)] Id
 
 instance Functor IdList where
   fmap = contents . fmap . second
+
+instance Show Id where
+  show (Id i) = show i
 
 
 
