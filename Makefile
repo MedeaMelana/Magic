@@ -1,5 +1,5 @@
 run:
-	ghci -Wall Magic.Engine Magic.M12 Magic.BasicLands
+	ghci -Wall -i.:tests CLITest
 
 configure:
 	cabal configure
