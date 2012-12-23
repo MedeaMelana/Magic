@@ -185,9 +185,11 @@ data Object = Object
   -- for spells on the stack
   , _stackItem :: Maybe StackItem
 
-  -- for creatures on the battlefield
+  -- for creatures
   , _power         :: Maybe Int
   , _toughness     :: Maybe Int
+
+  -- for creatures on the battlefield
   , _damage        :: Maybe Int
   , _deathtouched  :: Bool
   --, _mustBeBlocked :: Maybe Bool
@@ -308,6 +310,7 @@ data ManaCost = ManaCost
   { payColoredMana   :: Bag Color
   , payColorlessMana :: Int
   }
+  deriving (Eq, Ord, Show, Read)
 
 instance Monoid ManaCost where
   mempty = ManaCost [] 0
@@ -340,6 +343,7 @@ data StaticKeywordAbility
   | Shroud
   | Trample
   | Vigilance
+  deriving (Eq, Ord, Show, Read)
 
 data ContinuousEffect = ContinuousEffect
   { _layer       :: Layer
