@@ -35,11 +35,11 @@ askQuestions = eval . view
     eval xs = case xs of
       Return x -> return x
       AskedQuestion p world AskKeepHand :>>= k -> do
-        Text.putStrLn (desc world ("Your hand: " <> describeHand p))
+        Text.putStrLn (desc world ("Your hand: \n" <> describeHand p <> "\n"))
         chosen <- offerOptions p "Would you like to keep your hand?" [("Keep hand", True), ("Take mulligan", False)]
         askQuestions (k chosen)
       AskedQuestion p world (AskPriorityAction actions) :>>= k -> do
-        Text.putStrLn (desc world describeWorld)
+        Text.putStrLn (desc world describeWorld <> "\n")
         let pass = ("Pass", Nothing)
         let nonPass = [ (desc world (describePriorityAction action), Just action) | action <- actions ]
         chosen <- offerOptions p "What would you like to do?" (pass : nonPass)
