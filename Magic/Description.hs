@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module Magic.Description where
 
@@ -13,7 +14,11 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Monad.Reader (ask)
 
 import Data.Label.Pure (get)
+import Data.List (sort)
+import Data.Maybe (catMaybes)
 import Data.Monoid (Monoid(..), (<>))
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.String (IsString(..))
 import Data.Text (Text, pack)
 import qualified Data.Text as Text
@@ -70,11 +75,42 @@ describeWorld = withWorld $ \world -> unlines
   ]
 
 describeHand :: PlayerRef -> Description
-describeHand p = withWorld $ \world -> intercalate ", " $
+describeHand p = withWorld $ \world -> unlines $
   map describeObject (toList (get (player p .^ hand) world))
 
 describeObject :: (Id, Object) -> Description
-describeObject (i, o) =
-  case get name o of
-    Just n -> "#" <> sh i <> " " <> text n
-    Nothing -> "#" <> sh i
+describeObject (i, o) = intercalate ", " [nm, describeTypes (get types o)]
+  where
+    nm =
+      case get name o of
+        Just n -> "#" <> sh i <> " " <> text n
+        Nothing -> "#" <> sh i
+
+describeTypes :: ObjectTypes -> Description
+describeTypes tys = intercalate " - " [pre, post]
+  where
+    pre :: Description
+    pre = intercalate " " $ ls (_supertypes tys) <> map fst subtypes
+
+    post :: Description
+    post = intercalate " " (mconcat (map snd subtypes))
+
+    mls :: (Ord a, Show a) => (ObjectTypes -> Maybe (Set a)) -> Maybe [Description]
+    mls g = fmap ls (g tys)
+
+    ls :: (Ord a, Show a) => Set a -> [Description]
+    ls = map sh . sort . Set.toList
+
+    subtypes :: [(Description, [Description])]
+    subtypes = catMaybes [ subtype "Artifact"     _artifactSubtypes
+                         , subtype "Creature"     _creatureSubtypes
+                         , subtype "Enchantment"  _enchantmentSubtypes
+                         , subtype "Instant"      _instantSubtypes
+                         , subtype "Land"         _landSubtypes
+                         , subtype "Planeswalker" _planeswalkerSubtypes
+                         , subtype "Sorcery"      _sorcerySubtypes
+                         ]
+
+    subtype :: (Ord a, Show a) => Description -> (ObjectTypes -> Maybe (Set a)) ->
+      Maybe (Description, [Description])
+    subtype nm g = fmap (nm, ) (mls g)
