@@ -43,7 +43,7 @@ willMoveToBattlefield :: ObjectRef -> View OneShotEffect
 willMoveToBattlefield r = do
   o <- asks (object r)
   let o' = o { _tapStatus = Just Untapped }
-  return (WillMoveObject r Battlefield o)
+  return (WillMoveObject r Battlefield o')
 
 
 
