@@ -17,8 +17,6 @@ import Magic.Types
 
 import Control.Applicative
 import Control.Monad (forM, filterM)
-import qualified Control.Monad.Operational as Operational
-import Control.Monad.Trans (lift)
 import Data.Label.PureM (asks)
 
 

@@ -73,7 +73,6 @@ import qualified Control.Monad.Operational as Operational
 import Data.Label (mkLabels)
 import Data.Monoid
 import Data.Set (Set)
-import qualified Data.Set as Set
 import Data.Text (Text)
 
 
