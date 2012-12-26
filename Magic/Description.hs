@@ -82,10 +82,8 @@ describeWorld = withWorld $ \world -> unlines
   ] <> describeBattlefield <> describeManaPools
 
 describeBattlefield :: Description
-describeBattlefield = withWorld $ \world ->
-  case toList (get battlefield world) of
-    [] -> ""
-    objs -> unlines ("Battlefield: " : map describeObject (objs))
+describeBattlefield = withWorld $ \world -> header "Battlefield: " $
+  unlines (map describeObject (toList (get battlefield world)))
 
 describeHand :: PlayerRef -> Description
 describeHand p = withWorld $ \world -> unlines $
