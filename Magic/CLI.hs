@@ -5,7 +5,7 @@ module Magic.CLI where
 
 import Magic.Engine (fullGame, newWorld)
 import Magic.Types hiding (view)
-import Magic.Description (Description(..), describeWorld, describeHand, describePriorityAction)
+import Magic.Description (Description(..), describeWorld, describeHand, describePriorityAction, describeEvent)
 
 import Control.Monad (forM_)
 import Control.Monad.Operational (Program, ProgramViewT(..), view)
@@ -29,16 +29,19 @@ evalRandTIO p = evalRandT p `fmap` newStdGen
 desc :: World -> Description -> Text
 desc w d = runReader (runDescription d) w
 
-askQuestions :: Program AskedQuestion a -> IO a
+askQuestions :: Program Interact a -> IO a
 askQuestions = eval . view
   where
     eval xs = case xs of
       Return x -> return x
-      AskedQuestion p world AskKeepHand :>>= k -> do
+      LogEvent e world :>>= k -> do
+        Text.putStrLn (desc world (">>> " <> describeEvent e))
+        askQuestions (k ())
+      AskQuestion p world AskKeepHand :>>= k -> do
         Text.putStrLn (desc world ("Your hand: \n" <> describeHand p <> "\n"))
         chosen <- offerOptions p "Would you like to keep your hand?" [("Keep hand", True), ("Take mulligan", False)]
         askQuestions (k chosen)
-      AskedQuestion p world (AskPriorityAction actions) :>>= k -> do
+      AskQuestion p world (AskPriorityAction actions) :>>= k -> do
         Text.putStrLn (desc world describeWorld <> "\n")
         let pass = ("Pass", Nothing)
         let nonPass = [ (desc world (describePriorityAction action), Just action) | action <- actions ]

@@ -24,6 +24,8 @@ import Magic.Types
 
 import Control.Applicative ((<$>))
 import Control.Monad (forM_,)
+import qualified Control.Monad.Operational as Operational
+import qualified Control.Monad.State as State
 import Control.Monad.Trans (lift)
 import Data.Either (partitionEithers)
 import Data.Label.Pure (get, set)
@@ -57,8 +59,10 @@ executeEffect e = applyReplacementEffects e >>= mapM_ compileEffect
 
 -- | Raise an event, triggering abilities.
 raise :: Event -> Engine ()
-raise _ = do
+raise event = do
   -- TODO handle triggered abilities
+  world <- State.get
+  lift $ lift $ Operational.singleton (LogEvent event world)
   return ()
 
 

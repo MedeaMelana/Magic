@@ -46,7 +46,7 @@ allObjects = do
 liftQuestion :: PlayerRef -> Question a -> Magic a
 liftQuestion p q = do
   world <- ask
-  lift (Operational.singleton (AskedQuestion p world q))
+  lift (Operational.singleton (AskQuestion p world q))
 
 liftEngineQuestion :: PlayerRef -> Question a -> Engine a
 liftEngineQuestion p q = executeMagic (liftQuestion p q)

@@ -59,7 +59,7 @@ module Magic.Types (
     -- * Monads
     ViewT, View, Magic, Engine,
     view,
-    AskedQuestion(..), Question(..)
+    Interact(..), Question(..)
   ) where
 
 import Magic.IdList (Id, IdList)
@@ -451,11 +451,13 @@ instance Applicative (TargetList t) where
 type ViewT = ReaderT World
 type View = ViewT Identity
 
-type Magic = ViewT (Operational.Program AskedQuestion)
+type Magic = ViewT (Operational.Program Interact)
 
-type Engine = StateT World (RandT StdGen (Operational.Program AskedQuestion))
+type Engine = StateT World (RandT StdGen (Operational.Program Interact))
 
-data AskedQuestion a = AskedQuestion PlayerRef World (Question a)
+data Interact a where
+  LogEvent    :: Event -> World -> Interact ()
+  AskQuestion :: PlayerRef -> World -> Question a -> Interact a
 
 data Question a where
   AskKeepHand              :: Question Bool

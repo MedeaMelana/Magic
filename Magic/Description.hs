@@ -106,6 +106,13 @@ describeObject (i, o) = intercalate ", " components
         Just ts' -> [sh ts']
         Nothing -> []
 
+describeObjectName :: (Id, Object) -> Description
+describeObjectName (i, o) =
+  case get name o of
+    Just n -> text n
+    Nothing -> "#" <> sh i  -- TODO Use token creature type if any
+
+
 describeTypes :: ObjectTypes -> Description
 describeTypes tys = intercalate " - " [pre, post]
   where
@@ -163,3 +170,27 @@ header (Description headerDesc) (Description bodyDesc) = Description $ do
   if Text.null bodyText
     then return ""
     else return (Text.unlines ["", headerText, bodyText])
+
+describeEvent :: Event -> Description
+describeEvent e =
+  withWorld $ \world ->
+    case e of
+      Did (DrawCard p) -> "Player " <> sh p <> " draws a card"
+      Did (ShuffleLibrary p) -> "Player " <> sh p <> " shuffles their library"
+      DidMoveObject rFromZone r@(rToZone, i) ->
+        describeObjectName (i, (get (object r) world)) <> " moves from " <>
+        describeZoneRef rFromZone <> " to " <> describeZoneRef rToZone
+      WillEndStep s -> "End of " <> sh s
+      DidBeginStep s -> "Beginning of " <> sh s
+      _ -> "(event)"
+
+describeZoneRef :: ZoneRef -> Description
+describeZoneRef z =
+  case z of
+    Library p -> "player " <> sh p <> "'s library"
+    Hand p -> "player " <> sh p <> "'s hand"
+    Battlefield -> "the battlefield"
+    Graveyard p -> "player " <> sh p <> "'s graveyard"
+    Stack -> "the stack"
+    Exile -> "exile"
+    Command -> "the command zone"
