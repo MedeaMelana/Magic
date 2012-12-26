@@ -338,12 +338,19 @@ collectActions p = do
   execWriterT $ do
     for objects $ \(r,o) -> do
       let Just playAbility = get play o
-      playAbilityOk <- lift $ executeMagic (view (get available (playAbility r p)))
-      when playAbilityOk (tell [PlayCard r])
+      ok <- lift (eligible playAbility r)
+      when ok (tell [PlayCard r])
 
       for (zip [0..] (get activatedAbilities o)) $ \(i, ability) -> do
-        abilityOk <- lift $ executeMagic (view (get available (ability r p)))
-        when abilityOk (tell [ActivateAbility r i])
+        ok' <- lift (eligible ability r)
+        when ok' (tell [ActivateAbility r i])
+  where
+    eligible :: Ability -> ObjectRef -> Engine Bool
+    eligible ability rSource = do
+      let closedAbility = ability rSource p
+      abilityOk <- executeMagic (view (get available closedAbility))
+      payCostsOk <- canPayAdditionalCosts p (get additionalCosts closedAbility)
+      return (abilityOk && payCostsOk)
 
 executeAction :: Ability -> ObjectRef -> PlayerRef -> Engine ()
 executeAction ability rSource activatorId = do
@@ -365,7 +372,7 @@ executePriorityAction p a =
 
 canPayAdditionalCosts :: PlayerRef -> [AdditionalCost] -> Engine Bool
 canPayAdditionalCosts _ [] = return True
-canPayAdditionalCosts p (c:cs) =
+canPayAdditionalCosts _ (c:cs) =
   case c of
     TapSpecificPermanentCost ro -> do
       ts <- gets (object ro .^ tapStatus)
