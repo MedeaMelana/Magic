@@ -2,7 +2,6 @@
 
 module Magic.Utils where
 
-import Magic.IdList (Id)
 import qualified Magic.IdList as IdList
 import Magic.Types
 

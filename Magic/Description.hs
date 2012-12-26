@@ -157,9 +157,9 @@ partitionMaybes (Nothing : mxs) = first  (+ 1) (partitionMaybes mxs)
 partitionMaybes (Just x : mxs)  = second (x :) (partitionMaybes mxs)
 
 header :: Description -> Description -> Description
-header (Description head) (Description body) = Description $ do
-  head' <- head
-  body' <- body
-  if Text.null body'
+header (Description headerDesc) (Description bodyDesc) = Description $ do
+  headerText <- headerDesc
+  bodyText <- bodyDesc
+  if Text.null bodyText
     then return ""
-    else return (Text.unlines ["", head', body'])
+    else return (Text.unlines ["", headerText, bodyText])

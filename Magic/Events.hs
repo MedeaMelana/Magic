@@ -66,9 +66,9 @@ raise _ = do
 -- TODO Handle multiple effects (in a single event) at once, to be able to adhere
 -- to APNAP order; see http://draw3cards.com/questions/9618
 applyReplacementEffects :: OneShotEffect -> Engine [OneShotEffect]
-applyReplacementEffects effect = do
+applyReplacementEffects eff = do
     objects <- map snd <$> executeMagic allObjects
-    go (concatMap (get replacementEffects) objects) effect
+    go (concatMap (get replacementEffects) objects) eff
   where
     go :: [ReplacementEffect] -> OneShotEffect -> Engine [OneShotEffect]
     go availableEffects effectToReplace = do
