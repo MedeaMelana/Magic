@@ -34,6 +34,9 @@ askQuestions = eval . view
   where
     eval xs = case xs of
       Return x -> return x
+      Debug t :>>= k -> do
+        Text.putStrLn t
+        askQuestions (k ())
       LogEvent e world :>>= k -> do
         Text.putStrLn (desc world (">>> " <> describeEvent e))
         askQuestions (k ())

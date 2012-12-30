@@ -21,6 +21,7 @@ import qualified Control.Monad.State as State
 import Control.Monad.Trans (lift)
 import Data.Label.Pure ((:->))
 import Data.Label.PureM (asks)
+import Data.Text (Text)
 
 
 compileZoneRef :: ZoneRef -> World :-> IdList Object
@@ -47,6 +48,9 @@ liftQuestion :: PlayerRef -> Question a -> Magic a
 liftQuestion p q = do
   world <- ask
   lift (Operational.singleton (AskQuestion p world q))
+
+debug :: Text -> Magic ()
+debug t = lift (Operational.singleton (Debug t))
 
 liftEngineQuestion :: PlayerRef -> Question a -> Engine a
 liftEngineQuestion p q = executeMagic (liftQuestion p q)

@@ -456,6 +456,7 @@ type Magic = ViewT (Operational.Program Interact)
 type Engine = StateT World (RandT StdGen (Operational.Program Interact))
 
 data Interact a where
+  Debug       :: Text -> Interact ()
   LogEvent    :: Event -> World -> Interact ()
   AskQuestion :: PlayerRef -> World -> Question a -> Interact a
 
