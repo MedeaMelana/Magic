@@ -32,8 +32,8 @@ searingSpearEffect :: ObjectRef -> PlayerRef -> Magic [OneShotEffect]
 searingSpearEffect rSelf rActivator = do
   let ok t = case t of
               TargetObject r@(Battlefield, _) -> hasTypes creatureType <$> asks (object r)
-              TargetPlayer _                -> return True
-              _                             -> return False
+              TargetPlayer _                  -> return True
+              _                               -> return False
   ts <- askMagicTargets rActivator (singleTarget <?> ok)
   let f t = case t of
               TargetObject r -> return [Will (DamageObject rSelf r 3 False True)]
