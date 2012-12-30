@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Magic.Engine where
 
@@ -357,12 +358,10 @@ executeAction :: Ability -> ObjectRef -> PlayerRef -> Engine ()
 executeAction ability rSource activatorId = do
   let closedAbility = ability rSource activatorId
   forM_ (get additionalCosts closedAbility) (payAdditionalCost activatorId)
-  case _effect closedAbility of
-    SpecialAction m -> executeMagic m >>= mapM_ executeEffect
-    StackingAction _ -> return ()
+  executeMagic (get effect closedAbility) >>= mapM_ executeEffect
 
 executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
-executePriorityAction p a =
+executePriorityAction p a = do
   case a of
     PlayCard r -> do
       Just ability <- gets (object r .^ play)

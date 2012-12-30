@@ -45,7 +45,7 @@ module Magic.Types (
     -- * Abilities
     Ability,
     ClosedAbility(..), available, manaCost, additionalCosts, effect,
-    Action(..), StackItem, ManaCost(..), AdditionalCost(..),
+    StackItem, ManaCost(..), AdditionalCost(..),
     StaticKeywordAbility(..), ContinuousEffect(..), Layer(..),
     ReplacementEffect,
     PriorityAction(..),
@@ -201,7 +201,7 @@ data Object = Object
   , _staticKeywordAbilities :: Bag StaticKeywordAbility
   , _continuousEffects      :: [ContinuousEffect]  -- special form of static ability
   , _activatedAbilities     :: [Ability]
-  , _triggeredAbilities     :: [Event -> Action]
+  , _triggeredAbilities     :: [Event -> Magic [OneShotEffect]]
   , _replacementEffects     :: [ReplacementEffect]
   }
 
@@ -297,12 +297,8 @@ data ClosedAbility = ClosedAbility
   { _available       :: View Bool  -- check for cost is implied
   , _manaCost        :: ManaCost
   , _additionalCosts :: [AdditionalCost]
-  , _effect          :: Action
+  , _effect          :: Magic [OneShotEffect]
   }
-
-data Action
-  = SpecialAction  (Magic [OneShotEffect])
-  | StackingAction (Magic StackItem)
 
 type StackItem = TargetList Target (Magic [OneShotEffect])
 
@@ -472,4 +468,4 @@ type Pick a = (a, [a])
 view :: View a -> Magic a
 view v = ReaderT $ return . runIdentity . runReaderT v
 
-$(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''Action, ''ClosedAbility])
+$(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''ClosedAbility])

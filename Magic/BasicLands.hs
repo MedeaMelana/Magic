@@ -42,7 +42,7 @@ playLand rSource rActivator = ClosedAbility
         _           -> return False
   , _manaCost = mempty
   , _additionalCosts = []
-  , _effect = SpecialAction ((:[]) <$> view (willMoveToBattlefield rSource))
+  , _effect = ((:[]) <$> view (willMoveToBattlefield rSource))
   }
 
 tapToAddMana :: Maybe Color -> Ability
@@ -53,7 +53,7 @@ tapToAddMana mc rSource rActivator = ClosedAbility
         _                -> return False
   , _manaCost = mempty
   , _additionalCosts = [TapSpecificPermanentCost rSource]
-  , _effect = SpecialAction (return [Will (AddToManaPool rActivator mc)])
+  , _effect = return [Will (AddToManaPool rActivator mc)]
   }
 
 checkObject :: ObjectRef -> (Object -> Bool) -> View Bool

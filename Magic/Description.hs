@@ -82,7 +82,7 @@ describeWorld = withWorld $ \world -> unlines
   , "Player " <> sh (get activePlayer world) <> "'s turn"
   , sh (get activeStep world)
   , ""
-  ] <> describeZone Battlefield <> describeManaPools
+  ] <> describeZone Stack <> describeZone Battlefield <> describeManaPools
 
 describeZone :: ZoneRef -> Description
 describeZone zr = withWorld $ \world -> header (describeZoneRef zr <> ":") $
@@ -198,3 +198,7 @@ describeZoneRef z =
     Stack -> "the stack"
     Exile -> "exile"
     Command -> "the command zone"
+
+describeTarget :: Target -> Description
+describeTarget (TargetPlayer p) = "Player " <> sh p
+describeTarget (TargetObject r) = describeObjectByRef r

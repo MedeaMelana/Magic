@@ -5,7 +5,7 @@ module Magic.CLI where
 
 import Magic.Engine (fullGame, newWorld)
 import Magic.Types hiding (view)
-import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction, describeEvent)
+import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction, describeEvent, describeTarget)
 
 import Control.Monad (forM_)
 import Control.Monad.Operational (Program, ProgramViewT(..), view)
@@ -50,6 +50,10 @@ askQuestions = eval . view
         let nonPass = [ (desc world (describePriorityAction action), Just action) | action <- actions ]
         chosen <- offerOptions p "What would you like to do?" (pass : nonPass)
         askQuestions (k chosen)
+      AskQuestion p world (AskTarget ts) :>>= k -> do
+        Text.putStrLn "Choose target:"
+        t <- offerOptions p "Choose target:" [ (desc world (describeTarget t), t) | t <- ts ]
+        askQuestions (k t)
 
 showText :: Show a => a -> Text
 showText = Text.pack . show

@@ -3,7 +3,7 @@ module Magic.Events (
     OneShotEffect(..), SimpleOneShotEffect(..), Event(..),
 
     -- * Constructing specific one-shot effects
-    willMoveToGraveyard, willMoveToBattlefield,
+    willMoveToGraveyard, willMoveToBattlefield, willMoveToStack,
 
     -- * Executing effects
     executeEffect, raise, applyReplacementEffects,
@@ -46,6 +46,11 @@ willMoveToBattlefield r = do
   o <- asks (object r)
   let o' = o { _tapStatus = Just Untapped }
   return (WillMoveObject r Battlefield o')
+
+willMoveToStack :: ObjectRef -> StackItem -> View OneShotEffect
+willMoveToStack r si = do
+  o <- asks (object r)
+  return (WillMoveObject r Stack (set stackItem (Just si) o))
 
 
 
@@ -127,6 +132,7 @@ compileEffect e =
     Will (ShuffleLibrary rPlayer)   -> shuffleLibrary rPlayer
     Will (PlayLand ro)              -> playLand ro
     Will (AddToManaPool p mc)       -> addToManaPool p mc
+    Will (DamagePlayer rSource p amount isCombatDamage isPreventable) -> damagePlayer rSource p amount isCombatDamage isPreventable
     _ -> error "compileEffect: effect not implemented"
 
 -- | Cause a permanent on the battlefield to untap. If it was previously tapped, a 'Did' 'UntapPermanent' event is raised.
@@ -184,6 +190,11 @@ addToManaPool :: PlayerRef -> Maybe Color -> Engine ()
 addToManaPool p mc = do
   player p .^ manaPool ~: (mc :)
   raise (Did (AddToManaPool p mc))
+
+damagePlayer :: ObjectRef -> PlayerRef -> Int -> Bool -> Bool -> Engine ()
+damagePlayer rSource p amount isCombatDamage isPreventable = do
+  player p .^ life ~: subtract amount
+  raise (Did (DamagePlayer rSource p amount isCombatDamage isPreventable))
 
 tick :: Engine Timestamp
 tick = do
