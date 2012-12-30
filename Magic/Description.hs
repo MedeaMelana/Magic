@@ -13,6 +13,7 @@ import Prelude hiding (unlines)
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow (first, second)
 import Control.Monad.Reader (ask)
+import Control.Monad.Reader (runReader)
 
 import Data.Label.Pure (get)
 import Data.List (sort)
@@ -61,6 +62,9 @@ intercalate x ys = Description (Text.intercalate <$> runDescription x <*> mapM r
 unlines :: [Description] -> Description
 --unlines xs = Description (Text.unlines <$> mapM runDescription xs)
 unlines = intercalate "\n"
+
+nullDesc :: World -> Description -> Bool
+nullDesc world (Description vt) = Text.null (runReader vt world)
 
 
 
@@ -112,7 +116,8 @@ describeObjectName (i, o) =
 
 
 describeTypes :: ObjectTypes -> Description
-describeTypes tys = intercalate " - " [pre, post]
+describeTypes tys = withWorld $ \world ->
+    intercalate " - " (filter (not . nullDesc world) [pre, post])
   where
     pre :: Description
     pre = intercalate " " $ ls (_supertypes tys) <> map fst subtypes
