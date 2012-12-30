@@ -86,11 +86,12 @@ drawOpeningHands [] _ =
 drawOpeningHands playerIds 0 =
   forM_ playerIds shuffleLibrary
 drawOpeningHands playerIds handSize = do
-  mulliganingPlayers <-
-    for playerIds $ \playerId -> do
+  mulliganingPlayers <- do
+    forM_ playerIds $ \playerId -> do
       moveAllObjects (Hand playerId) (Library playerId)
       shuffleLibrary playerId
       replicateM_ handSize (drawCard playerId)
+    for playerIds $ \playerId -> do
       keepHand <- liftEngineQuestion playerId AskKeepHand
       if keepHand
         then return Nothing
