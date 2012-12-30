@@ -10,7 +10,7 @@ import Magic.Core
 import Magic.Events
 
 import Control.Applicative
-import Data.Label.PureM ((=:))
+import Data.Label.PureM ((=:), asks)
 
 
 searingSpear :: Card
@@ -30,12 +30,8 @@ searingSpear = mkCard $ do
 
 searingSpearEffect :: ObjectRef -> PlayerRef -> Magic [OneShotEffect]
 searingSpearEffect rSelf rActivator = do
-  -- TODO check for hexproof
-  -- TODO check for protection
-  -- TODO realise rSelf is sometimes in hand, sometimes on the stack
-  debug ("Casting Searing Spear")
   let ok t = case t of
-              TargetObject (Battlefield, _) -> return True
+              TargetObject r@(Battlefield, _) -> hasTypes creatureType <$> asks (object r)
               TargetPlayer _                -> return True
               _                             -> return False
   ts <- askMagicTargets rActivator (singleTarget <?> ok)

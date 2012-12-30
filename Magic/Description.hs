@@ -5,7 +5,7 @@ module Magic.Description where
 
 import Magic.Core
 import Magic.Types
-import Magic.IdList (Id, toList)
+import Magic.IdList (Id, toList, ids)
 
 import Prelude hiding (unlines)
 
@@ -82,7 +82,7 @@ describeWorld = withWorld $ \world -> unlines
   , "Player " <> sh (get activePlayer world) <> "'s turn"
   , sh (get activeStep world)
   , ""
-  ] <> describeZone Stack <> describeZone Battlefield <> describeManaPools
+  ] <> describePlayers <> describeZone Stack <> describeZone Battlefield <> describeManaPools
 
 describeZone :: ZoneRef -> Description
 describeZone zr = withWorld $ \world -> header (describeZoneRef zr <> ":") $
@@ -202,3 +202,12 @@ describeZoneRef z =
 describeTarget :: Target -> Description
 describeTarget (TargetPlayer p) = "Player " <> sh p
 describeTarget (TargetObject r) = describeObjectByRef r
+
+describePlayers :: Description
+describePlayers = withWorld $ \world ->
+  unlines (map describePlayer (ids (get players world)))
+
+describePlayer :: PlayerRef -> Description
+describePlayer rPlayer = withWorld $ \world ->
+  let p = get (player rPlayer) world
+   in "Player " <> sh rPlayer <> ": " <> sh (get life p) <> " life"

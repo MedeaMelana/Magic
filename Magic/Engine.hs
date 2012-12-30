@@ -13,7 +13,7 @@ import Magic.ObjectTypes
 import Magic.Predicates
 import Magic.Target
 import Magic.Types
-import Magic.Utils hiding (object)
+import Magic.Utils
 
 import Control.Applicative ((<$>))
 import Control.Monad (forever, forM_, replicateM_, when)
@@ -282,7 +282,7 @@ collectSBAs = execWriterT $ do
       forM_ ios $ \(i,o) -> do
 
         -- Check creatures
-        when (o `hasTypes` creatureType) $ do
+        when (hasTypes creatureType o) $ do
 
           -- [704.5f]
           let hasNonPositiveToughness = maybe False (<= 0) (get toughness o)
@@ -298,7 +298,7 @@ collectSBAs = execWriterT $ do
             tell [Will (DestroyPermanent i True)]
 
         -- [704.5i]
-        when (o `hasTypes` planeswalkerType && countCountersOfType Loyalty o == 0) $
+        when (hasTypes planeswalkerType o && countCountersOfType Loyalty o == 0) $
           tell [willMoveToGraveyard i o]
 
       -- TODO [704.5j]
@@ -330,7 +330,7 @@ resolve i = do
   executeMagic mkEffects >>= mapM_ executeEffect
   -- if the object is now still on the stack, move it to the appropriate zone
   let o' = set stackItem Nothing o
-  if (o `hasTypes` instantType || o `hasTypes` sorceryType)
+  if (hasTypes instantType o || hasTypes sorceryType o)
     then moveObject (Stack, i) (Graveyard (get controller o)) o'
     else moveObject (Stack, i) Battlefield o'
 

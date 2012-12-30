@@ -124,5 +124,5 @@ isObjectTypesSubsetOf x y =
     Just x'  `isMaybeSubsetOf` Just y' = x' `Set.isSubsetOf` y'
 
 -- | Checks whether the object's types are a superset of the given type set.
-hasTypes :: Object -> ObjectTypes -> Bool
-hasTypes o t = t `isObjectTypesSubsetOf` _types o
+hasTypes :: ObjectTypes -> Object -> Bool
+hasTypes t o = t `isObjectTypesSubsetOf` _types o

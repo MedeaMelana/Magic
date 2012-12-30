@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Magic.Utils where
+module Magic.Utils (mkCard, countCountersOfType) where
 
 import qualified Magic.IdList as IdList
 import Magic.Types
