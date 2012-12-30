@@ -52,6 +52,9 @@ liftQuestion p q = do
 debug :: Text -> Magic ()
 debug t = lift (Operational.singleton (Debug t))
 
+debugEngine :: Text -> Engine ()
+debugEngine t = executeMagic (lift (Operational.singleton (Debug t)))
+
 liftEngineQuestion :: PlayerRef -> Question a -> Engine a
 liftEngineQuestion p q = executeMagic (liftQuestion p q)
 
