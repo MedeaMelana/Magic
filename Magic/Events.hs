@@ -159,7 +159,7 @@ moveObject (rFromZone, i) rToZone obj = do
     Nothing -> return ()
     Just _  -> do
       t <- tick
-      newId <- IdList.consM (compileZoneRef rToZone) (set timestamp t obj)
+      newId <- IdList.snocM (compileZoneRef rToZone) (set timestamp t obj)
       raise (DidMoveObject rFromZone (rToZone, newId))
 
 -- | @moveAllObjects z1 z2@ moves all objects from zone @z1@ to zone @z2@, raising a 'DidMoveObject' event for every object that was moved this way.

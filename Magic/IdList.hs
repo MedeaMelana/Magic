@@ -13,7 +13,7 @@ module Magic.IdList (
 
     -- * Modifying
     set, remove, cons, cons', snoc, snoc', filter, shuffle,
-    consM, removeM, shuffleM
+    consM, snocM, removeM, shuffleM
 
   ) where
 
@@ -131,5 +131,12 @@ consM :: MonadState s m => (s :-> IdList a) -> a -> m Id
 consM label x = do
   list <- gets label
   let (i, list') = cons' (const x) list
+  puts label list'
+  return i
+
+snocM :: MonadState s m => (s :-> IdList a) -> a -> m Id
+snocM label x = do
+  list <- gets label
+  let (i, list') = snoc' (const x) list
   puts label list'
   return i
