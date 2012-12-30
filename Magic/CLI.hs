@@ -5,7 +5,7 @@ module Magic.CLI where
 
 import Magic.Engine (fullGame, newWorld)
 import Magic.Types hiding (view)
-import Magic.Description (Description(..), describeWorld, describeHand, describePriorityAction, describeEvent)
+import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction, describeEvent)
 
 import Control.Monad (forM_)
 import Control.Monad.Operational (Program, ProgramViewT(..), view)
@@ -41,11 +41,11 @@ askQuestions = eval . view
         Text.putStrLn (desc world (">>> " <> describeEvent e))
         askQuestions (k ())
       AskQuestion p world AskKeepHand :>>= k -> do
-        Text.putStrLn (desc world ("Your hand: \n" <> describeHand p <> "\n"))
+        Text.putStrLn (desc world (describeZone (Hand p)))
         chosen <- offerOptions p "Would you like to keep your hand?" [("Keep hand", True), ("Take mulligan", False)]
         askQuestions (k chosen)
       AskQuestion p world (AskPriorityAction actions) :>>= k -> do
-        Text.putStrLn (desc world describeWorld <> "\n")
+        Text.putStrLn (desc world describeWorld)
         let pass = ("Pass", Nothing)
         let nonPass = [ (desc world (describePriorityAction action), Just action) | action <- actions ]
         chosen <- offerOptions p "What would you like to do?" (pass : nonPass)

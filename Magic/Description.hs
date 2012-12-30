@@ -6,7 +6,6 @@ module Magic.Description where
 import Magic.Core
 import Magic.Types
 import Magic.IdList (Id, toList)
-import Magic.Labels
 
 import Prelude hiding (unlines)
 
@@ -74,8 +73,8 @@ nullDesc world (Description vt) = Text.null (runReader vt world)
 describePriorityAction :: PriorityAction -> Description
 describePriorityAction a =
   case a of
-    PlayCard ro -> "Play " <> sh ro
-    ActivateAbility ro i -> "Activate ability " <> sh i <> " of " <> sh ro
+    PlayCard ro@(zr, _) -> "Play from " <> describeZoneRef zr <> ": " <> describeObjectByRef ro
+    ActivateAbility ro i -> "Activate ability " <> sh i <> " of " <> describeObjectByRef ro
 
 describeWorld :: Description
 describeWorld = withWorld $ \world -> unlines
@@ -83,15 +82,18 @@ describeWorld = withWorld $ \world -> unlines
   , "Player " <> sh (get activePlayer world) <> "'s turn"
   , sh (get activeStep world)
   , ""
-  ] <> describeBattlefield <> describeManaPools
+  ] <> describeZone Battlefield <> describeManaPools
 
-describeBattlefield :: Description
-describeBattlefield = withWorld $ \world -> header "Battlefield: " $
-  unlines (map describeObject (toList (get battlefield world)))
+describeZone :: ZoneRef -> Description
+describeZone zr = withWorld $ \world -> header (describeZoneRef zr <> ":") $
+  unlines (map describeObject (toList (get (compileZoneRef zr) world)))
 
-describeHand :: PlayerRef -> Description
-describeHand p = withWorld $ \world -> unlines $
-  map describeObject (toList (get (player p .^ hand) world))
+--describeHand :: PlayerRef -> Description
+--describeHand p = withWorld $ \world -> unlines $
+--  map describeObject (toList (get (player p .^ hand) world))
+
+describeObjectByRef :: ObjectRef -> Description
+describeObjectByRef ro@(_, i) = withWorld $ \world -> describeObject (i, get (object ro) world)
 
 describeObject :: (Id, Object) -> Description
 describeObject (i, o) = intercalate ", " components
@@ -113,7 +115,6 @@ describeObjectName (i, o) =
   case get name o of
     Just n -> text n
     Nothing -> "#" <> sh i  -- TODO Use token creature type if any
-
 
 describeTypes :: ObjectTypes -> Description
 describeTypes tys = withWorld $ \world ->
