@@ -16,7 +16,7 @@ import Data.Maybe (fromJust)
 listEl :: Id -> IdList a :-> a
 listEl i = lens (fromJust . IdList.get i) (IdList.set i)
 
-(.^) :: Category (~>) => a ~> b -> b ~> c -> a ~> c
+(.^) :: Category cat => cat a b -> cat b c -> cat a c
 (.^) = (>>>)
 
 (~:) :: MonadState s m => (s :-> a) -> (a -> a) -> m ()
