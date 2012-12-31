@@ -28,4 +28,12 @@ library
                     Magic.Types,
                     Magic.Utils
   -- other-modules:
-  build-depends:       base ==4.5.*, fclabels ==1.1.*, operational ==0.2.*, mtl ==2.1.*, MonadRandom ==0.1.*, random-shuffle ==0.0.*, containers ==0.4.*, text ==0.11.*, safe ==0.3.*
+  build-depends:    base < 5,
+                    containers,
+                    fclabels ==1.1.*,
+                    operational ==0.2.*,
+                    mtl ==2.1.*,
+                    MonadRandom ==0.1.*,
+                    random-shuffle ==0.0.*,
+                    text ==0.11.*,
+                    safe ==0.3.*
