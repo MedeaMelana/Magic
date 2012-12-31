@@ -35,7 +35,7 @@ askQuestions = eval . view
     eval xs = case xs of
       Return x -> return x
       Debug t :>>= k -> do
-        Text.putStrLn t
+        Text.putStrLn ("[DEBUG] " <> t)
         askQuestions (k ())
       LogEvent e world :>>= k -> do
         Text.putStrLn (desc world (">>> " <> describeEvent e))
@@ -51,7 +51,6 @@ askQuestions = eval . view
         chosen <- offerOptions p "What would you like to do?" (pass : nonPass)
         askQuestions (k chosen)
       AskQuestion p world (AskTarget ts) :>>= k -> do
-        Text.putStrLn "Choose target:"
         t <- offerOptions p "Choose target:" [ (desc world (describeTarget t), t) | t <- ts ]
         askQuestions (k t)
 

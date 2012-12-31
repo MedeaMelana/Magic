@@ -11,6 +11,7 @@ import Magic.Events
 
 import Control.Applicative
 import Data.Label.PureM ((=:), asks)
+import Data.Text (pack)
 
 
 searingSpear :: Card
@@ -35,7 +36,8 @@ searingSpearEffect rSelf rActivator = do
               TargetPlayer _                  -> return True
               _                               -> return False
   ts <- askMagicTargets rActivator (singleTarget <?> ok)
-  let f t = case t of
-              TargetObject r -> return [Will (DamageObject rSelf r 3 False True)]
-              TargetPlayer r -> return [Will (DamagePlayer rSelf r 3 False True)]
+  let f :: Target -> Object -> Magic [OneShotEffect]
+      f t source = case t of
+        TargetObject r -> return [Will (DamageObject source r 3 False True)]
+        TargetPlayer r -> return [Will (DamagePlayer source r 3 False True)]
   (: []) <$> view (willMoveToStack rSelf (f <$> ts))

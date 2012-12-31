@@ -300,7 +300,7 @@ data ClosedAbility = ClosedAbility
   , _effect          :: Magic [OneShotEffect]
   }
 
-type StackItem = TargetList Target (Magic [OneShotEffect])
+type StackItem = TargetList Target (Object -> Magic [OneShotEffect])
 
 data ManaCost = ManaCost
   { payColoredMana   :: Bag Color
@@ -396,8 +396,8 @@ data OneShotEffect
 -- | A one-shot effect is simple if its fields contain enough information to serve as an 'Event' unchanged, using the 'Did' constructor.
 data SimpleOneShotEffect
   = AdjustLife PlayerRef Int
-  | DamageObject ObjectRef ObjectRef Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
-  | DamagePlayer ObjectRef PlayerRef Int Bool Bool  -- source, player, amount, combat damage?, preventable?
+  | DamageObject Object ObjectRef Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
+  | DamagePlayer Object PlayerRef Int Bool Bool  -- source, player, amount, combat damage?, preventable?
   | ShuffleLibrary PlayerRef
   -- ReorderLibraryCards
   | DrawCard PlayerRef -- Drawing is special [120.5]

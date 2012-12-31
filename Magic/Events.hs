@@ -132,7 +132,7 @@ compileEffect e =
     Will (ShuffleLibrary rPlayer)   -> shuffleLibrary rPlayer
     Will (PlayLand ro)              -> playLand ro
     Will (AddToManaPool p mc)       -> addToManaPool p mc
-    Will (DamagePlayer rSource p amount isCombatDamage isPreventable) -> damagePlayer rSource p amount isCombatDamage isPreventable
+    Will (DamagePlayer source p amount isCombatDamage isPreventable) -> damagePlayer source p amount isCombatDamage isPreventable
     _ -> error "compileEffect: effect not implemented"
 
 -- | Cause a permanent on the battlefield to untap. If it was previously tapped, a 'Did' 'UntapPermanent' event is raised.
@@ -191,10 +191,10 @@ addToManaPool p mc = do
   player p .^ manaPool ~: (mc :)
   raise (Did (AddToManaPool p mc))
 
-damagePlayer :: ObjectRef -> PlayerRef -> Int -> Bool -> Bool -> Engine ()
-damagePlayer rSource p amount isCombatDamage isPreventable = do
+damagePlayer :: Object -> PlayerRef -> Int -> Bool -> Bool -> Engine ()
+damagePlayer source p amount isCombatDamage isPreventable = do
   player p .^ life ~: subtract amount
-  raise (Did (DamagePlayer rSource p amount isCombatDamage isPreventable))
+  raise (Did (DamagePlayer source p amount isCombatDamage isPreventable))
 
 tick :: Engine Timestamp
 tick = do

@@ -6,11 +6,13 @@ module Magic.Description where
 import Magic.Core
 import Magic.Types
 import Magic.IdList (Id, toList, ids)
+import Magic.Labels ((.^))
 
-import Prelude hiding (unlines)
+import Prelude hiding (unlines, (.))
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow (first, second)
+import Control.Category ((.))
 import Control.Monad.Reader (ask)
 import Control.Monad.Reader (runReader)
 
@@ -110,11 +112,11 @@ describeObject (i, o) = intercalate ", " components
         Just ts' -> [sh ts']
         Nothing -> []
 
-describeObjectName :: (Id, Object) -> Description
-describeObjectName (i, o) =
-  case get name o of
-    Just n -> text n
-    Nothing -> "#" <> sh i  -- TODO Use token creature type if any
+describeObjectName :: Object -> Description
+describeObjectName o =
+  case (get name o, get types o) of
+    (Just n, _) -> text n
+    (Nothing, tys) -> describeTypes tys
 
 describeTypes :: ObjectTypes -> Description
 describeTypes tys = withWorld $ \world ->
@@ -181,8 +183,9 @@ describeEvent e =
     case e of
       Did (DrawCard p) -> "Player " <> sh p <> " draws a card"
       Did (ShuffleLibrary p) -> "Player " <> sh p <> " shuffles their library"
+      Did (DamagePlayer source p amount _ _) -> describeObjectName source <> " deals " <> sh amount <> " damage to player " <> sh p
       DidMoveObject rFromZone r@(rToZone, i) ->
-        describeObjectName (i, (get (object r) world)) <> " moves from " <>
+        describeObjectName (get (object r) world) <> " moves from " <>
         describeZoneRef rFromZone <> " to " <> describeZoneRef rToZone
       WillEndStep s -> "End of " <> sh s
       DidBeginStep s -> "Beginning of " <> sh s

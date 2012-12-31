@@ -327,7 +327,7 @@ resolve i = do
   o <- gets (stack .^ listEl i)
   let Just item = get stackItem o
   let (_, mkEffects) = evaluateTargetList item
-  executeMagic mkEffects >>= mapM_ executeEffect
+  executeMagic (mkEffects o) >>= mapM_ executeEffect
   -- if the object is now still on the stack, move it to the appropriate zone
   let o' = set stackItem Nothing o
   if (hasTypes instantType o || hasTypes sorceryType o)
