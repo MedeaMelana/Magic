@@ -21,7 +21,7 @@ library
                     Magic.Events,
                     Magic.IdList,
                     Magic.Labels,
-                    Magic.M12,
+                    Magic.M13,
                     Magic.ObjectTypes,
                     Magic.Predicates,
                     Magic.Target
