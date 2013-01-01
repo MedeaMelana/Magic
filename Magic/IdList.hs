@@ -9,7 +9,7 @@ module Magic.IdList (
     empty, fromList, fromListWithId,
 
     -- * Querying
-    head, get, toList, ids,
+    length, null, head, get, toList, ids,
 
     -- * Modifying
     set, remove, cons, cons', snoc, snoc', filter, shuffle,
@@ -17,7 +17,7 @@ module Magic.IdList (
 
   ) where
 
-import Prelude hiding (filter, head)
+import Prelude hiding (length, null, filter, head)
 import qualified Prelude
 
 import Control.Arrow (second)
@@ -61,6 +61,12 @@ fromListWithId f = foldr (\x xs -> snd (snoc' (\i -> f i x) xs)) empty
 
 -- QUERYING
 
+
+length :: IdList a -> Int
+length (IdList ixs _) = Prelude.length ixs
+
+null :: IdList a -> Bool
+null (IdList ixs _) = Prelude.null ixs
 
 head :: IdList a -> Maybe (Id, a)
 head (IdList (ix : _) _) = Just ix

@@ -36,9 +36,10 @@ playLand rSource rActivator = ClosedAbility
       case rSource of
         (Hand _, _) -> do
           control <- checkObject rSource (isControlledBy rActivator)
+          stackEmpty <- isStackEmpty
           ap <- asks activePlayer
           step <- asks activeStep
-          return (control && ap == rActivator && step == MainPhase)
+          return (control && ap == rActivator && step == MainPhase && stackEmpty)
         _           -> return False
   , _manaCost = mempty
   , _additionalCosts = []

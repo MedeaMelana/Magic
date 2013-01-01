@@ -66,3 +66,6 @@ object (zoneRef, i) = compileZoneRef zoneRef .^ listEl i
 
 player :: PlayerRef -> World :-> Player
 player i = players .^ listEl i
+
+isStackEmpty :: View Bool
+isStackEmpty = IdList.null <$> asks stack
