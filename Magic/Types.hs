@@ -307,7 +307,7 @@ type StackItem = TargetList Target (Object -> Magic [OneShotEffect])
 type ManaPool = Bag (Maybe Color)
 
 data AdditionalCost
-  = TapSpecificPermanentCost Id
+  = TapSelf
   | SacrificePermanentCost (Object -> Bool)
   | ExileObjectCost        [ZoneRef] (Object -> Bool)  -- exile matching object from any of the listed zones
   | DiscardCardCost

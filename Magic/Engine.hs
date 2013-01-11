@@ -364,14 +364,14 @@ shouldOfferAbility :: Ability -> ObjectRef -> PlayerRef -> Engine Bool
 shouldOfferAbility ability rSource rActivator = do
   let closedAbility = ability rSource rActivator
   abilityOk <- executeMagic (view (get available closedAbility))
-  payCostsOk <- canPayAdditionalCosts rActivator (get additionalCosts closedAbility)
+  payCostsOk <- canPayAdditionalCosts rSource rActivator (get additionalCosts closedAbility)
   return (abilityOk && payCostsOk)
 
 activateAbility :: Ability -> ObjectRef -> PlayerRef -> Engine ()
 activateAbility ability rSource rActivator  = do
   let closedAbility = ability rSource rActivator
   offerManaAbilitiesToPay rActivator (get manaCost closedAbility)
-  forM_ (get additionalCosts closedAbility) (payAdditionalCost rActivator)
+  forM_ (get additionalCosts closedAbility) (payAdditionalCost rSource rActivator)
   executeMagic (get effect closedAbility) >>= mapM_ executeEffect
 
 executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
@@ -406,18 +406,19 @@ offerManaAbilitiesToPay p cost = do
       activateAbility (abilities !! i) r p
       offerManaAbilitiesToPay p cost
 
-canPayAdditionalCosts :: PlayerRef -> [AdditionalCost] -> Engine Bool
-canPayAdditionalCosts _ [] = return True
-canPayAdditionalCosts _ (c:cs) =
-  case c of
-    TapSpecificPermanentCost i -> do
+canPayAdditionalCosts :: ObjectRef -> PlayerRef -> [AdditionalCost] -> Engine Bool
+canPayAdditionalCosts rSource _ [] = return True
+canPayAdditionalCosts rSource _ (c:cs) =
+  case (rSource, c) of
+    ((Battlefield, i), TapSelf) -> do
       ts <- gets (object (Battlefield, i) .^ tapStatus)
       return (ts == Just Untapped)
+    (_, TapSelf) -> return False
 
-payAdditionalCost :: PlayerRef -> AdditionalCost -> Engine ()
-payAdditionalCost p c =
+payAdditionalCost :: ObjectRef -> PlayerRef -> AdditionalCost -> Engine ()
+payAdditionalCost rSource p c =
   case c of
-    TapSpecificPermanentCost i -> executeEffect (Will (TapPermanent i))
+    TapSelf -> case rSource of (Battlefield, i) -> executeEffect (Will (TapPermanent i))
 
 -- | Returns player IDs in APNAP order (active player, non-active player).
 apnap :: Engine [(PlayerRef, Player)]
