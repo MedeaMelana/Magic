@@ -6,7 +6,6 @@ module Magic.Description where
 import Magic.Core
 import Magic.Types
 import Magic.IdList (Id, toList, ids)
-import Magic.Labels ((.^))
 
 import Prelude hiding (unlines, (.))
 
@@ -77,6 +76,12 @@ describePriorityAction a =
   case a of
     PlayCard ro@(zr, _) -> "Play from " <> describeZoneRef zr <> ": " <> describeObjectByRef ro
     ActivateAbility (ro, i) -> "Activate ability " <> sh i <> " of " <> describeObjectByRef ro
+
+describePayManaAction :: PayManaAction -> Description
+describePayManaAction a =
+  case a of
+    PayManaFromManaPool mc -> "Use " <> describeManaPool [mc] <> " from mana pool"
+    ActivateManaAbility (ro, i) -> "Activate ability " <> sh i <> " of " <> describeObjectByRef ro
 
 describeWorld :: Description
 describeWorld = withWorld $ \world -> unlines
@@ -183,7 +188,12 @@ describeEvent e =
     case e of
       Did (DrawCard p) -> "Player " <> sh p <> " draws a card"
       Did (ShuffleLibrary p) -> "Player " <> sh p <> " shuffles their library"
-      Did (DamagePlayer source p amount _ _) -> describeObjectName source <> " deals " <> sh amount <> " damage to player " <> sh p
+      Did (DamagePlayer source p amount _ _) ->
+        describeObjectName source <> " deals " <> sh amount <> " damage to player " <> sh p
+      Did (AddToManaPool p pool) ->
+        "Player " <> sh p <> " adds " <> describeManaPool pool <> " to their mana pool"
+      Did (SpendFromManaPool p pool) ->
+        "Player " <> sh p <> " spends " <> describeManaPool pool <> " from their mana pool"
       DidMoveObject rFromZone r@(rToZone, i) ->
         describeObjectName (get (object r) world) <> " moves from " <>
         describeZoneRef rFromZone <> " to " <> describeZoneRef rToZone

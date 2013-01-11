@@ -384,32 +384,40 @@ executePriorityAction p a = do
       abilities <- gets (object r .^ activatedAbilities)
       activateAbility (abilities !! i) r p
 
-offerManaAbilitiesToPay :: PlayerRef -> ManaCost -> Engine ()
+offerManaAbilitiesToPay :: PlayerRef -> ManaPool -> Engine ()
 offerManaAbilitiesToPay _ []   = return ()
 offerManaAbilitiesToPay p cost = do
   amas <- map ActivateManaAbility <$>
           collectAvailableActivatedAbilities (get isManaAbility) p
   pool <- gets (player p .^ manaPool)
-  let pms = map PayManaFromManaPool (nub pool `intersect` cost)
-  action <- liftEngineQuestion p (AskManaAbility (amas <> pms))
+  let pms =
+        if Nothing `elem` cost
+          then map PayManaFromManaPool (nub pool)  -- there is at least 1 colorless mana to pay
+          else map PayManaFromManaPool (nub pool `intersect` cost)
+  action <- liftEngineQuestion p (AskManaAbility cost (amas <> pms))
   case action of
-    PayManaFromManaPool mc -> offerManaAbilitiesToPay p (delete mc cost)
+    PayManaFromManaPool mc -> do
+      executeEffect (Will (SpendFromManaPool p [mc]))
+      if mc `elem` cost
+        then offerManaAbilitiesToPay p (delete mc cost)
+        else offerManaAbilitiesToPay p (delete Nothing cost)
     ActivateManaAbility (r, i) -> do
       abilities <- gets (object r .^ activatedAbilities)
       activateAbility (abilities !! i) r p
+      offerManaAbilitiesToPay p cost
 
 canPayAdditionalCosts :: PlayerRef -> [AdditionalCost] -> Engine Bool
 canPayAdditionalCosts _ [] = return True
 canPayAdditionalCosts _ (c:cs) =
   case c of
-    TapSpecificPermanentCost ro -> do
-      ts <- gets (object ro .^ tapStatus)
+    TapSpecificPermanentCost i -> do
+      ts <- gets (object (Battlefield, i) .^ tapStatus)
       return (ts == Just Untapped)
 
 payAdditionalCost :: PlayerRef -> AdditionalCost -> Engine ()
 payAdditionalCost p c =
   case c of
-    TapSpecificPermanentCost ro -> object ro .^ tapStatus =: Just Tapped
+    TapSpecificPermanentCost i -> executeEffect (Will (TapPermanent i))
 
 -- | Returns player IDs in APNAP order (active player, non-active player).
 apnap :: Engine [(PlayerRef, Player)]

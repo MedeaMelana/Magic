@@ -54,8 +54,8 @@ tapToAddMana mc rSource rActivator = ClosedAbility
         (Battlefield, _) -> checkObject rSource (isControlledBy rActivator)
         _                -> return False
   , _manaCost = mempty
-  , _additionalCosts = [TapSpecificPermanentCost rSource]
-  , _effect = return [Will (AddToManaPool rActivator mc)]
+  , _additionalCosts = [case rSource of (Battlefield, i) -> TapSpecificPermanentCost i]
+  , _effect = return [Will (AddToManaPool rActivator [mc])]
   , _isManaAbility = True
   }
 

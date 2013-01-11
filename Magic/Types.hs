@@ -45,7 +45,7 @@ module Magic.Types (
     -- * Abilities
     Ability,
     ClosedAbility(..), available, manaCost, additionalCosts, effect, isManaAbility,
-    StackItem, ManaCost, AdditionalCost(..),
+    StackItem, ManaPool, AdditionalCost(..),
     StaticKeywordAbility(..), ContinuousEffect(..), Layer(..),
     ReplacementEffect,
     PriorityAction(..), PayManaAction(..),
@@ -296,7 +296,7 @@ type Ability = ObjectRef -> PlayerRef -> ClosedAbility
 
 data ClosedAbility = ClosedAbility
   { _available       :: View Bool  -- check for cost is implied
-  , _manaCost        :: ManaCost
+  , _manaCost        :: ManaPool
   , _additionalCosts :: [AdditionalCost]
   , _effect          :: Magic [OneShotEffect]
   , _isManaAbility   :: Bool
@@ -304,10 +304,10 @@ data ClosedAbility = ClosedAbility
 
 type StackItem = TargetList Target (Object -> Magic [OneShotEffect])
 
-type ManaCost = Bag (Maybe Color)
+type ManaPool = Bag (Maybe Color)
 
 data AdditionalCost
-  = TapSpecificPermanentCost ObjectRef
+  = TapSpecificPermanentCost Id
   | SacrificePermanentCost (Object -> Bool)
   | ExileObjectCost        [ZoneRef] (Object -> Bool)  -- exile matching object from any of the listed zones
   | DiscardCardCost
@@ -321,7 +321,7 @@ data StaticKeywordAbility
   | Enchant
   | FirstStrike
   | Flash
-  | Flashback ManaCost
+  | Flashback ManaPool
   | Flying
   | Haste
   | Hexproof
@@ -406,7 +406,8 @@ data SimpleOneShotEffect
   | AddCounter ObjectRef CounterType
   | RemoveCounter ObjectRef CounterType
   | CreateObject Object  -- create a token, emblem or spell
-  | AddToManaPool PlayerRef (Maybe Color)
+  | AddToManaPool PlayerRef ManaPool
+  | SpendFromManaPool PlayerRef ManaPool
   | AttachPermanent ObjectRef (Maybe ObjectRef) (Maybe ObjectRef)  -- aura/equipment, old target, new target
   | RemoveFromCombat Id
   | PlayLand ObjectRef
@@ -458,7 +459,7 @@ data Interact a where
 data Question a where
   AskKeepHand              :: Question Bool
   AskPriorityAction        :: [PriorityAction] -> Question (Maybe PriorityAction)
-  AskManaAbility           :: [PayManaAction] -> Question PayManaAction
+  AskManaAbility           :: ManaPool -> [PayManaAction] -> Question PayManaAction
   AskTarget                :: [Target] -> Question Target
   AskReorder               :: [a] -> Question [a]
   AskPickReplacementEffect :: [(ReplacementEffect, Magic [OneShotEffect])] -> Question (Pick (ReplacementEffect, Magic [OneShotEffect]))

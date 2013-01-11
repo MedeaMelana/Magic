@@ -5,7 +5,8 @@ module Magic.CLI where
 
 import Magic.Engine (fullGame, newWorld)
 import Magic.Types hiding (view)
-import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction, describeEvent, describeTarget)
+import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction,
+  describeEvent, describeTarget, describeManaPool, describePayManaAction)
 
 import Control.Monad (forM_)
 import Control.Monad.Operational (Program, ProgramViewT(..), view)
@@ -53,6 +54,12 @@ askQuestions = eval . view
       AskQuestion p world (AskTarget ts) :>>= k -> do
         t <- offerOptions p "Choose target:" [ (desc world (describeTarget t), t) | t <- ts ]
         askQuestions (k t)
+      AskQuestion p world (AskManaAbility cost actions) :>>= k -> do
+        let costDesc = desc world (describeManaPool cost)
+        let options = [ (desc world (describePayManaAction action), action) | action <- actions ]
+        chosen <- offerOptions p ("Pay " <> costDesc) options
+        askQuestions (k chosen)
+
 
 showText :: Show a => a -> Text
 showText = Text.pack . show

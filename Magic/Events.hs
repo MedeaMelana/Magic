@@ -30,6 +30,8 @@ import Control.Monad.Trans (lift)
 import Data.Either (partitionEithers)
 import Data.Label.Pure (get, set)
 import Data.Label.PureM (asks, gets, puts, (=:))
+import Data.List ((\\))
+import Data.Monoid ((<>))
 import Data.Traversable (for)
 
 
@@ -110,6 +112,7 @@ affectedPlayer e =
     Will (RemoveCounter o _)      -> controllerOf o
     Will (CreateObject o)         -> return (get controller o)
     Will (AddToManaPool p _)      -> return p
+    Will (SpendFromManaPool p _)  -> return p
     Will (AttachPermanent o _ _)  -> controllerOf o  -- debatable
     Will (RemoveFromCombat i)     -> controllerOf (Battlefield, i)
     Will (PlayLand o)             -> controllerOf o
@@ -127,22 +130,33 @@ compileEffect e =
   -- TODO Return [Event] what actually happened
   case e of
     WillMoveObject rObj rToZone obj -> moveObject rObj rToZone obj
+    Will (TapPermanent i)           -> tapPermanent i
     Will (UntapPermanent i)         -> untapPermanent i
     Will (DrawCard rp)              -> drawCard rp
     Will (ShuffleLibrary rPlayer)   -> shuffleLibrary rPlayer
     Will (PlayLand ro)              -> playLand ro
-    Will (AddToManaPool p mc)       -> addToManaPool p mc
+    Will (AddToManaPool p pool)     -> addToManaPool p pool
+    Will (SpendFromManaPool p pool) -> spendFromManaPool p pool
     Will (DamagePlayer source p amount isCombatDamage isPreventable) -> damagePlayer source p amount isCombatDamage isPreventable
     _ -> error "compileEffect: effect not implemented"
+
+tapPermanent :: Id -> Engine ()
+tapPermanent i = do
+  Just ts <- gets (object (Battlefield, i) .^ tapStatus)
+  case ts of
+    Untapped -> do
+      object (Battlefield, i) .^ tapStatus =: Just Tapped
+      raise (Did (TapPermanent i))
+    Tapped   -> return ()
 
 -- | Cause a permanent on the battlefield to untap. If it was previously tapped, a 'Did' 'UntapPermanent' event is raised.
 untapPermanent :: Id -> Engine ()
 untapPermanent i = do
-  Just ts <- gets (battlefield .^ listEl i .^ tapStatus)
+  Just ts <- gets (object (Battlefield, i) .^ tapStatus)
   case ts of
     Untapped -> return ()
     Tapped -> do
-      battlefield .^ listEl i .^ tapStatus =: Just Untapped
+      object (Battlefield, i) .^ tapStatus =: Just Untapped
       raise (Did (UntapPermanent i))
 
 -- | Cause the given player to draw a card. If a card was actually drawn, a 'Did' 'DrawCard' event is raised. If not, the player loses the game the next time state-based actions are checked.
@@ -186,10 +200,15 @@ shuffleLibrary rPlayer = do
 playLand :: ObjectRef -> Engine ()
 playLand ro = gets (object ro) >>= moveObject ro Battlefield
 
-addToManaPool :: PlayerRef -> Maybe Color -> Engine ()
-addToManaPool p mc = do
-  player p .^ manaPool ~: (mc :)
-  raise (Did (AddToManaPool p mc))
+addToManaPool :: PlayerRef -> ManaPool -> Engine ()
+addToManaPool p pool = do
+  player p .^ manaPool ~: (pool <>)
+  raise (Did (AddToManaPool p pool))
+
+spendFromManaPool :: PlayerRef -> ManaPool -> Engine ()
+spendFromManaPool p pool = do
+  player p .^ manaPool ~: (\\ pool)
+  raise (Did (SpendFromManaPool p pool))
 
 damagePlayer :: Object -> PlayerRef -> Int -> Bool -> Bool -> Engine ()
 damagePlayer source p amount isCombatDamage isPreventable = do
