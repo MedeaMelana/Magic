@@ -61,12 +61,12 @@ turnSteps =
   , BeginningPhase UpkeepStep
   , BeginningPhase DrawStep
   , MainPhase
-  , CombatPhase BeginningOfCombatStep
-  , CombatPhase DeclareAttackersStep
-  , CombatPhase DeclareBlockersStep
-  , CombatPhase CombatDamageStep
-  , CombatPhase EndOfCombatStep
-  , MainPhase
+  --, CombatPhase BeginningOfCombatStep
+  --, CombatPhase DeclareAttackersStep
+  --, CombatPhase DeclareBlockersStep
+  --, CombatPhase CombatDamageStep
+  --, CombatPhase EndOfCombatStep
+  --, MainPhase
   , EndPhase EndOfTurnStep
   , EndPhase CleanupStep
   ]
