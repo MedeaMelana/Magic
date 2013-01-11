@@ -11,7 +11,7 @@ module Magic.Types (
     Bag,
 
     -- * Reference types
-    PlayerRef, ObjectRef, ZoneRef(..),
+    PlayerRef, ObjectRef, ActivatedAbilityRef, ZoneRef(..),
 
     -- * World
     World(..), players, activePlayer, activeStep, time, turnStructure, exile, battlefield, stack, command,
@@ -44,11 +44,11 @@ module Magic.Types (
 
     -- * Abilities
     Ability,
-    ClosedAbility(..), available, manaCost, additionalCosts, effect,
-    StackItem, ManaCost(..), AdditionalCost(..),
+    ClosedAbility(..), available, manaCost, additionalCosts, effect, isManaAbility,
+    StackItem, ManaCost, AdditionalCost(..),
     StaticKeywordAbility(..), ContinuousEffect(..), Layer(..),
     ReplacementEffect,
-    PriorityAction(..),
+    PriorityAction(..), PayManaAction(..),
 
     -- * Events
     Event(..), OneShotEffect(..), SimpleOneShotEffect(..),
@@ -89,6 +89,7 @@ type Bag = []
 
 type PlayerRef = Id
 type ObjectRef = (ZoneRef, Id)
+type ActivatedAbilityRef = (ObjectRef, Int)
 
 data ZoneRef = Library PlayerRef | Hand PlayerRef | Battlefield | Graveyard PlayerRef | Stack | Exile | Command
   deriving (Eq, Ord, Show)
@@ -298,19 +299,12 @@ data ClosedAbility = ClosedAbility
   , _manaCost        :: ManaCost
   , _additionalCosts :: [AdditionalCost]
   , _effect          :: Magic [OneShotEffect]
+  , _isManaAbility   :: Bool
   }
 
 type StackItem = TargetList Target (Object -> Magic [OneShotEffect])
 
-data ManaCost = ManaCost
-  { payColoredMana   :: Bag Color
-  , payColorlessMana :: Int
-  }
-  deriving (Eq, Ord, Show, Read)
-
-instance Monoid ManaCost where
-  mempty = ManaCost [] 0
-  ManaCost cs1 n1 `mappend` ManaCost cs2 n2 = ManaCost (cs1 ++ cs2) (n1 + n2)
+type ManaCost = Bag (Maybe Color)
 
 data AdditionalCost
   = TapSpecificPermanentCost ObjectRef
@@ -367,7 +361,12 @@ type ReplacementEffect = OneShotEffect -> Maybe (Magic [OneShotEffect])
 
 data PriorityAction
   = PlayCard ObjectRef
-  | ActivateAbility ObjectRef Int  -- index into field
+  | ActivateAbility ActivatedAbilityRef
+
+-- Actions that may be taken when paying a mana cost
+data PayManaAction
+  = PayManaFromManaPool (Maybe Color)
+  | ActivateManaAbility ActivatedAbilityRef
 
 
 
@@ -459,6 +458,7 @@ data Interact a where
 data Question a where
   AskKeepHand              :: Question Bool
   AskPriorityAction        :: [PriorityAction] -> Question (Maybe PriorityAction)
+  AskManaAbility           :: [PayManaAction] -> Question PayManaAction
   AskTarget                :: [Target] -> Question Target
   AskReorder               :: [a] -> Question [a]
   AskPickReplacementEffect :: [(ReplacementEffect, Magic [OneShotEffect])] -> Question (Pick (ReplacementEffect, Magic [OneShotEffect]))

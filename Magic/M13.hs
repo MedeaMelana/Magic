@@ -24,9 +24,10 @@ searingSpear = mkCard $ do
           case rSelf of
             (Hand rp, _) -> return (rp == rActivator)
             _            -> return False
-      , _manaCost = ManaCost [Red] 1
+      , _manaCost = [Nothing, Just Red]
       , _additionalCosts = []
       , _effect = searingSpearEffect rSelf rActivator
+      , _isManaAbility = False
       })
 
 searingSpearEffect :: ObjectRef -> PlayerRef -> Magic [OneShotEffect]

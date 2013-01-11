@@ -76,7 +76,7 @@ describePriorityAction :: PriorityAction -> Description
 describePriorityAction a =
   case a of
     PlayCard ro@(zr, _) -> "Play from " <> describeZoneRef zr <> ": " <> describeObjectByRef ro
-    ActivateAbility ro i -> "Activate ability " <> sh i <> " of " <> describeObjectByRef ro
+    ActivateAbility (ro, i) -> "Activate ability " <> sh i <> " of " <> describeObjectByRef ro
 
 describeWorld :: Description
 describeWorld = withWorld $ \world -> unlines

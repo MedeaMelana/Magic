@@ -21,7 +21,9 @@ import Control.Monad.Trans (lift)
 import Control.Monad.Writer (tell, execWriterT)
 import Data.Label.Pure (get, set)
 import Data.Label.PureM (gets, (=:))
+import Data.List (nub, intersect, delete)
 import Data.Maybe (catMaybes)
+import Data.Monoid ((<>))
 import Data.Traversable (for)
 import Prelude hiding (round)
 
@@ -244,7 +246,7 @@ offerPriority = do
             offerPriority
   where
     offerPriority' ((p, _):ps) = do
-      actions <- collectActions p
+      actions <- collectPriorityActions p
       mAction <- liftEngineQuestion p (AskPriorityAction actions)
       case mAction of
         Just action -> return (Just (p, action))
@@ -334,30 +336,42 @@ resolve i = do
     then moveObject (Stack, i) (Graveyard (get controller o)) o'
     else moveObject (Stack, i) Battlefield o'
 
-collectActions :: PlayerRef -> Engine [PriorityAction]
-collectActions p = do
+collectPriorityActions :: PlayerRef -> Engine [PriorityAction]
+collectPriorityActions p = do
+  as <- map ActivateAbility <$> collectAvailableActivatedAbilities (const True) p
+  plays <- map PlayCard <$> collectPlayableCards p
+  return (as <> plays)
+
+collectAvailableActivatedAbilities :: (ClosedAbility -> Bool) -> PlayerRef -> Engine [ActivatedAbilityRef]
+collectAvailableActivatedAbilities predicate p = do
+  objects <- executeMagic allObjects
+  execWriterT $ do
+    for objects $ \(r,o) -> do
+      for (zip [0..] (get activatedAbilities o)) $ \(i, ability) -> do
+        ok <- lift (shouldOfferAbility ability r p)
+        when (predicate (ability r p) && ok) (tell [(r, i)])
+
+collectPlayableCards :: PlayerRef -> Engine [ObjectRef]
+collectPlayableCards p = do
   objects <- executeMagic allObjects
   execWriterT $ do
     for objects $ \(r,o) -> do
       let Just playAbility = get play o
-      ok <- lift (eligible playAbility r)
-      when ok (tell [PlayCard r])
+      ok <- lift (shouldOfferAbility playAbility r p)
+      when ok (tell [r])
 
-      for (zip [0..] (get activatedAbilities o)) $ \(i, ability) -> do
-        ok' <- lift (eligible ability r)
-        when ok' (tell [ActivateAbility r i])
-  where
-    eligible :: Ability -> ObjectRef -> Engine Bool
-    eligible ability rSource = do
-      let closedAbility = ability rSource p
-      abilityOk <- executeMagic (view (get available closedAbility))
-      payCostsOk <- canPayAdditionalCosts p (get additionalCosts closedAbility)
-      return (abilityOk && payCostsOk)
+shouldOfferAbility :: Ability -> ObjectRef -> PlayerRef -> Engine Bool
+shouldOfferAbility ability rSource rActivator = do
+  let closedAbility = ability rSource rActivator
+  abilityOk <- executeMagic (view (get available closedAbility))
+  payCostsOk <- canPayAdditionalCosts rActivator (get additionalCosts closedAbility)
+  return (abilityOk && payCostsOk)
 
-executeAction :: Ability -> ObjectRef -> PlayerRef -> Engine ()
-executeAction ability rSource activatorId = do
-  let closedAbility = ability rSource activatorId
-  forM_ (get additionalCosts closedAbility) (payAdditionalCost activatorId)
+activateAbility :: Ability -> ObjectRef -> PlayerRef -> Engine ()
+activateAbility ability rSource rActivator  = do
+  let closedAbility = ability rSource rActivator
+  offerManaAbilitiesToPay rActivator (get manaCost closedAbility)
+  forM_ (get additionalCosts closedAbility) (payAdditionalCost rActivator)
   executeMagic (get effect closedAbility) >>= mapM_ executeEffect
 
 executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
@@ -365,10 +379,24 @@ executePriorityAction p a = do
   case a of
     PlayCard r -> do
       Just ability <- gets (object r .^ play)
-      executeAction ability r p
-    ActivateAbility r i -> do
+      activateAbility ability r p
+    ActivateAbility (r, i) -> do
       abilities <- gets (object r .^ activatedAbilities)
-      executeAction (abilities !! i) r p
+      activateAbility (abilities !! i) r p
+
+offerManaAbilitiesToPay :: PlayerRef -> ManaCost -> Engine ()
+offerManaAbilitiesToPay _ []   = return ()
+offerManaAbilitiesToPay p cost = do
+  amas <- map ActivateManaAbility <$>
+          collectAvailableActivatedAbilities (get isManaAbility) p
+  pool <- gets (player p .^ manaPool)
+  let pms = map PayManaFromManaPool (nub pool `intersect` cost)
+  action <- liftEngineQuestion p (AskManaAbility (amas <> pms))
+  case action of
+    PayManaFromManaPool mc -> offerManaAbilitiesToPay p (delete mc cost)
+    ActivateManaAbility (r, i) -> do
+      abilities <- gets (object r .^ activatedAbilities)
+      activateAbility (abilities !! i) r p
 
 canPayAdditionalCosts :: PlayerRef -> [AdditionalCost] -> Engine Bool
 canPayAdditionalCosts _ [] = return True
