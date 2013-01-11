@@ -228,30 +228,32 @@ executeStep (EndPhase CleanupStep) = do
 
 
 offerPriority :: Engine ()
-offerPriority = do
-    -- TODO do this in a loop
-    checkSBAs
-    processPrestacks
-    mAction <- apnap >>= offerPriority'
-    case mAction of
-      Just (p, action) -> do
-        executePriorityAction p action
-        offerPriority
-      Nothing -> do
-        st <- gets stack
-        case IdList.head st of
-          Nothing -> return ()
-          Just (i, _) -> do
-            resolve i
-            offerPriority
+offerPriority = gets activePlayer >>= fullRoundStartingWith
   where
-    offerPriority' ((p, _):ps) = do
+    fullRoundStartingWith p = do
+      -- TODO do this in a loop
+      checkSBAs
+      processPrestacks
+      mAction <- playersStartingWith p >>= partialRound
+      case mAction of
+        Just (p, action) -> do
+          executePriorityAction p action
+          fullRoundStartingWith p
+        Nothing -> do
+          st <- gets stack
+          case IdList.head st of
+            Nothing -> return ()
+            Just (i, _) -> do
+              resolve i
+              offerPriority
+
+    partialRound ((p, _):ps) = do
       actions <- collectPriorityActions p
       mAction <- liftEngineQuestion p (AskPriorityAction actions)
       case mAction of
         Just action -> return (Just (p, action))
-        Nothing -> offerPriority' ps
-    offerPriority' [] = return Nothing
+        Nothing -> partialRound ps
+    partialRound [] = return Nothing
 
 checkSBAs :: Engine ()
 checkSBAs = do
@@ -422,7 +424,9 @@ payAdditionalCost rSource p c =
 
 -- | Returns player IDs in APNAP order (active player, non-active player).
 apnap :: Engine [(PlayerRef, Player)]
-apnap = do
-  activePlayerId <- gets activePlayer
-  (ps, qs) <- break ((== activePlayerId) . fst) . IdList.toList <$> gets players
+apnap = gets activePlayer >>= playersStartingWith
+
+playersStartingWith :: PlayerRef -> Engine [(PlayerRef, Player)]
+playersStartingWith p = do
+  (ps, qs) <- break ((== p) . fst) . IdList.toList <$> gets players
   return (qs ++ ps)
