@@ -11,7 +11,6 @@ import Magic.Events
 
 import Control.Applicative
 import Data.Label.PureM ((=:), asks)
-import Data.Text (pack)
 
 
 searingSpear :: Card
