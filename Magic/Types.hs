@@ -5,6 +5,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Magic.Types (
     -- * Data structures
@@ -57,7 +59,7 @@ module Magic.Types (
     Target(..), TargetList(..),
 
     -- * Monads
-    ViewT, View, Magic, Engine,
+    ViewT(..), View, Magic, Engine,
     view,
     Interact(..), Question(..)
   ) where
@@ -444,7 +446,9 @@ instance Applicative (TargetList t) where
 -- MONADS
 
 
-type ViewT = ReaderT World
+newtype ViewT m a = ViewT { runViewT :: ReaderT World m a }
+  deriving (Functor, Applicative, Monad, MonadReader World, MonadTrans)
+
 type View = ViewT Identity
 
 type Magic = ViewT (Operational.Program Interact)
@@ -467,6 +471,6 @@ data Question a where
 type Pick a = (a, [a])
 
 view :: View a -> Magic a
-view v = ReaderT $ return . runIdentity . runReaderT v
+view v = ViewT $ ReaderT $ return . runIdentity . runReaderT (runViewT v)
 
 $(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''ClosedAbility])

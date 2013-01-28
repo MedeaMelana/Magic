@@ -59,7 +59,7 @@ liftEngineQuestion :: PlayerRef -> Question a -> Engine a
 liftEngineQuestion p q = executeMagic (liftQuestion p q)
 
 executeMagic :: Magic a -> Engine a
-executeMagic m = State.get >>= lift . lift . runReaderT m
+executeMagic m = State.get >>= lift . lift . runReaderT (runViewT m)
 
 object :: ObjectRef -> World :-> Object
 object (zoneRef, i) = compileZoneRef zoneRef .^ listEl i

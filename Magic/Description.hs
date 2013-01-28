@@ -64,7 +64,7 @@ unlines :: [Description] -> Description
 unlines = intercalate "\n"
 
 nullDesc :: World -> Description -> Bool
-nullDesc world (Description vt) = Text.null (runReader vt world)
+nullDesc world (Description (ViewT vt)) = Text.null (runReader vt world)
 
 
 

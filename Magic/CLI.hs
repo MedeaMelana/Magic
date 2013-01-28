@@ -28,7 +28,7 @@ evalRandTIO :: Monad m => RandT StdGen m a -> IO (m a)
 evalRandTIO p = evalRandT p `fmap` newStdGen
 
 desc :: World -> Description -> Text
-desc w d = runReader (runDescription d) w
+desc w d = runReader (runViewT (runDescription d)) w
 
 askQuestions :: Program Interact a -> IO a
 askQuestions = eval . view
