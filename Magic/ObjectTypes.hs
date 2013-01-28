@@ -16,7 +16,7 @@ module Magic.ObjectTypes (
     planeswalkerType, sorceryType,
 
     -- * Class @ObjectType@
-    ObjectType(..), objectType,
+    ObjectType(..), objectTypes, objectType,
 
     -- * Testing
     isObjectTypesSubsetOf,  hasTypes
@@ -95,9 +95,14 @@ instance ObjectType PlaneswalkerSubtype where
   objectTypeLabel = planeswalkerSubtypes
 
 -- | Allows for convenient construction of type lines with
+-- multiple subtypes of one card type. For example, to create Snapcaster Mage's
+-- typeline, use @objectTypes ['Human', 'Wizard']@.
+objectTypes :: Ord a => ObjectType a => [a] -> ObjectTypes
+objectTypes tys = set objectTypeLabel (Just (Set.fromList tys)) mempty
+
+-- | Allows for convenient construction of type lines with
 -- subtypes of various card types. For example, to create Dryad Arbor's
--- typeline, use @'landType' \<\> 'creatureType' \<\> objectType 'Forest' \<\>
--- objectType 'Dryad'@.
+-- typeline, use @objectType 'Forest' \<\> objectType 'Dryad'@.
 objectType :: ObjectType a => a -> ObjectTypes
 objectType ty = set objectTypeLabel (Just (Set.singleton ty)) mempty
 

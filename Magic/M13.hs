@@ -10,8 +10,59 @@ import Magic.Core
 import Magic.Events
 
 import Control.Applicative
+import Data.Label.Pure (get)
 import Data.Label.PureM ((=:), asks)
 
+
+instantSpeed :: ObjectRef -> PlayerRef -> View Bool
+instantSpeed rSelf rActivator =
+  case rSelf of
+    (Hand rp, _) -> return (rp == rActivator)
+    _            -> return False
+
+sorcerySpeed :: ObjectRef -> PlayerRef -> View Bool
+sorcerySpeed rSelf rp = (&&) <$> instantSpeed rSelf rp <*> myMainPhase
+  where
+    myMainPhase = do
+      ap <- asks activePlayer
+      as <- asks activeStep
+      return (ap == rp && as == MainPhase)
+
+-- | The effect of playing a permanent without targets that uses the stack.
+playPermanentEffect :: ObjectRef -> PlayerRef -> Magic [OneShotEffect]
+playPermanentEffect rSelf _ = (: []) <$> view (willMoveToStack rSelf (pure resolvePermanent))
+  where
+    resolvePermanent _source = return []
+
+stackingPlayAbility :: ManaPool -> [AdditionalCost] -> Ability
+stackingPlayAbility mc ac rSelf rActivator =
+  ClosedAbility
+    { _available       = do
+      self <- asks (object rSelf)
+      if hasTypes instantType self || Flash `elem` get staticKeywordAbilities self
+        then instantSpeed rSelf rActivator
+        else sorcerySpeed rSelf rActivator
+    , _manaCost        = mc
+    , _additionalCosts = ac
+    , _effect          = playPermanentEffect rSelf rActivator
+    , _isManaAbility   = False
+    }
+
+ajani'sSunstriker :: Card
+ajani'sSunstriker = mkCard $ do
+  name      =: Just "Ajani's Sunstriker"
+  types     =: creatureType
+  power     =: Just 2
+  toughness =: Just 2
+  play     =: (Just $ \rSelf rActivator ->
+    ClosedAbility
+      { _available       = sorcerySpeed rSelf rActivator
+      , _manaCost        = [Just White, Just White]
+      , _additionalCosts = []
+      , _effect          = playPermanentEffect rSelf rActivator
+      , _isManaAbility   = False
+      })
+  staticKeywordAbilities =: [Lifelink]
 
 searingSpear :: Card
 searingSpear = mkCard $ do
@@ -19,10 +70,7 @@ searingSpear = mkCard $ do
   types =: instantType
   play  =: (Just $ \rSelf rActivator ->
     ClosedAbility
-      { _available =
-          case rSelf of
-            (Hand rp, _) -> return (rp == rActivator)
-            _            -> return False
+      { _available = instantSpeed rSelf rActivator
       , _manaCost = [Nothing, Just Red]
       , _additionalCosts = []
       , _effect = searingSpearEffect rSelf rActivator
