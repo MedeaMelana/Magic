@@ -444,7 +444,7 @@ instance Applicative (TargetList t) where
 
 
 
--- MONADS
+-- TYPE ViewT
 
 
 newtype ViewT m a = ViewT { runViewT :: ReaderT World m a }
@@ -461,7 +461,18 @@ instance (Monad m, Boolean a) => Boolean (ViewT m a) where
   (&&*) = liftM2 (&&*)
   (||*) = liftM2 (||*)
 
+
+
+-- TYPE View
+
 type View = ViewT Identity
+
+class MonadView m where
+  view :: View a -> m a
+
+instance Monad m => MonadView (ViewT m) where
+  view (ViewT (ReaderT f)) = liftM (runIdentity . f) ask
+
 
 type Magic = ViewT (Operational.Program Interact)
 
@@ -481,8 +492,5 @@ data Question a where
   AskPickReplacementEffect :: [(ReplacementEffect, Magic [OneShotEffect])] -> Question (Pick (ReplacementEffect, Magic [OneShotEffect]))
 
 type Pick a = (a, [a])
-
-view :: View a -> Magic a
-view v = ViewT $ ReaderT $ return . runIdentity . runReaderT (runViewT v)
 
 $(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''ClosedAbility])
