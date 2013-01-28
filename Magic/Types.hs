@@ -449,6 +449,10 @@ instance Applicative (TargetList t) where
 newtype ViewT m a = ViewT { runViewT :: ReaderT World m a }
   deriving (Functor, Applicative, Monad, MonadReader World, MonadTrans)
 
+instance (Monoid a, Monad m) => Monoid (ViewT m a) where
+  mempty = return mempty
+  ViewT x `mappend` ViewT y = ViewT (liftM2 mappend x y)
+
 type View = ViewT Identity
 
 type Magic = ViewT (Operational.Program Interact)
