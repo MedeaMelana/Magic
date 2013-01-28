@@ -56,11 +56,11 @@ askMagicTargets p ts = do
 
 allTargets :: Magic [Target]
 allTargets = do
-  ps <- IdList.ids <$> asks players
+  ps <- IdList.ids <$> view (asks players)
   let zrs = [Exile, Battlefield, Stack, Command] ++
             [ z p | z <- [Library, Hand, Graveyard], p <- ps ]
   oss <- forM zrs $ \zr -> do
-    os <- IdList.ids <$> asks (compileZoneRef zr)
+    os <- IdList.ids <$> view (asks (compileZoneRef zr))
     return (map (\o -> (zr, o)) os)
   return (map TargetPlayer ps ++ map TargetObject (concat oss))
 

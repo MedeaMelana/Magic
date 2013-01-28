@@ -21,7 +21,7 @@ import Safe
 
 runGame :: [Deck] -> IO ()
 runGame decks = do
-  program <- evalRandTIO (evalStateT fullGame (newWorld decks))
+  program <- evalRandTIO (evalStateT (runEngine fullGame) (newWorld decks))
   askQuestions program
 
 evalRandTIO :: Monad m => RandT StdGen m a -> IO (m a)

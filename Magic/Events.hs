@@ -33,6 +33,7 @@ import Data.Label.PureM (asks, gets, puts, (=:))
 import Data.List ((\\))
 import Data.Monoid ((<>))
 import Data.Traversable (for)
+import Prelude hiding (interact)
 
 
 
@@ -69,7 +70,7 @@ raise :: Event -> Engine ()
 raise event = do
   -- TODO handle triggered abilities
   world <- State.get
-  lift $ lift $ Operational.singleton (LogEvent event world)
+  interact (LogEvent event world)
   return ()
 
 
@@ -78,7 +79,7 @@ raise event = do
 -- to APNAP order; see http://draw3cards.com/questions/9618
 applyReplacementEffects :: OneShotEffect -> Engine [OneShotEffect]
 applyReplacementEffects eff = do
-    objects <- map snd <$> executeMagic allObjects
+    objects <- map snd <$> view allObjects
     go (concatMap (get replacementEffects) objects) eff
   where
     go :: [ReplacementEffect] -> OneShotEffect -> Engine [OneShotEffect]
@@ -193,7 +194,7 @@ shuffleLibrary :: PlayerRef -> Engine ()
 shuffleLibrary rPlayer = do
   let libraryLabel = players .^ listEl rPlayer .^ library
   lib <- gets libraryLabel
-  lib' <- lift (IdList.shuffle lib)
+  lib' <- IdList.shuffle lib
   puts libraryLabel lib'
   raise (Did (ShuffleLibrary rPlayer))
 

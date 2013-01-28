@@ -22,6 +22,7 @@ import Control.Monad.Trans (lift)
 import Data.Label.Pure ((:->))
 import Data.Label.PureM (asks)
 import Data.Text (Text)
+import Prelude hiding (interact)
 
 
 compileZoneRef :: ZoneRef -> World :-> IdList Object
@@ -35,7 +36,7 @@ compileZoneRef z =
     Exile       -> exile
     Command     -> command
 
-allObjects :: Magic [(ObjectRef, Object)]
+allObjects :: View [(ObjectRef, Object)]
 allObjects = do
   ps <- IdList.ids <$> asks players
   let zrs = [Exile, Battlefield, Stack, Command] ++
@@ -46,20 +47,20 @@ allObjects = do
 
 liftQuestion :: PlayerRef -> Question a -> Magic a
 liftQuestion p q = do
-  world <- ask
-  lift (Operational.singleton (AskQuestion p world q))
+  world <- view ask
+  interact (AskQuestion p world q)
 
 debug :: Text -> Magic ()
-debug t = lift (Operational.singleton (Debug t))
+debug t = interact (Debug t)
 
 debugEngine :: Text -> Engine ()
-debugEngine t = executeMagic (lift (Operational.singleton (Debug t)))
+debugEngine = executeMagic . debug
 
 liftEngineQuestion :: PlayerRef -> Question a -> Engine a
 liftEngineQuestion p q = executeMagic (liftQuestion p q)
 
 executeMagic :: Magic a -> Engine a
-executeMagic m = State.get >>= lift . lift . runReaderT (runViewT m)
+executeMagic (Magic m) = Engine (State.get >>= lift . lift . runReaderT (runViewT m))
 
 object :: ObjectRef -> World :-> Object
 object (zoneRef, i) = compileZoneRef zoneRef .^ listEl i

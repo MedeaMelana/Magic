@@ -346,7 +346,7 @@ collectPriorityActions p = do
 
 collectAvailableActivatedAbilities :: (ClosedAbility -> Bool) -> PlayerRef -> Engine [ActivatedAbilityRef]
 collectAvailableActivatedAbilities predicate p = do
-  objects <- executeMagic allObjects
+  objects <- view allObjects
   execWriterT $ do
     for objects $ \(r,o) -> do
       for (zip [0..] (get activatedAbilities o)) $ \(i, ability) -> do
@@ -355,7 +355,7 @@ collectAvailableActivatedAbilities predicate p = do
 
 collectPlayableCards :: PlayerRef -> Engine [ObjectRef]
 collectPlayableCards p = do
-  objects <- executeMagic allObjects
+  objects <- view allObjects
   execWriterT $ do
     for objects $ \(r,o) -> do
       let Just playAbility = get play o

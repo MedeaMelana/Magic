@@ -7,6 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Magic.Types (
     -- * Data structures
@@ -58,25 +59,33 @@ module Magic.Types (
     -- * Targets
     Target(..), TargetList(..),
 
-    -- * Monads
-    ViewT(..), View, Magic, Engine,
-    view,
-    Interact(..), Question(..)
+    -- * Monads @ViewT@ and @View@
+    ViewT(..), View, MonadView(..),
+
+    -- * Monadic interaction with players
+    Interact(..), Question(..), Pick, MonadInteract(..),
+
+    -- * Monad Magic
+    Magic(..),
+
+    -- * Monad Engine
+    Engine(..)
   ) where
 
 import Magic.IdList (Id, IdList)
 
 import Control.Applicative
 import Control.Monad.Identity
-import Control.Monad.Random (RandT, StdGen)
+import Control.Monad.Random (MonadRandom, RandT, StdGen)
 import Control.Monad.Reader
-import Control.Monad.State (StateT)
+import Control.Monad.State (MonadState, StateT, get)
 import qualified Control.Monad.Operational as Operational
 import Data.Boolean
 import Data.Label (mkLabels)
 import Data.Monoid
 import Data.Set (Set)
 import Data.Text (Text)
+import Prelude hiding (interact)
 
 
 
@@ -444,7 +453,7 @@ instance Applicative (TargetList t) where
 
 
 
--- TYPE ViewT
+-- MONADS ViewT AND View
 
 
 newtype ViewT m a = ViewT { runViewT :: ReaderT World m a }
@@ -461,10 +470,6 @@ instance (Monad m, Boolean a) => Boolean (ViewT m a) where
   (&&*) = liftM2 (&&*)
   (||*) = liftM2 (||*)
 
-
-
--- TYPE View
-
 type View = ViewT Identity
 
 class MonadView m where
@@ -474,9 +479,9 @@ instance Monad m => MonadView (ViewT m) where
   view (ViewT (ReaderT f)) = liftM (runIdentity . f) ask
 
 
-type Magic = ViewT (Operational.Program Interact)
 
-type Engine = StateT World (RandT StdGen (Operational.Program Interact))
+-- MONADIC INTERACTION WITH PLAYERS
+
 
 data Interact a where
   Debug       :: Text -> Interact ()
@@ -492,5 +497,35 @@ data Question a where
   AskPickReplacementEffect :: [(ReplacementEffect, Magic [OneShotEffect])] -> Question (Pick (ReplacementEffect, Magic [OneShotEffect]))
 
 type Pick a = (a, [a])
+
+class Monad m => MonadInteract m where
+  interact :: Interact a -> m a
+
+
+
+-- MONAD Magic
+
+
+newtype Magic a = Magic { runMagic :: ViewT (Operational.Program Interact) a }
+  deriving (Functor, Applicative, Monad)
+
+instance MonadView Magic where
+  view = Magic . view
+
+instance MonadInteract Magic where
+  interact instr = Magic (lift (Operational.singleton instr))
+
+
+
+newtype Engine a = Engine { runEngine :: StateT World (RandT StdGen (Operational.Program Interact)) a }
+  deriving (Functor, Applicative, Monad, MonadState World, MonadRandom)
+
+instance MonadView Engine where
+  -- TODO Apply continuous effects
+  view (ViewT (ReaderT f)) = liftM (runIdentity . f) get
+
+instance MonadInteract Engine
+
+
 
 $(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''ClosedAbility])
