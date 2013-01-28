@@ -72,6 +72,7 @@ import Control.Monad.Random (RandT, StdGen)
 import Control.Monad.Reader
 import Control.Monad.State (StateT)
 import qualified Control.Monad.Operational as Operational
+import Data.Boolean
 import Data.Label (mkLabels)
 import Data.Monoid
 import Data.Set (Set)
@@ -452,6 +453,13 @@ newtype ViewT m a = ViewT { runViewT :: ReaderT World m a }
 instance (Monoid a, Monad m) => Monoid (ViewT m a) where
   mempty = return mempty
   ViewT x `mappend` ViewT y = ViewT (liftM2 mappend x y)
+
+instance (Monad m, Boolean a) => Boolean (ViewT m a) where
+  true  = return true
+  false = return false
+  notB  = liftM  notB
+  (&&*) = liftM2 (&&*)
+  (||*) = liftM2 (||*)
 
 type View = ViewT Identity
 

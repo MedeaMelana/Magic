@@ -36,4 +36,5 @@ library
                     MonadRandom ==0.1.*,
                     random-shuffle ==0.0.*,
                     text ==0.11.*,
-                    safe ==0.3.*
+                    safe ==0.3.*,
+                    Boolean ==0.1.*
