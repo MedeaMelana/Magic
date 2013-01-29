@@ -66,19 +66,14 @@ module Magic.Types (
     Interact(..), Question(..), Pick, MonadInteract(..),
 
     -- * Monad Magic
-    Magic(..),
-
-    -- * Monad Engine
-    Engine(..)
+    Magic(..)
   ) where
 
 import Magic.IdList (Id, IdList)
 
 import Control.Applicative
 import Control.Monad.Identity
-import Control.Monad.Random (MonadRandom, RandT, StdGen)
 import Control.Monad.Reader
-import Control.Monad.State (MonadState, StateT, get)
 import qualified Control.Monad.Operational as Operational
 import Data.Boolean
 import Data.Label (mkLabels)
@@ -514,17 +509,6 @@ instance MonadView Magic where
 
 instance MonadInteract Magic where
   interact instr = Magic (lift (Operational.singleton instr))
-
-
-
-newtype Engine a = Engine { runEngine :: StateT World (RandT StdGen (Operational.Program Interact)) a }
-  deriving (Functor, Applicative, Monad, MonadState World, MonadRandom)
-
-instance MonadView Engine where
-  -- TODO Apply continuous effects
-  view (ViewT (ReaderT f)) = liftM (runIdentity . f) get
-
-instance MonadInteract Engine
 
 
 

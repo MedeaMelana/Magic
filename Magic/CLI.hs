@@ -4,6 +4,7 @@
 module Magic.CLI where
 
 import Magic.Engine (fullGame, newWorld)
+import Magic.Engine.Types (runEngine)
 import Magic.Types hiding (view)
 import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction,
   describeEvent, describeTarget, describeManaPool, describePayManaAction)

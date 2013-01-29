@@ -14,11 +14,8 @@ import Magic.Labels
 import Magic.Types
 
 import Control.Applicative
-import qualified Control.Monad.Operational as Operational
 import Control.Monad (forM)
-import Control.Monad.Reader (runReaderT, ask)
-import qualified Control.Monad.State as State
-import Control.Monad.Trans (lift)
+import Control.Monad.Reader (ask)
 import Data.Label.Pure ((:->))
 import Data.Label.PureM (asks)
 import Data.Text (Text)
@@ -45,22 +42,13 @@ allObjects = do
     ios <- IdList.toList <$> asks (compileZoneRef zr)
     return (map (\(i,o) -> ((zr,i),o)) ios)
 
-liftQuestion :: PlayerRef -> Question a -> Magic a
-liftQuestion p q = do
+askQuestion :: (MonadInteract m, MonadView m) => PlayerRef -> Question a -> m a
+askQuestion p q = do
   world <- view ask
   interact (AskQuestion p world q)
 
-debug :: Text -> Magic ()
+debug :: MonadInteract m => Text -> m ()
 debug t = interact (Debug t)
-
-debugEngine :: Text -> Engine ()
-debugEngine = executeMagic . debug
-
-liftEngineQuestion :: PlayerRef -> Question a -> Engine a
-liftEngineQuestion p q = executeMagic (liftQuestion p q)
-
-executeMagic :: Magic a -> Engine a
-executeMagic (Magic m) = Engine (State.get >>= lift . lift . runReaderT (runViewT m))
 
 object :: ObjectRef -> World :-> Object
 object (zoneRef, i) = compileZoneRef zoneRef .^ listEl i

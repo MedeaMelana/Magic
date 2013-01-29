@@ -18,6 +18,8 @@ library
                     Magic.Core,
                     Magic.CLI,
                     Magic.Engine,
+                    Magic.Engine.Types,
+                    Magic.Engine.Events,
                     Magic.Events,
                     Magic.IdList,
                     Magic.Labels,

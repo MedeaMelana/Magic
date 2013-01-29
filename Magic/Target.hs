@@ -52,7 +52,7 @@ askTargets choose = askTargets' (const (return True))
 askMagicTargets :: PlayerRef -> TargetList () a -> Magic (TargetList Target a)
 askMagicTargets p ts = do
   ats <- allTargets
-  askTargets (liftQuestion p . AskTarget) ats ts
+  askTargets (askQuestion p . AskTarget) ats ts
 
 allTargets :: Magic [Target]
 allTargets = do

@@ -14,6 +14,8 @@ import Magic.Predicates
 import Magic.Target
 import Magic.Types
 import Magic.Utils
+import Magic.Engine.Types
+import Magic.Engine.Events
 
 import Control.Applicative ((<$>))
 import Control.Monad (forever, forM_, replicateM_, when)
@@ -95,7 +97,7 @@ drawOpeningHands playerIds handSize = do
       shuffleLibrary playerId
       replicateM_ handSize (drawCard playerId)
     for playerIds $ \playerId -> do
-      keepHand <- liftEngineQuestion playerId AskKeepHand
+      keepHand <- askQuestion playerId AskKeepHand
       if keepHand
         then return Nothing
         else return (Just playerId)
@@ -249,7 +251,7 @@ offerPriority = gets activePlayer >>= fullRoundStartingWith
 
     partialRound ((p, _):ps) = do
       actions <- collectPriorityActions p
-      mAction <- liftEngineQuestion p (AskPriorityAction actions)
+      mAction <- askQuestion p (AskPriorityAction actions)
       case mAction of
         Just action -> return (Just (p, action))
         Nothing -> partialRound ps
@@ -321,7 +323,7 @@ processPrestacks = do
   forM_ ips $ \(i,p) -> do
     let pending = get prestack p
     when (not (null pending)) $ do
-      pending' <- liftEngineQuestion i (AskReorder pending)
+      pending' <- askQuestion i (AskReorder pending)
       forM_ pending' $ \mkStackObject -> do
         stackObject <- executeMagic mkStackObject
         stack ~: IdList.cons stackObject
@@ -396,7 +398,7 @@ offerManaAbilitiesToPay p cost = do
         if Nothing `elem` cost
           then map PayManaFromManaPool (nub pool)  -- there is at least 1 colorless mana to pay
           else map PayManaFromManaPool (nub pool `intersect` cost)
-  action <- liftEngineQuestion p (AskManaAbility cost (amas <> pms))
+  action <- askQuestion p (AskManaAbility cost (amas <> pms))
   case action of
     PayManaFromManaPool mc -> do
       executeEffect (Will (SpendFromManaPool p [mc]))
