@@ -446,6 +446,10 @@ instance Applicative (TargetList t) where
   xs <*> Snoc ys t = Snoc ((.) <$> xs <*> ys) t
   xs <*> Test f ok ys = Test fst snd ((\g x -> (g (f x), ok x)) <$> xs <*> ys)
 
+instance Monoid a => Monoid (TargetList t a) where
+  mempty  = pure mempty
+  mappend = liftA2 mappend
+
 
 
 -- MONADS ViewT AND View
@@ -509,6 +513,10 @@ instance MonadView Magic where
 
 instance MonadInteract Magic where
   interact instr = Magic (lift (Operational.singleton instr))
+
+instance Monoid a => Monoid (Magic a) where
+  mempty  = return mempty
+  mappend = liftM2 mappend
 
 
 
