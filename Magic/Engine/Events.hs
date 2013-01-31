@@ -159,7 +159,6 @@ drawCard rp = do
       return []
     (ro, o) : _ -> do
       effs <- executeEffect (WillMoveObject (Library rp, ro) (Hand rp) o)
-      -- TODO Only raise event if card was actually moved
       return (effs ++ [Did (DrawCard rp)])
 
 -- | Cause an object to move from one zone to another in the specified form. If the object was actually moved, a 'DidMoveObject' event is raised.
