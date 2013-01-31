@@ -158,7 +158,7 @@ drawCard rp = do
       players .^ listEl rp .^ failedCardDraw =: True
       return []
     (ro, o) : _ -> do
-      effs <- executeEffects [WillMoveObject (Library rp, ro) (Hand rp) o]
+      effs <- executeEffect (WillMoveObject (Library rp, ro) (Hand rp) o)
       -- TODO Only raise event if card was actually moved
       return (effs ++ [Did (DrawCard rp)])
 
