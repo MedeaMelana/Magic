@@ -386,7 +386,7 @@ data PayManaAction
 -- | Events are caused by various actions in the game. They describe something that has just happened, such as executing a 'OneShotEffect', progressing to the next step or phases, casting spells, et cetera. Events form the input for triggered abilities.
 data Event
   = Did SimpleOneShotEffect
-  | DidMoveObject ZoneRef ObjectRef  -- old zone, new zone/id
+  | DidMoveObject ObjectRef ObjectRef  -- old ref, new ref
 
   -- Keyword actions [701]
   | DidActivateAbility ObjectRef Int  -- index of ability
