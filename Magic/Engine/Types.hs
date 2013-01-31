@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GADTs #-}
 
 module Magic.Engine.Types where
@@ -6,15 +7,17 @@ module Magic.Engine.Types where
 import Magic.Types
 
 import Control.Applicative
+import Control.Monad.Error (MonadError(..), ErrorT, Error(..))
 import Control.Monad.Identity
 import Control.Monad.Random (MonadRandom, RandT, StdGen)
 import Control.Monad.Reader
 import Control.Monad.State (StateT, MonadState(..))
-import Control.Monad.Operational (Program)
+import Control.Monad.Operational (ProgramT, liftProgram)
+import Data.Text (Text, pack)
 import Prelude hiding (interact)
 
 
-newtype Engine a = Engine { runEngine :: StateT World (RandT StdGen (Program Interact)) a }
+newtype Engine a = Engine { runEngine :: StateT World (RandT StdGen (ProgramT Interact (Either GameOver))) a }
   deriving (Functor, Applicative, Monad, MonadState World, MonadRandom)
 
 instance MonadView Engine where
@@ -22,4 +25,18 @@ instance MonadView Engine where
   view (ViewT (ReaderT f)) = liftM (runIdentity . f) get
 
 instance MonadInteract Engine where
-  interact = Engine . lift . lift
+  interact = Engine . lift . lift . liftProgram
+
+instance MonadError GameOver Engine where
+  throwError = Engine . lift . lift . lift . throwError
+  catchError = error "not yet implemented: Engine catchError"
+
+data GameOver
+  = GameWin PlayerRef
+  | GameDraw
+  | ErrorWithMessage Text
+  | UnknownError
+
+instance Error GameOver where
+  noMsg  = UnknownError
+  strMsg = ErrorWithMessage . pack

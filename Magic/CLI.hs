@@ -4,13 +4,13 @@
 module Magic.CLI where
 
 import Magic.Engine (fullGame, newWorld)
-import Magic.Engine.Types (runEngine)
+import Magic.Engine.Types (runEngine, GameOver(..))
 import Magic.Types hiding (view)
 import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction,
   describeEvent, describeTarget, describeManaPool, describePayManaAction)
 
 import Control.Monad (forM_)
-import Control.Monad.Operational (Program, ProgramViewT(..), view)
+import Control.Monad.Operational (ProgramT, ProgramViewT(..), viewT)
 import Control.Monad.Random
 import Control.Monad.Reader (runReader)
 import Control.Monad.State (evalStateT)
@@ -31,10 +31,15 @@ evalRandTIO p = evalRandT p `fmap` newStdGen
 desc :: World -> Description -> Text
 desc w d = runReader (runViewT (runDescription d)) w
 
-askQuestions :: Program Interact a -> IO a
-askQuestions = eval . view
+askQuestions :: ProgramT Interact (Either GameOver) () -> IO ()
+askQuestions = eval . viewT
   where
-    eval xs = case xs of
+    eval (Left gameOver) = case gameOver of
+      GameWin p -> Text.putStrLn ("Player " <> showText p <> " wins!")
+      GameDraw  -> Text.putStrLn "The game is a draw"
+      ErrorWithMessage message -> Text.putStrLn ("Error: " <> message)
+      UnknownError -> Text.putStrLn "Unknown error"
+    eval (Right program) = case program of
       Return x -> return x
       Debug t :>>= k -> do
         Text.putStrLn ("[DEBUG] " <> t)
