@@ -16,6 +16,7 @@ import Magic.Types
 import Control.Applicative
 import Control.Monad (forM)
 import Control.Monad.Reader (ask)
+import Control.Monad.Operational (singleton)
 import Data.Label.Pure ((:->))
 import Data.Label.PureM (asks)
 import Data.Text (Text)
@@ -45,10 +46,10 @@ allObjects = do
 askQuestion :: (MonadInteract m, MonadView m) => PlayerRef -> Question a -> m a
 askQuestion p q = do
   world <- view ask
-  interact (AskQuestion p world q)
+  interact (singleton (AskQuestion p world q))
 
 debug :: MonadInteract m => Text -> m ()
-debug t = interact (Debug t)
+debug t = interact (singleton (Debug t))
 
 object :: ObjectRef -> World :-> Object
 object (zoneRef, i) = compileZoneRef zoneRef .^ listEl i

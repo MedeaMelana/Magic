@@ -5,7 +5,7 @@
 module Magic.Engine where
 
 import Magic.Core
-import Magic.Events
+import Magic.Events hiding (executeEffect)
 import Magic.IdList (Id)
 import qualified Magic.IdList as IdList
 import Magic.Labels
@@ -18,7 +18,7 @@ import Magic.Engine.Types
 import Magic.Engine.Events
 
 import Control.Applicative ((<$>))
-import Control.Monad (forever, forM_, replicateM_, when)
+import Control.Monad (forever, forM_, replicateM_, when, void)
 import Control.Monad.Trans (lift)
 import Control.Monad.Writer (tell, execWriterT)
 import Data.Label.Pure (get, set)
@@ -337,8 +337,8 @@ resolve i = do
   -- if the object is now still on the stack, move it to the appropriate zone
   let o' = set stackItem Nothing o
   if (hasTypes instantType o || hasTypes sorceryType o)
-    then moveObject (Stack, i) (Graveyard (get controller o)) o'
-    else moveObject (Stack, i) Battlefield o'
+    then void (moveObject (Stack, i) (Graveyard (get controller o)) o')
+    else void (moveObject (Stack, i) Battlefield o')
 
 collectPriorityActions :: PlayerRef -> Engine [PriorityAction]
 collectPriorityActions p = do
@@ -422,7 +422,7 @@ canPayAdditionalCosts rSource _ (c:cs) =
 payAdditionalCost :: ObjectRef -> PlayerRef -> AdditionalCost -> Engine ()
 payAdditionalCost rSource p c =
   case c of
-    TapSelf -> case rSource of (Battlefield, i) -> executeEffect (Will (TapPermanent i))
+    TapSelf -> case rSource of (Battlefield, i) -> void (executeEffect (Will (TapPermanent i)))
 
 -- | Returns player IDs in APNAP order (active player, non-active player).
 apnap :: Engine [(PlayerRef, Player)]

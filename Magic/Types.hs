@@ -65,6 +65,9 @@ module Magic.Types (
     -- * Monadic interaction with players
     Interact(..), Question(..), Pick, MonadInteract(..),
 
+    -- * Executing effects
+    ExecuteEffects(..),
+
     -- * Monad Magic
     Magic(..)
   ) where
@@ -74,7 +77,7 @@ import Magic.IdList (Id, IdList)
 import Control.Applicative
 import Control.Monad.Identity
 import Control.Monad.Reader
-import qualified Control.Monad.Operational as Operational
+import Control.Monad.Operational (Program, ProgramT)
 import Data.Boolean
 import Data.Label (mkLabels)
 import Data.Monoid
@@ -498,26 +501,28 @@ data Question a where
 type Pick a = (a, [a])
 
 class Monad m => MonadInteract m where
-  interact :: Interact a -> m a
+  interact :: Program Interact a -> m a
 
 
 
 -- MONAD Magic
 
 
-newtype Magic a = Magic { runMagic :: ViewT (Operational.Program Interact) a }
+newtype Magic a = Magic { runMagic :: ViewT (ProgramT ExecuteEffects (Program Interact)) a }
   deriving (Functor, Applicative, Monad)
+
+data ExecuteEffects a where
+  ExecuteEffects :: [OneShotEffect] -> ExecuteEffects [Event]
 
 instance MonadView Magic where
   view = Magic . view
 
 instance MonadInteract Magic where
-  interact instr = Magic (lift (Operational.singleton instr))
+  interact = Magic . lift . lift
 
 instance Monoid a => Monoid (Magic a) where
   mempty  = return mempty
   mappend = liftM2 mappend
-
 
 
 $(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''ClosedAbility])

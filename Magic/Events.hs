@@ -4,12 +4,16 @@ module Magic.Events (
 
     -- * Constructing specific one-shot effects
     willMoveToGraveyard, willMoveToBattlefield, willMoveToStack,
+
+    executeEffects, executeEffect
   ) where
 
 import Magic.Core
 import Magic.IdList (Id)
 import Magic.Types
 
+import Control.Monad.Operational (singleton)
+import Control.Monad.Trans (lift)
 import Data.Label.Pure (get, set)
 import Data.Label.PureM (asks)
 import Prelude hiding (interact)
@@ -39,3 +43,8 @@ willMoveToStack r si = do
 -- EXECUTING EFFECTS
 
 
+executeEffects :: [OneShotEffect] -> Magic [Event]
+executeEffects = Magic . lift . singleton . ExecuteEffects
+
+executeEffect :: OneShotEffect -> Magic [Event]
+executeEffect = executeEffects . (: [])
