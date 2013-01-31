@@ -11,6 +11,7 @@ import Magic.Utils
 import Magic.Types
 
 import Control.Applicative
+import Control.Monad (void)
 import Data.Label.PureM
 import Data.Monoid
 import Data.String
@@ -43,7 +44,7 @@ playLand rSource rActivator = ClosedAbility
         _           -> return False
   , _manaCost = mempty
   , _additionalCosts = []
-  , _effect = ((:[]) <$> view (willMoveToBattlefield rSource))
+  , _effect = void (view (willMoveToBattlefield rSource) >>= executeEffect)
   , _isManaAbility = False
   }
 
@@ -55,7 +56,7 @@ tapToAddMana mc rSource rActivator = ClosedAbility
         _                -> return False
   , _manaCost = mempty
   , _additionalCosts = [TapSelf]
-  , _effect = return [Will (AddToManaPool rActivator [mc])]
+  , _effect = void (executeEffect (Will (AddToManaPool rActivator [mc])))
   , _isManaAbility = True
   }
 

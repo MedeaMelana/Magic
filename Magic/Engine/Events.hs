@@ -21,7 +21,6 @@ import Magic.Engine.Types
 
 import Control.Applicative ((<$>))
 import Control.Monad (forM_,)
-import qualified Control.Monad.State as State
 import Control.Monad.Reader (ask, runReaderT)
 import Control.Monad.Operational (singleton, Program, ProgramT, viewT, ProgramViewT(..))
 import Data.Either (partitionEithers)
@@ -159,9 +158,9 @@ drawCard rp = do
       players .^ listEl rp .^ failedCardDraw =: True
       return []
     (ro, o) : _ -> do
-      executeEffects [WillMoveObject (Library rp, ro) (Hand rp) o]
+      effs <- executeEffects [WillMoveObject (Library rp, ro) (Hand rp) o]
       -- TODO Only raise event if card was actually moved
-      return [Did (DrawCard rp)]
+      return (effs ++ [Did (DrawCard rp)])
 
 -- | Cause an object to move from one zone to another in the specified form. If the object was actually moved, a 'DidMoveObject' event is raised.
 moveObject :: ObjectRef -> ZoneRef -> Object -> Engine [Event]

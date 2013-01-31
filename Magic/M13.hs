@@ -10,6 +10,7 @@ import Magic.Core
 import Magic.Events
 
 import Control.Applicative
+import Control.Monad (void)
 import Data.Label.Pure (get)
 import Data.Label.PureM ((=:), asks)
 
@@ -29,10 +30,13 @@ sorcerySpeed rSelf rp = (&&) <$> instantSpeed rSelf rp <*> myMainPhase
       return (ap == rp && as == MainPhase)
 
 -- | The effect of playing a permanent without targets that uses the stack.
-playPermanentEffect :: ObjectRef -> PlayerRef -> Magic [OneShotEffect]
-playPermanentEffect rSelf _ = (: []) <$> view (willMoveToStack rSelf (pure resolvePermanent))
+playPermanentEffect :: ObjectRef -> PlayerRef -> Magic ()
+playPermanentEffect rSelf _ = do
+    effect <- view (willMoveToStack rSelf (pure resolvePermanent))
+    _ <- executeEffect effect
+    return ()
   where
-    resolvePermanent _source = return []
+    resolvePermanent _source = return ()
 
 stackingPlayAbility :: ManaPool -> [AdditionalCost] -> Ability
 stackingPlayAbility mc ac rSelf rActivator =
@@ -77,15 +81,15 @@ searingSpear = mkCard $ do
       , _isManaAbility = False
       })
 
-searingSpearEffect :: ObjectRef -> PlayerRef -> Magic [OneShotEffect]
+searingSpearEffect :: ObjectRef -> PlayerRef -> Magic ()
 searingSpearEffect rSelf rActivator = do
   let ok t = case t of
               TargetObject r@(Battlefield, _) -> hasTypes creatureType <$> asks (object r)
               TargetPlayer _                  -> return True
               _                               -> return False
   ts <- askMagicTargets rActivator (singleTarget <?> ok)
-  let f :: Target -> Object -> Magic [OneShotEffect]
-      f t source = case t of
-        TargetObject r -> return [Will (DamageObject source r 3 False True)]
-        TargetPlayer r -> return [Will (DamagePlayer source r 3 False True)]
-  (: []) <$> view (willMoveToStack rSelf (f <$> ts))
+  let f :: Target -> Object -> Magic ()
+      f t source = void $ executeEffect $ case t of
+        TargetObject r -> Will (DamageObject source r 3 False True)
+        TargetPlayer r -> Will (DamagePlayer source r 3 False True)
+  void (view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect)

@@ -212,7 +212,7 @@ data Object = Object
   , _staticKeywordAbilities :: Bag StaticKeywordAbility
   , _continuousEffects      :: [ContinuousEffect]  -- special form of static ability
   , _activatedAbilities     :: [Ability]
-  , _triggeredAbilities     :: [Event -> Magic [OneShotEffect]]
+  , _triggeredAbilities     :: [Event -> Maybe (Magic ())]
   , _replacementEffects     :: [ReplacementEffect]
   }
 
@@ -308,11 +308,11 @@ data ClosedAbility = ClosedAbility
   { _available       :: View Bool  -- check for cost is implied
   , _manaCost        :: ManaPool
   , _additionalCosts :: [AdditionalCost]
-  , _effect          :: Magic [OneShotEffect]
+  , _effect          :: Magic ()
   , _isManaAbility   :: Bool
   }
 
-type StackItem = TargetList Target (Object -> Magic [OneShotEffect])
+type StackItem = TargetList Target (Object -> Magic ())
 
 type ManaPool = Bag (Maybe Color)
 

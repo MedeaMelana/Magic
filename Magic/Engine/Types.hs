@@ -9,10 +9,8 @@ import Control.Applicative
 import Control.Monad.Identity
 import Control.Monad.Random (MonadRandom, RandT, StdGen)
 import Control.Monad.Reader
-import Control.Monad.State (MonadState, StateT, get)
-import qualified Control.Monad.State as State
-import Control.Monad.Operational (ProgramT, ProgramViewT(..), Program)
-import qualified Control.Monad.Operational as Operational
+import Control.Monad.State (StateT, MonadState(..))
+import Control.Monad.Operational (Program)
 import Prelude hiding (interact)
 
 

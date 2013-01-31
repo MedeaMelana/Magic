@@ -93,8 +93,8 @@ drawOpeningHands playerIds 0 =
 drawOpeningHands playerIds handSize = do
   mulliganingPlayers <- do
     forM_ playerIds $ \playerId -> do
-      moveAllObjects (Hand playerId) (Library playerId)
-      shuffleLibrary playerId
+      _ <- moveAllObjects (Hand playerId) (Library playerId)
+      _ <- shuffleLibrary playerId
       replicateM_ handSize (drawCard playerId)
     for playerIds $ \playerId -> do
       keepHand <- askQuestion playerId AskKeepHand
@@ -146,7 +146,7 @@ executeStep (BeginningPhase UpkeepStep) = do
 executeStep (BeginningPhase DrawStep) = do
   -- [504.1]
   ap <- gets activePlayer
-  executeEffect (Will (DrawCard ap))
+  _ <- executeEffect (Will (DrawCard ap))
 
   -- TODO [504.2]  handle triggers
 
@@ -333,7 +333,7 @@ resolve i = do
   o <- gets (stack .^ listEl i)
   let Just item = get stackItem o
   let (_, mkEffects) = evaluateTargetList item
-  executeMagic (mkEffects o) >>= mapM_ executeEffect
+  executeMagic (mkEffects o)
   -- if the object is now still on the stack, move it to the appropriate zone
   let o' = set stackItem Nothing o
   if (hasTypes instantType o || hasTypes sorceryType o)
@@ -376,7 +376,7 @@ activateAbility ability rSource rActivator  = do
   let closedAbility = ability rSource rActivator
   offerManaAbilitiesToPay rActivator (get manaCost closedAbility)
   forM_ (get additionalCosts closedAbility) (payAdditionalCost rSource rActivator)
-  executeMagic (get effect closedAbility) >>= mapM_ executeEffect
+  executeMagic (get effect closedAbility)
 
 executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
 executePriorityAction p a = do
@@ -401,7 +401,7 @@ offerManaAbilitiesToPay p cost = do
   action <- askQuestion p (AskManaAbility cost (amas <> pms))
   case action of
     PayManaFromManaPool mc -> do
-      executeEffect (Will (SpendFromManaPool p [mc]))
+      _ <- executeEffect (Will (SpendFromManaPool p [mc]))
       if mc `elem` cost
         then offerManaAbilitiesToPay p (delete mc cost)
         else offerManaAbilitiesToPay p (delete Nothing cost)
