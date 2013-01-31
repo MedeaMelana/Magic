@@ -21,6 +21,7 @@ import Magic.Engine.Types
 
 import Control.Applicative ((<$>))
 import Control.Monad (forM_,)
+import Control.Monad.Error (throwError)
 import Control.Monad.Reader (ask, runReaderT)
 import Control.Monad.Operational (singleton, Program, ProgramT, viewT, ProgramViewT(..))
 import Data.Either (partitionEithers)
@@ -107,6 +108,7 @@ affectedPlayer e =
     Will (RemoveFromCombat i)     -> controllerOf (Battlefield, i)
     Will (PlayLand o)             -> controllerOf o
     Will (LoseGame p)             -> return p
+    Will (WinGame p)              -> return p
   where controllerOf o = gets (object o .^ controller)
 
 
@@ -128,6 +130,8 @@ compileEffect e =
     Will (AddToManaPool p pool)     -> addToManaPool p pool
     Will (SpendFromManaPool p pool) -> spendFromManaPool p pool
     Will (DamagePlayer source p amount isCombatDamage isPreventable) -> damagePlayer source p amount isCombatDamage isPreventable
+    Will (LoseGame p)               -> loseGame p
+    Will (WinGame p)                -> winGame p
     _ -> error "compileEffect: effect not implemented"
 
 tapPermanent :: Id -> Engine [Event]
@@ -204,6 +208,19 @@ damagePlayer :: Object -> PlayerRef -> Int -> Bool -> Bool -> Engine [Event]
 damagePlayer source p amount isCombatDamage isPreventable = do
   player p .^ life ~: subtract amount
   return [Did (DamagePlayer source p amount isCombatDamage isPreventable)]
+
+loseGame :: PlayerRef -> Engine [Event]
+loseGame p = do
+  -- TODO Remove all objects that belong to the player
+  ps <- gets players
+  case IdList.remove p ps of
+    Nothing        -> return []
+    Just (_, ps')  -> do
+      players =: ps'
+      return [Did (LoseGame p)]
+
+winGame :: PlayerRef -> Engine a
+winGame p = throwError (GameWin p)
 
 tick :: Engine Timestamp
 tick = do

@@ -422,6 +422,7 @@ data SimpleOneShotEffect
   | RemoveFromCombat Id
   | PlayLand ObjectRef
   | LoseGame PlayerRef
+  | WinGame PlayerRef
 
 
 

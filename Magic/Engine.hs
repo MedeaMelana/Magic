@@ -283,6 +283,10 @@ collectSBAs = execWriterT $ do
         when (get life p <= 0 || get failedCardDraw p) $
           tell [Will (LoseGame i)]
 
+      case ips of
+        [(i, _)] -> tell [Will (WinGame i)]
+        _    -> return ()
+
     checkBattlefield = do
       ios <- IdList.toList <$> lift (gets battlefield)
       forM_ ios $ \(i,o) -> do
