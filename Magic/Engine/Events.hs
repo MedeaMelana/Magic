@@ -119,7 +119,6 @@ affectedPlayer e =
 -- | Compile and execute an effect.
 compileEffect :: OneShotEffect -> Engine [Event]
 compileEffect e =
-  -- TODO Return [Event] what actually happened
   case e of
     WillMoveObject rObj rToZone obj -> moveObject rObj rToZone obj
     Will (TapPermanent i)           -> tapPermanent i
