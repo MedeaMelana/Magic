@@ -5,7 +5,7 @@
 module Magic.Engine where
 
 import Magic.Core
-import Magic.Events hiding (executeEffect)
+import Magic.Events hiding (executeEffect, executeEffects)
 import Magic.IdList (Id)
 import qualified Magic.IdList as IdList
 import Magic.Labels
@@ -17,8 +17,8 @@ import Magic.Utils
 import Magic.Engine.Types
 import Magic.Engine.Events
 
-import Control.Applicative ((<$>))
-import Control.Monad (forever, forM_, replicateM_, when, void)
+import Control.Applicative ((<$>), (<*>))
+import Control.Monad (forever, forM_, replicateM_, when, void, liftM)
 import Control.Monad.Trans (lift)
 import Control.Monad.Writer (tell, execWriterT)
 import Data.Label.Pure (get, set)
@@ -221,8 +221,8 @@ executeStep (EndPhase EndOfTurnStep) = do
 executeStep (EndPhase CleanupStep) = do
   -- TODO [514.1]  discard excess cards
   -- TODO [514.2]  remove damage from permanents
-  -- TODO [514.3]  handle triggers; check state-based actions; possibly offer priority
-  return ()
+  shouldOfferPriority <- executeSBAsAndProcessPrestacks
+  when shouldOfferPriority offerPriority
 
 
 
@@ -234,8 +234,7 @@ offerPriority = gets activePlayer >>= fullRoundStartingWith
   where
     fullRoundStartingWith p = do
       -- TODO do this in a loop
-      checkSBAs
-      processPrestacks
+      _ <- executeSBAsAndProcessPrestacks
       mAction <- playersStartingWith p >>= partialRound
       case mAction of
         Just (p, action) -> do
@@ -257,12 +256,39 @@ offerPriority = gets activePlayer >>= fullRoundStartingWith
         Nothing -> partialRound ps
     partialRound [] = return Nothing
 
-checkSBAs :: Engine ()
-checkSBAs = do
-  sbas <- collectSBAs
-  sbas' <- concat <$> for sbas applyReplacementEffects
-  forM_ sbas' executeEffect
+-- | Repeatedly checks and execute state-based effects and asks players to put triggered abilities
+--   on the stack, until everything has been processed. Returns whether any SBAs have been taken or
+--   whether any abilities have been put on the stack.
+executeSBAsAndProcessPrestacks :: Engine Bool
+executeSBAsAndProcessPrestacks = untilFalse ((||) <$> checkSBAs <*> processPrestacks)
 
+-- | Repeatedly checks and executes state-based effects until no more actions need to be taken.
+--   Returns whether any actions were taken at all.
+checkSBAs :: Engine Bool
+checkSBAs = untilFalse $ (not . null) <$> (collectSBAs >>= executeEffects)
+
+-- | Ask players to put pending items on the stack in APNAP order. [405.3]
+--   Returns whether anything was put on the stack as a result.
+processPrestacks :: Engine Bool
+processPrestacks = do
+  ips <- apnap
+  liftM or $ for ips $ \(i,p) -> do
+    let pending = get prestack p
+    when (not (null pending)) $ do
+      pending' <- askQuestion i (AskReorder pending)
+      forM_ pending' $ \mkStackObject -> do
+        stackObject <- executeMagic mkStackObject
+        stack ~: IdList.cons stackObject
+    return (not (null pending))
+
+untilFalse :: Monad m => m Bool -> m Bool
+untilFalse p = do
+  b <- p
+  if b
+    then untilFalse p >> return True
+    else return False
+
+-- | Collects and returns all applicable state-based actions (without executing them).
 collectSBAs :: Engine [OneShotEffect]
 collectSBAs = execWriterT $ do
     checkPlayers
@@ -315,18 +341,6 @@ collectSBAs = execWriterT $ do
       -- TODO [704.5q]
       -- TODO [704.5r]
       -- TODO [704.5s]
-
--- | Ask players to put pending items on the stack in APNAP order. [405.3]
-processPrestacks :: Engine ()
-processPrestacks = do
-  ips <- apnap
-  forM_ ips $ \(i,p) -> do
-    let pending = get prestack p
-    when (not (null pending)) $ do
-      pending' <- askQuestion i (AskReorder pending)
-      forM_ pending' $ \mkStackObject -> do
-        stackObject <- executeMagic mkStackObject
-        stack ~: IdList.cons stackObject
 
 resolve :: Id -> Engine ()
 resolve i = do
