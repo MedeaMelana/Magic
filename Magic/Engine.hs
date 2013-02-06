@@ -233,7 +233,6 @@ offerPriority :: Engine ()
 offerPriority = gets activePlayer >>= fullRoundStartingWith
   where
     fullRoundStartingWith p = do
-      -- TODO do this in a loop
       _ <- executeSBAsAndProcessPrestacks
       mAction <- playersStartingWith p >>= partialRound
       case mAction of
