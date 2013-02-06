@@ -170,7 +170,7 @@ drawCard rp = do
       players .^ listEl rp .^ failedCardDraw =: True
       return []
     (ro, o) : _ -> do
-      effs <- executeEffect (WillMoveObject (Library rp, ro) (Hand rp) o)
+      effs <- compileEffect (WillMoveObject (Library rp, ro) (Hand rp) o)
       return (effs ++ [Did (DrawCard rp)])
 
 -- | Cause an object to move from one zone to another in the specified form. If the object was actually moved, a 'DidMoveObject' event is raised.
