@@ -89,7 +89,7 @@ applyReplacementEffects eff = do
       if null applicable
         then return [effectToReplace]
         else do
-          ((chosen, mReplacements), notChosen) <-
+          ((_, mReplacements), notChosen) <-
             askQuestion p (AskPickReplacementEffect applicable)
           replacements <- executeMagic mReplacements
           -- TODO Resolve replacements in affected player APNAP order.

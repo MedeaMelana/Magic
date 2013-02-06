@@ -7,7 +7,7 @@ module Magic.Engine.Types where
 import Magic.Types
 
 import Control.Applicative
-import Control.Monad.Error (MonadError(..), ErrorT, Error(..))
+import Control.Monad.Error (MonadError(..), Error(..))
 import Control.Monad.Identity
 import Control.Monad.Random (MonadRandom, RandT, StdGen)
 import Control.Monad.Reader

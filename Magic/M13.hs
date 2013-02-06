@@ -31,10 +31,8 @@ sorcerySpeed rSelf rp = (&&) <$> instantSpeed rSelf rp <*> myMainPhase
 
 -- | The effect of playing a permanent without targets that uses the stack.
 playPermanentEffect :: ObjectRef -> PlayerRef -> Magic ()
-playPermanentEffect rSelf _ = do
-    effect <- view (willMoveToStack rSelf (pure resolvePermanent))
-    _ <- executeEffect effect
-    return ()
+playPermanentEffect rSelf _ = void $
+    view (willMoveToStack rSelf (pure resolvePermanent)) >>= executeEffect
   where
     resolvePermanent _source = return ()
 

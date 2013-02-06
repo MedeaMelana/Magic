@@ -236,9 +236,9 @@ offerPriority = gets activePlayer >>= fullRoundStartingWith
       _ <- executeSBAsAndProcessPrestacks
       mAction <- playersStartingWith p >>= partialRound
       case mAction of
-        Just (p, action) -> do
-          executePriorityAction p action
-          fullRoundStartingWith p
+        Just (initiatingPlayer, action) -> do
+          executePriorityAction initiatingPlayer action
+          fullRoundStartingWith initiatingPlayer
         Nothing -> do
           st <- gets stack
           case IdList.head st of
@@ -424,7 +424,7 @@ offerManaAbilitiesToPay p cost = do
       offerManaAbilitiesToPay p cost
 
 canPayAdditionalCosts :: ObjectRef -> PlayerRef -> [AdditionalCost] -> Engine Bool
-canPayAdditionalCosts rSource _ [] = return True
+canPayAdditionalCosts _ _ [] = return True
 canPayAdditionalCosts rSource _ (c:cs) =
   case (rSource, c) of
     ((Battlefield, i), TapSelf) -> do
@@ -433,7 +433,7 @@ canPayAdditionalCosts rSource _ (c:cs) =
     (_, TapSelf) -> return False
 
 payAdditionalCost :: ObjectRef -> PlayerRef -> AdditionalCost -> Engine ()
-payAdditionalCost rSource p c =
+payAdditionalCost rSource _ c =
   case c of
     TapSelf -> case rSource of (Battlefield, i) -> void (executeEffect (Will (TapPermanent i)))
 

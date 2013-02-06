@@ -1,8 +1,7 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Magic.Utils (mkCard, countCountersOfType) where
+module Magic.Utils (mkCard, countCountersOfType, sortOn) where
 
-import qualified Magic.IdList as IdList
 import Magic.Types
 
 import Control.Monad.State (State, execState)
@@ -14,18 +13,6 @@ import Data.Ord (comparing)
 
 mkCard :: State Object () -> Card
 mkCard f = Card (\ts rOwner -> execState f (object ts rOwner))
-
-player :: Player
-player = Player
-  { _life            = 20
-  , _manaPool        = []
-  , _prestack        = []
-  , _library         = IdList.empty
-  , _hand            = IdList.empty
-  , _graveyard       = IdList.empty
-  , _maximumHandSize = Just 7
-  , _failedCardDraw  = False
-  }
 
 object :: Timestamp -> PlayerRef -> Object
 object ts rOwner = Object
