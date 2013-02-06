@@ -37,7 +37,7 @@ askQuestions = eval . viewT
     eval (Left gameOver) = case gameOver of
       GameWin p -> Text.putStrLn ("Player " <> showText p <> " wins!")
       GameDraw  -> Text.putStrLn "The game is a draw"
-      ErrorWithMessage message -> Text.putStrLn ("Error: " <> message)
+      ErrorWithMessage message -> Text.putStrLn ("Engine failed with error: " <> message)
       UnknownError -> Text.putStrLn "Unknown error"
     eval (Right program) = case program of
       Return x -> return x
