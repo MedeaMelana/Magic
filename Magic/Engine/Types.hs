@@ -18,7 +18,12 @@ import Prelude hiding (interact)
 
 
 newtype Engine a = Engine { runEngine :: StateT World (RandT StdGen (ProgramT Interact (Either GameOver))) a }
-  deriving (Functor, Applicative, Monad, MonadState World, MonadRandom)
+  deriving (Functor, Applicative, MonadState World, MonadRandom)
+
+instance Monad Engine where
+  return         = Engine . return
+  Engine x >>= f = Engine (x >>= (runEngine . f))
+  fail           = throwError . strMsg
 
 instance MonadView Engine where
   -- TODO Apply continuous effects
