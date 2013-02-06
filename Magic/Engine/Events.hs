@@ -49,6 +49,15 @@ runExecuteEffectsProgram program = interact (viewT program) >>= eval
 executeEffects :: [OneShotEffect] -> Engine [Event]
 executeEffects effects = do
   effects' <- concat <$> for effects applyReplacementEffects
+
+  -- If enough players lose to end the game, end the game right now
+  let losingPlayers = [ p | Will (LoseGame p) <- effects' ]
+  remainingPlayers <- (\\ losingPlayers) . IdList.ids <$> gets players
+  case remainingPlayers of
+    []  -> throwError GameDraw
+    [p] -> throwError (GameWin p)
+    _   -> return ()  -- continue as normal
+
   events <- concat <$> for effects' compileEffect
   world <- view ask
   forM_ events $ \event -> do
