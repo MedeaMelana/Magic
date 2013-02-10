@@ -17,7 +17,7 @@ module Magic.Types (
     PlayerRef, ObjectRef, ActivatedAbilityRef, ZoneRef(..),
 
     -- * World
-    World(..), players, activePlayer, activeStep, time, turnStructure, exile, battlefield, stack, command,
+    World(..), players, activePlayer, activeStep, time, turnStructure, exile, battlefield, stack, command, turnHistory,
 
     -- * Turn structure
     Step(..), BeginningStep(..), CombatStep(..), EndStep(..),
@@ -120,6 +120,7 @@ data World = World
   , _battlefield   :: IdList Object
   , _stack         :: IdList Object
   , _command       :: IdList Object
+  , _turnHistory   :: [Event]
   }
 
 
@@ -392,7 +393,6 @@ data Event
   | DidActivateAbility ObjectRef Int  -- index of ability
   | DidCastSpell PlayerRef ObjectRef  -- controller, spell
   | DidCounter ObjectRef ObjectRef  -- source (spell or ability), target
-  | DidPlayLand ObjectRef
   | DidRevealCard ObjectRef
   | DidBeginStep Step
   | WillEndStep Step
@@ -420,7 +420,7 @@ data SimpleOneShotEffect
   | SpendFromManaPool PlayerRef ManaPool
   | AttachPermanent ObjectRef (Maybe ObjectRef) (Maybe ObjectRef)  -- aura/equipment, old target, new target
   | RemoveFromCombat Id
-  | PlayLand ObjectRef
+  | PlayLand PlayerRef ObjectRef
   | LoseGame PlayerRef
   | WinGame PlayerRef
 

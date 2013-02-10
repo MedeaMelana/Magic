@@ -42,6 +42,7 @@ newWorld decks = World
     , _battlefield   = IdList.empty
     , _stack         = IdList.empty
     , _command       = IdList.empty
+    , _turnHistory   = []
     }
   where
     ps = IdList.fromListWithId (\i deck -> newPlayer i deck) decks
@@ -109,18 +110,20 @@ fullGame = do
   drawOpeningHands ps 7
   forever $ do
     players ~:* set manaPool []
-    step <- nextStep
+    (step, newTurn) <- nextStep
+    when newTurn (turnHistory =: [])
     raise (DidBeginStep step)
     executeStep step
     raise (WillEndStep step)
 
-nextStep :: Engine Step
+-- | Moves to the next step. Returns the new step, and whether a new turn has begun.
+nextStep :: Engine (Step, Bool)
 nextStep = do
   (rp, s : ss) : ts <- gets turnStructure
   turnStructure =: if null ss then ts else (rp, ss) : ts
   activePlayer  =: rp
   activeStep    =: s
-  return s
+  return (s, null ss)
 
 
 

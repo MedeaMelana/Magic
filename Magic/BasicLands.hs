@@ -40,13 +40,22 @@ playLand rSource rActivator = ClosedAbility
           stackEmpty <- isStackEmpty
           ap <- asks activePlayer
           step <- asks activeStep
-          return (control && ap == rActivator && step == MainPhase && stackEmpty)
+          n <- countLandsPlayedThisTurn (== rActivator)
+
+          return (control && ap == rActivator && step == MainPhase && stackEmpty && n < 1)
         _           -> return False
   , _manaCost = mempty
   , _additionalCosts = []
-  , _effect = void (view (willMoveToBattlefield rSource) >>= executeEffect)
+  , _effect = void (executeEffect (Will (PlayLand rActivator rSource)))
   , _isManaAbility = False
   }
+
+countLandsPlayedThisTurn :: (PlayerRef -> Bool) -> View Int
+countLandsPlayedThisTurn f = length . filter isPlayLand <$> asks turnHistory
+  where
+    isPlayLand (Did (PlayLand p _))  = f p
+    isPlayLand _                     = False
+
 
 tapToAddMana :: Maybe Color -> Ability
 tapToAddMana mc rSource rActivator = ClosedAbility

@@ -59,10 +59,14 @@ executeEffects effects = do
     _   -> return ()  -- continue as normal
 
   events <- concat <$> for effects' compileEffect
+
+  turnHistory ~: (++ events)
+
   world <- view ask
   forM_ events $ \event -> do
     -- TODO trigger abilities
     interact (singleton (LogEvent event world))
+
   return events
 
 raise :: Event -> Engine ()
@@ -115,7 +119,7 @@ affectedPlayer e =
     Will (SpendFromManaPool p _)  -> return p
     Will (AttachPermanent o _ _)  -> controllerOf o  -- debatable
     Will (RemoveFromCombat i)     -> controllerOf (Battlefield, i)
-    Will (PlayLand o)             -> controllerOf o
+    Will (PlayLand p _)           -> return p
     Will (LoseGame p)             -> return p
     Will (WinGame p)              -> return p
   where controllerOf o = gets (object o .^ controller)
@@ -134,7 +138,7 @@ compileEffect e =
     Will (UntapPermanent i)         -> untapPermanent i
     Will (DrawCard rp)              -> drawCard rp
     Will (ShuffleLibrary rPlayer)   -> shuffleLibrary rPlayer
-    Will (PlayLand ro)              -> playLand ro
+    Will (PlayLand p ro)            -> playLand p ro
     Will (AddToManaPool p pool)     -> addToManaPool p pool
     Will (SpendFromManaPool p pool) -> spendFromManaPool p pool
     Will (DamagePlayer source p amount isCombatDamage isPreventable) -> damagePlayer source p amount isCombatDamage isPreventable
@@ -170,8 +174,8 @@ drawCard rp = do
       players .^ listEl rp .^ failedCardDraw =: True
       return []
     (ro, o) : _ -> do
-      effs <- compileEffect (WillMoveObject (Library rp, ro) (Hand rp) o)
-      return (effs ++ [Did (DrawCard rp)])
+      events <- compileEffect (WillMoveObject (Library rp, ro) (Hand rp) o)
+      return (events ++ [Did (DrawCard rp)])
 
 -- | Cause an object to move from one zone to another in the specified form. If the object was actually moved, a 'DidMoveObject' event is raised.
 moveObject :: ObjectRef -> ZoneRef -> Object -> Engine [Event]
@@ -199,8 +203,13 @@ shuffleLibrary rPlayer = do
   puts libraryLabel lib'
   return [Did (ShuffleLibrary rPlayer)]
 
-playLand :: ObjectRef -> Engine [Event]
-playLand ro = gets (object ro) >>= moveObject ro Battlefield
+playLand :: PlayerRef -> ObjectRef -> Engine [Event]
+playLand p ro = do
+  o <- gets (object ro)
+  -- TODO apply replacement effects on the move effect
+  -- TODO store more sensible data in the PlayLand event
+  events <- moveObject ro Battlefield o { _tapStatus = Just Untapped, _controller = p }
+  return (events ++ [Did (PlayLand p ro)])
 
 addToManaPool :: PlayerRef -> ManaPool -> Engine [Event]
 addToManaPool p pool = do
