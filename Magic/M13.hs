@@ -50,6 +50,11 @@ stackingPlayAbility mc ac rSelf rActivator =
     , _isManaAbility   = False
     }
 
+stackTargetlessEffect :: ObjectRef -> (Object -> Magic ()) -> Magic ()
+stackTargetlessEffect rSelf item = do
+  eff <- view (willMoveToStack rSelf (pure item))
+  void $ executeEffect eff
+
 ajani'sSunstriker :: Card
 ajani'sSunstriker = mkCard $ do
   name      =: Just "Ajani's Sunstriker"
@@ -75,7 +80,8 @@ angel'sMercy = mkCard $ do
       { _available = instantSpeed rSelf rActivator
       , _manaCost = [Nothing, Nothing, Just White, Just White]
       , _additionalCosts = []
-      , _effect = void (view (willMoveToStack rSelf (pure (\_ -> void (executeEffect (Will (AdjustLife rActivator 7)))))) >>= executeEffect)
+      , _effect = stackTargetlessEffect rSelf $ \_ ->
+                    void $ executeEffect (Will (AdjustLife rActivator 7))
       , _isManaAbility = False
       }
     )
