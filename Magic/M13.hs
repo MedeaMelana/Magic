@@ -66,6 +66,20 @@ ajani'sSunstriker = mkCard $ do
       })
   staticKeywordAbilities =: [Lifelink]
 
+angel'sMercy :: Card
+angel'sMercy = mkCard $ do
+  name =: Just "Angel's Mercy"
+  types =: instantType
+  play =: (Just $ \rSelf rActivator ->
+    ClosedAbility
+      { _available = instantSpeed rSelf rActivator
+      , _manaCost = [Nothing, Nothing, Just White, Just White]
+      , _additionalCosts = []
+      , _effect = void (view (willMoveToStack rSelf (pure (\_ -> void (executeEffect (Will (AdjustLife rActivator 7)))))) >>= executeEffect)
+      , _isManaAbility = False
+      }
+    )
+
 searingSpear :: Card
 searingSpear = mkCard $ do
   name  =: Just "Searing Spear"
