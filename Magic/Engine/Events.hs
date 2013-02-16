@@ -104,6 +104,7 @@ affectedPlayer :: OneShotEffect -> Engine PlayerRef
 affectedPlayer e =
   case e of
     WillMoveObject o _ _          -> controllerOf o
+    WillCreateObject _ o          -> return (get controller o)
     Will (AdjustLife p _)         -> return p
     Will (DamageObject _ o _ _ _) -> controllerOf o
     Will (DamagePlayer _ p _ _ _) -> return p
@@ -114,7 +115,6 @@ affectedPlayer e =
     Will (UntapPermanent i)       -> controllerOf (Battlefield, i)
     Will (AddCounter o _)         -> controllerOf o
     Will (RemoveCounter o _)      -> controllerOf o
-    Will (CreateObject o)         -> return (get controller o)
     Will (AddToManaPool p _)      -> return p
     Will (SpendFromManaPool p _)  -> return p
     Will (AttachPermanent o _ _)  -> controllerOf o  -- debatable

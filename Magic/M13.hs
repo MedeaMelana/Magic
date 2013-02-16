@@ -8,11 +8,13 @@ import Magic.Target
 import Magic.Utils
 import Magic.Core
 import Magic.Events
+import Magic.Labels
 
 import Control.Applicative
 import Control.Monad (void)
 import Data.Label.Pure (get)
 import Data.Label.PureM ((=:), asks)
+import qualified Data.Set as Set
 
 
 instantSpeed :: ObjectRef -> PlayerRef -> View Bool
@@ -85,6 +87,43 @@ angel'sMercy = mkCard $ do
       , _isManaAbility = False
       }
     )
+
+attendedKnight :: Card
+attendedKnight = mkCard $ do
+    name      =: Just "Attended Knight"
+    types     =: objectTypes [Human, Knight]
+    power     =: Just 2
+    toughness =: Just 2
+    play      =: (Just $ \rSelf rActivator ->
+      ClosedAbility
+        { _available       = sorcerySpeed rSelf rActivator
+        , _manaCost        = [Nothing, Nothing, Just White]
+        , _additionalCosts = []
+        , _effect          = playPermanentEffect rSelf rActivator
+        , _isManaAbility   = False
+        })
+    staticKeywordAbilities =: [FirstStrike]
+    triggeredAbilities     =: [trigger]
+  where
+    trigger :: TriggeredAbility
+    trigger rSelf@(Battlefield, iSelf) (DidMoveObject _ (Battlefield, iOther))
+      | iSelf == iOther  = Just . void . mkTriggerObject <$> asks (object rSelf .^ controller)
+    trigger _ _          = return Nothing
+
+    mkTriggerObject :: PlayerRef -> Magic ()
+    mkTriggerObject p = void $ executeEffect $ WillCreateObject Stack $
+      (emptyObject undefined p) { _stackItem = Just (triggerStackItem p) }
+
+    triggerStackItem :: PlayerRef -> StackItem
+    triggerStackItem p = pure $ \_self ->
+      void $ executeEffect $ WillCreateObject Battlefield $ (emptyObject undefined p)
+        { _name      = Just "Soldier"
+        , _colors    = Set.singleton White
+        , _types     = objectType Soldier
+        , _tapStatus = Just Untapped
+        , _power     = Just 2
+        , _toughness = Just 2
+        }
 
 searingSpear :: Card
 searingSpear = mkCard $ do

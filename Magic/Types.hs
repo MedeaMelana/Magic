@@ -50,7 +50,7 @@ module Magic.Types (
     ClosedAbility(..), available, manaCost, additionalCosts, effect, isManaAbility,
     StackItem, ManaPool, AdditionalCost(..),
     StaticKeywordAbility(..), ContinuousEffect(..), Layer(..),
-    ReplacementEffect,
+    ReplacementEffect, TriggeredAbility,
     PriorityAction(..), PayManaAction(..),
 
     -- * Events
@@ -213,7 +213,7 @@ data Object = Object
   , _staticKeywordAbilities :: Bag StaticKeywordAbility
   , _continuousEffects      :: [ContinuousEffect]  -- special form of static ability
   , _activatedAbilities     :: [Ability]
-  , _triggeredAbilities     :: [Event -> Maybe (Magic ())]
+  , _triggeredAbilities     :: [TriggeredAbility]
   , _replacementEffects     :: [ReplacementEffect]
   }
 
@@ -281,8 +281,10 @@ data CreatureSubtype
   | Goblin
   
   -- Roles
+  | Knight
   | Warrior
   | Shaman
+  | Soldier
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data EnchantmentSubtype = Aura | Curse
@@ -370,6 +372,8 @@ data Layer
 
 type ReplacementEffect = OneShotEffect -> Maybe (Magic [OneShotEffect])
 
+type TriggeredAbility = ObjectRef -> Event -> View (Maybe (Magic ()))
+
 data PriorityAction
   = PlayCard ObjectRef
   | ActivateAbility ActivatedAbilityRef
@@ -388,6 +392,7 @@ data PayManaAction
 data Event
   = Did SimpleOneShotEffect
   | DidMoveObject ObjectRef ObjectRef  -- old ref, new ref
+  | DidCreateObject ObjectRef
 
   -- Keyword actions [701]
   | DidActivateAbility ObjectRef Int  -- index of ability
@@ -401,6 +406,7 @@ data Event
 data OneShotEffect
   = Will SimpleOneShotEffect
   | WillMoveObject ObjectRef ZoneRef Object  -- current zone/id, new zone, suggested form
+  | WillCreateObject ZoneRef Object  -- create a token, emblem or spell
 
 -- | A one-shot effect is simple if its fields contain enough information to serve as an 'Event' unchanged, using the 'Did' constructor.
 data SimpleOneShotEffect
@@ -415,7 +421,6 @@ data SimpleOneShotEffect
   | UntapPermanent Id  -- object on battlefield
   | AddCounter ObjectRef CounterType
   | RemoveCounter ObjectRef CounterType
-  | CreateObject Object  -- create a token, emblem or spell
   | AddToManaPool PlayerRef ManaPool
   | SpendFromManaPool PlayerRef ManaPool
   | AttachPermanent ObjectRef (Maybe ObjectRef) (Maybe ObjectRef)  -- aura/equipment, old target, new target

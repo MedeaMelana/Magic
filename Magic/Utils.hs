@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Magic.Utils (mkCard, countCountersOfType, sortOn) where
+module Magic.Utils (mkCard, emptyObject, countCountersOfType, sortOn) where
 
 import Magic.Types
 
@@ -12,10 +12,10 @@ import Data.Ord (comparing)
 
 
 mkCard :: State Object () -> Card
-mkCard f = Card (\ts rOwner -> execState f (object ts rOwner))
+mkCard f = Card (\ts rOwner -> execState f (emptyObject ts rOwner))
 
-object :: Timestamp -> PlayerRef -> Object
-object ts rOwner = Object
+emptyObject :: Timestamp -> PlayerRef -> Object
+emptyObject ts rOwner = Object
   { _name = Nothing
   , _colors = mempty
   , _types = mempty
