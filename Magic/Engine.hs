@@ -319,14 +319,14 @@ collectSBAs = execWriterT $ do
         when (hasTypes creatureType o) $ do
 
           -- [704.5f]
-          let hasNonPositiveToughness = maybe False (<= 0) (get toughness o)
+          let hasNonPositiveToughness = maybe False (<= 0) (fmap snd (get pt o))
           when hasNonPositiveToughness $ tell [willMoveToGraveyard i o]
 
           -- [704.5g]
           -- [704.5h]
           let hasLethalDamage =
-                case (get toughness o, get damage o) of
-                  (Just t, Just d) -> t > 0 && d >= t
+                case (get pt o, get damage o) of
+                  (Just (_, t), Just d) -> t > 0 && d >= t
                   _                -> False
           when (hasLethalDamage || get deathtouched o) $
             tell [Will (DestroyPermanent i True)]

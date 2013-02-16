@@ -61,8 +61,7 @@ ajani'sSunstriker :: Card
 ajani'sSunstriker = mkCard $ do
   name      =: Just "Ajani's Sunstriker"
   types     =: creatureType
-  power     =: Just 2
-  toughness =: Just 2
+  pt        =: Just (2, 2)
   play     =: (Just $ \rSelf rActivator ->
     ClosedAbility
       { _available       = sorcerySpeed rSelf rActivator
@@ -92,8 +91,7 @@ attendedKnight :: Card
 attendedKnight = mkCard $ do
     name      =: Just "Attended Knight"
     types     =: objectTypes [Human, Knight]
-    power     =: Just 2
-    toughness =: Just 2
+    pt        =: Just (2, 2)
     play      =: (Just $ \rSelf rActivator ->
       ClosedAbility
         { _available       = sorcerySpeed rSelf rActivator
@@ -121,8 +119,7 @@ attendedKnight = mkCard $ do
         , _colors    = Set.singleton White
         , _types     = objectType Soldier
         , _tapStatus = Just Untapped
-        , _power     = Just 2
-        , _toughness = Just 2
+        , _pt        = Just (2, 2)
         }
 
 searingSpear :: Card

@@ -31,7 +31,7 @@ module Magic.Types (
       name, colors, types, owner, controller, timestamp, counters,
       tapStatus,
       stackItem,
-      power, toughness, damage, deathtouched,
+      pt, damage, deathtouched,
       play, staticKeywordAbilities, continuousEffects, activatedAbilities, triggeredAbilities, replacementEffects,
 
     -- * Object properties
@@ -198,8 +198,7 @@ data Object = Object
   , _stackItem :: Maybe StackItem
 
   -- for creatures
-  , _power         :: Maybe Int
-  , _toughness     :: Maybe Int
+  , _pt         :: Maybe (Int, Int)
 
   -- for creatures on the battlefield
   , _damage        :: Maybe Int

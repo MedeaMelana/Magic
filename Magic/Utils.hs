@@ -27,8 +27,7 @@ emptyObject ts rOwner = Object
   , _tapStatus = Nothing
   , _stackItem = Nothing
 
-  , _power = Nothing
-  , _toughness = Nothing
+  , _pt = Nothing
   , _damage = Nothing
   , _deathtouched = False
 
