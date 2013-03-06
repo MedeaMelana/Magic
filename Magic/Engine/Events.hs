@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Magic.Engine.Events (
     -- * Executing effects
@@ -17,6 +18,7 @@ import Magic.IdList (Id)
 import qualified Magic.IdList as IdList
 import Magic.Labels
 import Magic.Types
+import Magic.Utils
 import Magic.Engine.Types
 
 import Control.Applicative ((<$>))
@@ -63,16 +65,24 @@ executeEffects effects = do
   turnHistory ~: (++ events)
 
   world <- view ask
-  forM_ events $ \event -> do
-    -- TODO trigger abilities
-    interact (singleton (LogEvent event world))
-
+  forM_ events raise
   return events
 
 raise :: Event -> Engine ()
 raise event = do
   world <- view ask
+
   interact (singleton (LogEvent event world))
+
+  ros <- view allObjects
+  forM_ ros $ \(ro, o) -> do
+    let tas = get triggeredAbilities o
+    let p = get controller o
+    forM_ tas $ \ta -> do
+      mProgram <- view (ta ro p event)
+      case mProgram of
+        Nothing -> return ()
+        Just program -> player p .^ prestack ~: (++ [program])
 
 executeEffect :: OneShotEffect -> Engine [Event]
 executeEffect = executeEffects . (: [])

@@ -277,11 +277,14 @@ processPrestacks = do
   liftM or $ for ips $ \(i,p) -> do
     let pending = get prestack p
     when (not (null pending)) $ do
-      pending' <- askQuestion i (AskReorder pending)
-      forM_ pending' $ \mkStackObject -> do
-        stackObject <- executeMagic mkStackObject
-        stack ~: IdList.cons stackObject
+      pending' <- askReorder i pending
+      forM_ pending' executeMagic
     return (not (null pending))
+
+askReorder :: PlayerRef -> [a] -> Engine [a]
+askReorder _ [] = return []
+askReorder _ [x] = return [x]
+askReorder p xs = askQuestion p (AskReorder xs)
 
 untilFalse :: Monad m => m Bool -> m Bool
 untilFalse p = do
@@ -353,8 +356,8 @@ resolve i = do
   -- if the object is now still on the stack, move it to the appropriate zone
   let o' = set stackItem Nothing o
   if (hasTypes instantType o || hasTypes sorceryType o)
-    then void (moveObject (Stack, i) (Graveyard (get controller o)) o')
-    else void (moveObject (Stack, i) Battlefield o')
+    then void $ executeEffect $ WillMoveObject (Stack, i) (Graveyard (get controller o)) o'
+    else void $ executeEffect $ WillMoveObject (Stack, i) Battlefield o'
 
 collectPriorityActions :: PlayerRef -> Engine [PriorityAction]
 collectPriorityActions p = do

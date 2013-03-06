@@ -162,7 +162,7 @@ data EndStep
 data Player = Player
   { _life            :: Int
   , _manaPool        :: Bag (Maybe Color)
-  , _prestack        :: [Magic Object]  -- for triggered abilities
+  , _prestack        :: [Magic ()]  -- for triggered abilities
   , _library         :: IdList Object
   , _hand            :: IdList Object
   , _graveyard       :: IdList Object
@@ -371,7 +371,8 @@ data Layer
 
 type ReplacementEffect = OneShotEffect -> Maybe (Magic [OneShotEffect])
 
-type TriggeredAbility = ObjectRef -> Event -> View (Maybe (Magic ()))
+-- | Arguments: source, controller, event
+type TriggeredAbility = ObjectRef -> PlayerRef -> Event -> View (Maybe (Magic ()))
 
 data PriorityAction
   = PlayCard ObjectRef
@@ -392,6 +393,7 @@ data Event
   = Did SimpleOneShotEffect
   | DidMoveObject ObjectRef ObjectRef  -- old ref, new ref
   | DidCreateObject ObjectRef
+  | DidDeclareAttackers PlayerRef [ObjectRef]
 
   -- Keyword actions [701]
   | DidActivateAbility ObjectRef Int  -- index of ability
@@ -427,6 +429,7 @@ data SimpleOneShotEffect
   | PlayLand PlayerRef ObjectRef
   | LoseGame PlayerRef
   | WinGame PlayerRef
+  | InstallContinuousEffect ObjectRef ContinuousEffect
 
 
 

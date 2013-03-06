@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Magic.Utils (mkCard, emptyObject, countCountersOfType, sortOn) where
+module Magic.Utils (mkCard, emptyObject, countCountersOfType, sortOn, textShow) where
 
 import Magic.Types
 
@@ -9,6 +9,7 @@ import Data.Label.Pure
 import Data.List (sortBy)
 import Data.Monoid (mempty)
 import Data.Ord (comparing)
+import Data.Text (Text, pack)
 
 
 mkCard :: State Object () -> Card
@@ -45,3 +46,6 @@ countCountersOfType ty o = length (filter (== ty) (get counters o))
 
 sortOn :: Ord b => (a -> b) -> [a] -> [a]
 sortOn = sortBy . comparing
+
+textShow :: Show a => a -> Text
+textShow = pack . show

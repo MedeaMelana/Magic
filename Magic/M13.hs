@@ -87,6 +87,38 @@ angel'sMercy = mkCard $ do
       }
     )
 
+angelicBenediction :: Card
+angelicBenediction = mkCard $ do
+  name =: Just "Angelic Benediction"
+  types =: enchantmentType
+  play =: (Just $ \rSelf rActivator ->
+    ClosedAbility
+      { _available       = sorcerySpeed rSelf rActivator
+      , _manaCost        = [Nothing, Nothing, Nothing, Just White]
+      , _additionalCosts = []
+      , _effect          = playPermanentEffect rSelf rActivator
+      , _isManaAbility   = False
+      }
+    )
+  triggeredAbilities =: [exalted]
+
+exalted :: TriggeredAbility
+exalted (Battlefield, _) p (DidDeclareAttackers p' [r])
+    | p == p'  = return $ Just $ void $ mkTriggerObject p r
+  where
+    mkTriggerObject :: PlayerRef -> ObjectRef -> Magic ()
+    mkTriggerObject p r = void $ executeEffect $ WillCreateObject Stack $
+      (emptyObject undefined p) { _stackItem = Just (triggerStackItem p r) }
+
+    triggerStackItem :: PlayerRef -> ObjectRef -> StackItem
+    triggerStackItem p r = pure $ \_self ->
+      void $ executeEffect $ Will $ InstallContinuousEffect r $
+        ContinuousEffect
+          { _layer       = Layer7c
+          , _efTimestamp = undefined
+          , _efEffect    = undefined
+          }
+
 attendedKnight :: Card
 attendedKnight = mkCard $ do
     name      =: Just "Attended Knight"
@@ -104,9 +136,9 @@ attendedKnight = mkCard $ do
     triggeredAbilities     =: [trigger]
   where
     trigger :: TriggeredAbility
-    trigger rSelf@(Battlefield, iSelf) (DidMoveObject _ (Battlefield, iOther))
-      | iSelf == iOther  = Just . void . mkTriggerObject <$> asks (object rSelf .^ controller)
-    trigger _ _          = return Nothing
+    trigger rSelf@(Battlefield, iSelf) p (DidMoveObject _ (Battlefield, iOther))
+      | iSelf == iOther  = return $ Just $ void $ mkTriggerObject p
+    trigger _ _ _        = return Nothing
 
     mkTriggerObject :: PlayerRef -> Magic ()
     mkTriggerObject p = void $ executeEffect $ WillCreateObject Stack $
