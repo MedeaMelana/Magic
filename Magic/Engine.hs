@@ -356,8 +356,8 @@ resolve i = do
   -- if the object is now still on the stack, move it to the appropriate zone
   let o' = set stackItem Nothing o
   if (hasTypes instantType o || hasTypes sorceryType o)
-    then void $ executeEffect $ WillMoveObject (Stack, i) (Graveyard (get controller o)) o'
-    else void $ executeEffect $ WillMoveObject (Stack, i) Battlefield o'
+    then void $ executeEffect $ WillMoveObject (Just (Stack, i)) (Graveyard (get controller o)) o'
+    else void $ executeEffect $ WillMoveObject (Just (Stack, i)) Battlefield o'
 
 collectPriorityActions :: PlayerRef -> Engine [PriorityAction]
 collectPriorityActions p = do
@@ -378,10 +378,12 @@ collectPlayableCards :: PlayerRef -> Engine [ObjectRef]
 collectPlayableCards p = do
   objects <- view allObjects
   execWriterT $ do
-    for objects $ \(r,o) -> do
-      let Just playAbility = get play o
-      ok <- lift (shouldOfferAbility playAbility r p)
-      when ok (tell [r])
+    forM_ objects $ \(r,o) -> do
+      case get play o of
+        Just playAbility -> do
+          ok <- lift (shouldOfferAbility playAbility r p)
+          when ok (tell [r])
+        Nothing -> return ()
 
 shouldOfferAbility :: Ability -> ObjectRef -> PlayerRef -> Engine Bool
 shouldOfferAbility ability rSource rActivator = do

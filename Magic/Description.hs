@@ -18,7 +18,7 @@ import Control.Monad.Reader (runReader)
 import Data.Label.Pure (get)
 import Data.List (sort)
 import Data.Maybe (catMaybes)
-import Data.Monoid (Monoid(..), (<>))
+import Data.Monoid (Monoid(..), (<>), mempty)
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.String (IsString(..))
@@ -110,7 +110,7 @@ describeObject (i, o) = intercalate ", " components
     nm =
       case get name o of
         Just n -> "#" <> sh i <> " " <> text n
-        Nothing -> "#" <> sh i
+        Nothing -> "#" <> sh i <> " (anonymous)"
 
     ts =
       case get tapStatus o of
@@ -121,9 +121,11 @@ describeObjectName :: Object -> Description
 describeObjectName o =
   case (get name o, get types o) of
     (Just n, _) -> text n
-    (Nothing, tys) -> describeTypes tys
+    (Nothing, tys) | tys /= mempty -> describeTypes tys
+    _ -> "(anonymous)"
 
 describeTypes :: ObjectTypes -> Description
+describeTypes tys | tys == mempty = "(typeless)"
 describeTypes tys = withWorld $ \world ->
     intercalate " - " (filter (not . nullDesc world) [pre, post])
   where
@@ -196,9 +198,12 @@ describeEvent e =
         "Player " <> sh p <> " spends " <> describeManaPool pool <> " from their mana pool"
       Did (LoseGame p) -> "Player " <> sh p <> " loses"
       Did (WinGame p) -> "Player " <> sh p <> " wins the game"
-      DidMoveObject (rFromZone, _) r@(rToZone, _) ->
+      DidMoveObject (Just (rFromZone, _)) r@(rToZone, _) ->
         describeObjectName (get (object r) world) <> " moves from " <>
         describeZoneRef rFromZone <> " to " <> describeZoneRef rToZone
+      DidMoveObject Nothing r@(rToZone, _) ->
+        describeObjectName (get (object r) world) <> " enters " <>
+        describeZoneRef rToZone
       WillEndStep s -> "End of " <> sh s
       DidBeginStep s -> "Beginning of " <> sh s
       _ -> "(event)"

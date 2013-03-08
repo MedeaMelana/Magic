@@ -107,7 +107,7 @@ exalted (Battlefield, _) p (DidDeclareAttackers p' [r])
     | p == p'  = return $ Just $ void $ mkTriggerObject p r
   where
     mkTriggerObject :: PlayerRef -> ObjectRef -> Magic ()
-    mkTriggerObject p r = void $ executeEffect $ WillCreateObject Stack $
+    mkTriggerObject p r = void $ executeEffect $ WillMoveObject Nothing Stack $
       (emptyObject undefined p) { _stackItem = Just (triggerStackItem p r) }
 
     triggerStackItem :: PlayerRef -> ObjectRef -> StackItem
@@ -141,12 +141,12 @@ attendedKnight = mkCard $ do
     trigger _ _ _        = return Nothing
 
     mkTriggerObject :: PlayerRef -> Magic ()
-    mkTriggerObject p = void $ executeEffect $ WillCreateObject Stack $
-      (emptyObject undefined p) { _stackItem = Just (triggerStackItem p) }
+    mkTriggerObject p = void $ executeEffect $ WillMoveObject Nothing Stack $
+        (emptyObject undefined p) { _stackItem = Just (triggerStackItem p) }
 
     triggerStackItem :: PlayerRef -> StackItem
     triggerStackItem p = pure $ \_self ->
-      void $ executeEffect $ WillCreateObject Battlefield $ (emptyObject undefined p)
+      void $ executeEffect $ WillMoveObject Nothing Battlefield $ (emptyObject undefined p)
         { _name      = Just "Soldier"
         , _colors    = Set.singleton White
         , _types     = objectType Soldier

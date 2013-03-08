@@ -113,8 +113,7 @@ applyReplacementEffects eff = do
 affectedPlayer :: OneShotEffect -> Engine PlayerRef
 affectedPlayer e =
   case e of
-    WillMoveObject o _ _          -> controllerOf o
-    WillCreateObject _ o          -> return (get controller o)
+    WillMoveObject _ _ o          -> return (get controller o)
     Will (AdjustLife p _)         -> return p
     Will (DamageObject _ o _ _ _) -> controllerOf o
     Will (DamagePlayer _ p _ _ _) -> return p
@@ -143,7 +142,7 @@ affectedPlayer e =
 compileEffect :: OneShotEffect -> Engine [Event]
 compileEffect e =
   case e of
-    WillMoveObject rObj rToZone obj -> moveObject rObj rToZone obj
+    WillMoveObject mrObj rToZone obj -> moveObject mrObj rToZone obj
     Will (TapPermanent i)           -> tapPermanent i
     Will (UntapPermanent i)         -> untapPermanent i
     Will (DrawCard rp)              -> drawCard rp
@@ -184,25 +183,29 @@ drawCard rp = do
       players .^ listEl rp .^ failedCardDraw =: True
       return []
     (ro, o) : _ -> do
-      events <- compileEffect (WillMoveObject (Library rp, ro) (Hand rp) o)
+      events <- compileEffect (WillMoveObject (Just (Library rp, ro)) (Hand rp) o)
       return (events ++ [Did (DrawCard rp)])
 
 -- | Cause an object to move from one zone to another in the specified form. If the object was actually moved, a 'DidMoveObject' event is raised.
-moveObject :: ObjectRef -> ZoneRef -> Object -> Engine [Event]
-moveObject oldRef@(rFromZone, i) rToZone obj = do
+moveObject :: Maybe ObjectRef -> ZoneRef -> Object -> Engine [Event]
+moveObject (Just oldRef@(rFromZone, i)) rToZone obj = do
   mObj <- IdList.removeM (compileZoneRef rFromZone) i
   case mObj of
     Nothing -> return []
     Just _  -> do
       t <- tick
       newId <- IdList.snocM (compileZoneRef rToZone) (set timestamp t obj)
-      return [DidMoveObject oldRef (rToZone, newId)]
+      return [DidMoveObject (Just oldRef) (rToZone, newId)]
+moveObject Nothing rToZone obj = do
+  t <- tick
+  newId <- IdList.snocM (compileZoneRef rToZone) (set timestamp t obj)
+  return [DidMoveObject Nothing (rToZone, newId)]
 
 -- | @moveAllObjects z1 z2@ moves all objects from zone @z1@ to zone @z2@, raising a 'DidMoveObject' event for every object that was moved this way.
 moveAllObjects :: ZoneRef -> ZoneRef -> Engine [Event]
 moveAllObjects rFromZone rToZone = do
   ois <- IdList.toList <$> gets (compileZoneRef rFromZone)
-  concat <$> (for ois $ \(i, o) -> moveObject (rFromZone, i) rToZone o)
+  concat <$> (for ois $ \(i, o) -> moveObject (Just (rFromZone, i)) rToZone o)
 
 -- | Shuffle a player's library. A 'ShuffleLibrary' event is raised.
 shuffleLibrary :: PlayerRef -> Engine [Event]
@@ -218,7 +221,7 @@ playLand p ro = do
   o <- gets (object ro)
   -- TODO apply replacement effects on the move effect
   -- TODO store more sensible data in the PlayLand event
-  events <- moveObject ro Battlefield o { _tapStatus = Just Untapped, _controller = p }
+  events <- moveObject (Just ro) Battlefield o { _tapStatus = Just Untapped, _controller = p }
   return (events ++ [Did (PlayLand p ro)])
 
 addToManaPool :: PlayerRef -> ManaPool -> Engine [Event]

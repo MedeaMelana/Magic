@@ -391,7 +391,7 @@ data PayManaAction
 -- | Events are caused by various actions in the game. They describe something that has just happened, such as executing a 'OneShotEffect', progressing to the next step or phases, casting spells, et cetera. Events form the input for triggered abilities.
 data Event
   = Did SimpleOneShotEffect
-  | DidMoveObject ObjectRef ObjectRef  -- old ref, new ref
+  | DidMoveObject (Maybe ObjectRef) ObjectRef  -- old ref, new ref
   | DidCreateObject ObjectRef
   | DidDeclareAttackers PlayerRef [ObjectRef]
 
@@ -406,8 +406,7 @@ data Event
 -- | A one-shot effect causes a mutation in the game's state. A value of @OneShotEffect@ describes something that is about to happen. When one-shot effects are executed, they may be replaced or prevented by replacement effects, and cause an 'Event' to be raised, triggering abilities.
 data OneShotEffect
   = Will SimpleOneShotEffect
-  | WillMoveObject ObjectRef ZoneRef Object  -- current zone/id, new zone, suggested form
-  | WillCreateObject ZoneRef Object  -- create a token, emblem or spell
+  | WillMoveObject (Maybe ObjectRef) ZoneRef Object  -- optional current zone/id, new zone, suggested form
 
 -- | A one-shot effect is simple if its fields contain enough information to serve as an 'Event' unchanged, using the 'Did' constructor.
 data SimpleOneShotEffect
