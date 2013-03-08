@@ -278,6 +278,7 @@ processPrestacks = do
     let pending = get prestack p
     when (not (null pending)) $ do
       pending' <- askReorder i pending
+      player i .^ prestack =: []
       forM_ pending' executeMagic
     return (not (null pending))
 
