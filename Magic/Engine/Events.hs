@@ -49,6 +49,7 @@ runExecuteEffectsProgram program = interact (viewT program) >>= eval
 -- Execute multiple effects as a single event, applying replacement effects and
 -- triggering abilities.
 executeEffects :: [OneShotEffect] -> Engine [Event]
+executeEffects [] = return []
 executeEffects effects = do
   effects' <- concat <$> for effects applyReplacementEffects
 
@@ -64,7 +65,6 @@ executeEffects effects = do
 
   turnHistory ~: (++ events)
 
-  world <- view ask
   forM_ events raise
   return events
 
