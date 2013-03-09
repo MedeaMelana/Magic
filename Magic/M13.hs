@@ -12,6 +12,7 @@ import Magic.Labels
 
 import Control.Applicative
 import Control.Monad (void)
+import Data.Boolean ((&&*))
 import Data.Label.Pure (get)
 import Data.Label.PureM ((=:), asks)
 import qualified Data.Set as Set
@@ -24,7 +25,7 @@ instantSpeed rSelf rActivator =
     _            -> return False
 
 sorcerySpeed :: ObjectRef -> PlayerRef -> View Bool
-sorcerySpeed rSelf rp = (&&) <$> instantSpeed rSelf rp <*> myMainPhase
+sorcerySpeed rSelf rp = instantSpeed rSelf rp &&* myMainPhase &&* isStackEmpty
   where
     myMainPhase = do
       ap <- asks activePlayer
