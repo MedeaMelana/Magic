@@ -162,7 +162,7 @@ data EndStep
 data Player = Player
   { _life            :: Int
   , _manaPool        :: Bag (Maybe Color)
-  , _prestack        :: [Magic ()]  -- for triggered abilities
+  , _prestack        :: [Magic ()]  -- triggered abilities about to be put on the stack
   , _library         :: IdList Object
   , _hand            :: IdList Object
   , _graveyard       :: IdList Object
@@ -372,7 +372,7 @@ data Layer
 type ReplacementEffect = OneShotEffect -> Maybe (Magic [OneShotEffect])
 
 -- | Arguments: source, controller, event
-type TriggeredAbility = ObjectRef -> PlayerRef -> Event -> View (Maybe (Magic ()))
+type TriggeredAbility = ObjectRef -> PlayerRef -> [Event] -> View [Magic ()]
 
 data PriorityAction
   = PlayCard ObjectRef

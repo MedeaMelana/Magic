@@ -103,8 +103,8 @@ angelicBenediction = mkCard $ do
   triggeredAbilities =: [exalted]
 
 exalted :: TriggeredAbility
-exalted (Battlefield, _) p (DidDeclareAttackers p' [r])
-    | p == p'  = return $ Just $ void $ mkTriggerObject p r
+exalted (Battlefield, _) p events = return [ mkTriggerObject p r
+    | DidDeclareAttackers p' [r] <- events, p == p' ]
   where
     mkTriggerObject :: PlayerRef -> ObjectRef -> Magic ()
     mkTriggerObject p r = void $ executeEffect $ WillMoveObject Nothing Stack $
@@ -118,6 +118,7 @@ exalted (Battlefield, _) p (DidDeclareAttackers p' [r])
           , _efTimestamp = undefined
           , _efEffect    = undefined
           }
+exalted _ _ _ = return []
 
 attendedKnight :: Card
 attendedKnight = mkCard $ do
@@ -136,9 +137,8 @@ attendedKnight = mkCard $ do
     triggeredAbilities     =: [trigger]
   where
     trigger :: TriggeredAbility
-    trigger rSelf@(Battlefield, iSelf) p (DidMoveObject _ (Battlefield, iOther))
-      | iSelf == iOther  = return $ Just $ void $ mkTriggerObject p
-    trigger _ _ _        = return Nothing
+    trigger rSelf p events = return [ mkTriggerObject p
+      | DidMoveObject _ rOther@(Battlefield, _) <- events, rSelf == rOther ]
 
     mkTriggerObject :: PlayerRef -> Magic ()
     mkTriggerObject p = void $ executeEffect $ WillMoveObject Nothing Stack $

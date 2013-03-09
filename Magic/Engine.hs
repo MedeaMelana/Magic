@@ -112,9 +112,9 @@ fullGame = do
     players ~:* set manaPool []
     (step, newTurn) <- nextStep
     when newTurn (turnHistory =: [])
-    raise (DidBeginStep step)
+    raise [DidBeginStep step]
     executeStep step
-    raise (WillEndStep step)
+    raise [WillEndStep step]
 
 -- | Moves to the next step. Returns the new step, and whether a new turn has begun.
 nextStep :: Engine (Step, Bool)

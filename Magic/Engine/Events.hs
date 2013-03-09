@@ -64,24 +64,22 @@ executeEffects effects = do
 
   turnHistory ~: (++ events)
 
-  forM_ events raise
+  raise events
   return events
 
-raise :: Event -> Engine ()
-raise event = do
+raise :: [Event] -> Engine ()
+raise events = do
   world <- view ask
 
-  interact (singleton (LogEvent event world))
+  interact $ forM_ events $ \event -> singleton (LogEvent event world)
 
   ros <- view allObjects
   forM_ ros $ \(ro, o) -> do
     let tas = get triggeredAbilities o
     let p = get controller o
     forM_ tas $ \ta -> do
-      mProgram <- view (ta ro p event)
-      case mProgram of
-        Nothing -> return ()
-        Just program -> player p .^ prestack ~: (++ [program])
+      programs <- view (ta ro p events)
+      player p .^ prestack ~: (++ programs)
 
 executeEffect :: OneShotEffect -> Engine [Event]
 executeEffect = executeEffects . (: [])
