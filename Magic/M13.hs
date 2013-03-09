@@ -8,7 +8,6 @@ import Magic.Target
 import Magic.Utils
 import Magic.Core
 import Magic.Events
-import Magic.Labels
 
 import Control.Applicative
 import Control.Monad (void)

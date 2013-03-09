@@ -18,7 +18,6 @@ import Magic.IdList (Id)
 import qualified Magic.IdList as IdList
 import Magic.Labels
 import Magic.Types
-import Magic.Utils
 import Magic.Engine.Types
 
 import Control.Applicative ((<$>))
