@@ -151,7 +151,7 @@ attendedKnight = mkCard $ do
         , _colors    = Set.singleton White
         , _types     = objectType Soldier
         , _tapStatus = Just Untapped
-        , _pt        = Just (2, 2)
+        , _pt        = Just (1, 1)
         }
 
 searingSpear :: Card
