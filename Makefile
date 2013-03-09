@@ -12,3 +12,6 @@ opendocs: docs
 
 clean:
 	find . \( -name '*.o' -or -name '*.hi' \) -exec rm {} \;
+
+compile:
+	ghc --make -Wall -i.:tests Main
