@@ -199,7 +199,10 @@ moveObject mOldRef rToZone obj =
   where
     createObject = do
       t <- tick
-      newId <- IdList.snocM (compileZoneRef rToZone) (set timestamp t obj)
+      let insertOp
+            | rToZone == Stack  = IdList.consM
+            | otherwise         = IdList.snocM
+      newId <- insertOp (compileZoneRef rToZone) (set timestamp t obj)
       return [DidMoveObject mOldRef (rToZone, newId)]
 
 -- | @moveAllObjects z1 z2@ moves all objects from zone @z1@ to zone @z2@, raising a 'DidMoveObject' event for every object that was moved this way.
