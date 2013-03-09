@@ -188,18 +188,19 @@ drawCard rp = do
 
 -- | Cause an object to move from one zone to another in the specified form. If the object was actually moved, a 'DidMoveObject' event is raised.
 moveObject :: Maybe ObjectRef -> ZoneRef -> Object -> Engine [Event]
-moveObject (Just oldRef@(rFromZone, i)) rToZone obj = do
-  mObj <- IdList.removeM (compileZoneRef rFromZone) i
-  case mObj of
-    Nothing -> return []
-    Just _  -> do
+moveObject mOldRef rToZone obj =
+    case mOldRef of
+      Nothing -> createObject
+      Just (rFromZone, i) -> do
+        mObj <- IdList.removeM (compileZoneRef rFromZone) i
+        case mObj of
+          Nothing -> return []
+          Just _  -> createObject
+  where
+    createObject = do
       t <- tick
       newId <- IdList.snocM (compileZoneRef rToZone) (set timestamp t obj)
-      return [DidMoveObject (Just oldRef) (rToZone, newId)]
-moveObject Nothing rToZone obj = do
-  t <- tick
-  newId <- IdList.snocM (compileZoneRef rToZone) (set timestamp t obj)
-  return [DidMoveObject Nothing (rToZone, newId)]
+      return [DidMoveObject mOldRef (rToZone, newId)]
 
 -- | @moveAllObjects z1 z2@ moves all objects from zone @z1@ to zone @z2@, raising a 'DidMoveObject' event for every object that was moved this way.
 moveAllObjects :: ZoneRef -> ZoneRef -> Engine [Event]
