@@ -105,13 +105,20 @@ describeObjectByRef ro@(_, i) = withWorld $ \world -> describeObject (i, get (ob
 describeObject :: (Id, Object) -> Description
 describeObject (i, o) = intercalate ", " components
   where
-    components = [ nm, describeTypes (get types o)] ++
+    components = mconcat [ nm, ptd, [describeTypes (get types o)]] ++
                     map sh (get staticKeywordAbilities o) ++ ts
-    nm =
+
+    nm :: [Description]
+    nm = (: []) $
       case get name o of
         Just n -> "#" <> sh i <> " " <> text n
         Nothing -> "#" <> sh i <> " (anonymous)"
 
+    ptd :: [Description]
+    ptd =
+      case get pt o of
+        Just (p, t) -> [sh p <> "/" <> sh t]
+        Nothing -> []
     ts =
       case get tapStatus o of
         Just ts' -> [sh ts']
