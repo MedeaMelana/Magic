@@ -57,6 +57,11 @@ stackTargetlessEffect rSelf item = do
   eff <- view (willMoveToStack rSelf (pure item))
   void $ executeEffect eff
 
+-- | Creates a trigger on the stack under the control of the specified player.
+mkTriggerObject :: PlayerRef -> StackItem -> Magic ()
+mkTriggerObject p item = void $ executeEffect $ WillMoveObject Nothing Stack $
+  (emptyObject undefined p) { _stackItem = Just item }
+
 ajani'sSunstriker :: Card
 ajani'sSunstriker = mkCard $ do
   name      =: Just "Ajani's Sunstriker"
@@ -103,15 +108,11 @@ angelicBenediction = mkCard $ do
   triggeredAbilities =: [exalted]
 
 exalted :: TriggeredAbility
-exalted (Battlefield, _) p events = return [ mkTriggerObject p r
+exalted (Battlefield, _) p events = return [ mkTriggerObject p (boostPT r)
     | DidDeclareAttackers p' [r] <- events, p == p' ]
   where
-    mkTriggerObject :: PlayerRef -> ObjectRef -> Magic ()
-    mkTriggerObject p r = void $ executeEffect $ WillMoveObject Nothing Stack $
-      (emptyObject undefined p) { _stackItem = Just (triggerStackItem p r) }
-
-    triggerStackItem :: PlayerRef -> ObjectRef -> StackItem
-    triggerStackItem p r = pure $ \_self ->
+    boostPT :: ObjectRef -> StackItem
+    boostPT r = pure $ \_self ->
       void $ executeEffect $ Will $ InstallContinuousEffect r $
         ContinuousEffect
           { _layer       = Layer7c
@@ -137,16 +138,12 @@ attendedKnight = mkCard $ do
     triggeredAbilities     =: [trigger]
   where
     trigger :: TriggeredAbility
-    trigger rSelf p events = return [ mkTriggerObject p
+    trigger rSelf p events = return [ mkTriggerObject p (mkSoldier p)
       | DidMoveObject _ rOther@(Battlefield, _) <- events, rSelf == rOther ]
 
-    mkTriggerObject :: PlayerRef -> Magic ()
-    mkTriggerObject p = void $ executeEffect $ WillMoveObject Nothing Stack $
-        (emptyObject undefined p) { _stackItem = Just (triggerStackItem p) }
-
-    triggerStackItem :: PlayerRef -> StackItem
-    triggerStackItem p = pure $ \_self ->
-      void $ executeEffect $ WillMoveObject Nothing Battlefield $ (emptyObject undefined p)
+    mkSoldier :: PlayerRef -> StackItem
+    mkSoldier p = pure $ \_self -> void $ executeEffect $
+      WillMoveObject Nothing Battlefield $ (emptyObject undefined p)
         { _name      = Just "Soldier"
         , _colors    = Set.singleton White
         , _types     = objectType Soldier
