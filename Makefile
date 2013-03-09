@@ -1,5 +1,5 @@
 run:
-	ghci -Wall -i.:tests CLITest
+	ghci -Wall -i.:tests Main
 
 configure:
 	cabal configure
