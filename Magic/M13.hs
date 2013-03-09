@@ -65,7 +65,7 @@ mkTriggerObject p item = void $ executeEffect $ WillMoveObject Nothing Stack $
 ajani'sSunstriker :: Card
 ajani'sSunstriker = mkCard $ do
   name      =: Just "Ajani's Sunstriker"
-  types     =: creatureType
+  types     =: objectTypes [Cat, Cleric]
   pt        =: Just (2, 2)
   play     =: (Just $ \rSelf rActivator ->
     ClosedAbility
