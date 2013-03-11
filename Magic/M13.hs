@@ -8,12 +8,14 @@ import Magic.Target
 import Magic.Utils
 import Magic.Core
 import Magic.Events
+import Magic.Labels
 
 import Control.Applicative
 import Control.Monad (void)
 import Data.Boolean ((&&*))
 import Data.Label.Pure (get)
 import Data.Label.PureM ((=:), asks)
+import Data.Monoid (mconcat)
 import qualified Data.Set as Set
 
 
@@ -94,18 +96,40 @@ angel'sMercy = mkCard $ do
 
 angelicBenediction :: Card
 angelicBenediction = mkCard $ do
-  name =: Just "Angelic Benediction"
-  types =: enchantmentType
-  play =: (Just $ \rSelf rActivator ->
-    ClosedAbility
-      { _available       = sorcerySpeed rSelf rActivator
-      , _manaCost        = [Nothing, Nothing, Nothing, Just White]
-      , _additionalCosts = []
-      , _effect          = playPermanentEffect rSelf rActivator
-      , _isManaAbility   = False
-      }
-    )
-  triggeredAbilities =: [exalted]
+    name =: Just "Angelic Benediction"
+    types =: enchantmentType
+    play =: (Just $ \rSelf rActivator ->
+      ClosedAbility
+        { _available       = sorcerySpeed rSelf rActivator
+        , _manaCost        = [Nothing, Nothing, Nothing, Just White]
+        , _additionalCosts = []
+        , _effect          = playPermanentEffect rSelf rActivator
+        , _isManaAbility   = False
+        }
+      )
+    triggeredAbilities =: [exalted, tapTrigger]
+  where
+    tapTrigger :: TriggeredAbility
+    tapTrigger (Battlefield, _) p events =
+      mconcat [
+          do
+            p' <- asks (object rAttacker .^ controller)
+            if p == p'
+              then return [mkTapTriggerObject p]
+              else return []
+        | DidDeclareAttackers _ [rAttacker] <- events ]
+
+    mkTapTriggerObject :: PlayerRef -> Magic ()
+    mkTapTriggerObject p = do
+        let ok t = case t of
+              TargetObject r@(Battlefield, _) -> hasTypes creatureType <$> asks (object r)
+              _                               -> return False
+        ts <- askMagicTargets p (singleTarget <?> ok)
+        let f :: Target -> Object -> Magic ()
+            f t _source = void $ executeEffect $ case t of
+              TargetObject (Battlefield, i) -> Will (TapPermanent i)
+        mkTriggerObject p (f <$> ts)
+
 
 exalted :: TriggeredAbility
 exalted (Battlefield, _) p events = return [ mkTriggerObject p (boostPT r)
