@@ -354,11 +354,16 @@ resolve i = do
   let Just item = get stackItem o
   let (_, mkEffects) = evaluateTargetList item
   executeMagic (mkEffects o)
+
   -- if the object is now still on the stack, move it to the appropriate zone
   let o' = set stackItem Nothing o
   if (hasTypes instantType o || hasTypes sorceryType o)
-    then void $ executeEffect $ WillMoveObject (Just (Stack, i)) (Graveyard (get controller o)) o'
-    else void $ executeEffect $ WillMoveObject (Just (Stack, i)) Battlefield o'
+  then void $ executeEffect $
+    WillMoveObject (Just (Stack, i)) (Graveyard (get controller o)) o'
+  else if hasPermanentType o
+  then void $ executeEffect $
+    WillMoveObject (Just (Stack, i)) Battlefield o'
+  else void $ IdList.removeM stack i
 
 collectPriorityActions :: PlayerRef -> Engine [PriorityAction]
 collectPriorityActions p = do
