@@ -53,4 +53,4 @@ textShow = pack . show
 deleteAtIndex :: Int -> [a] -> [a]
 deleteAtIndex i xs = ys ++ zs
   where
-    (ys, z:zs) = splitAt i xs
+    (ys, _:zs) = splitAt i xs

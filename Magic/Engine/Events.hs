@@ -81,8 +81,8 @@ raise events = do
     forM_ tas $ \ta -> do
       prestackItems <- view $ do
         programs <- ta ro p events
-        o <- asks (object ro)
-        return (map (\program -> ((ro, o), program)) programs)
+        viewedObject <- asks (object ro)
+        return (map (\program -> ((ro, viewedObject), program)) programs)
       player p .^ prestack ~: (++ prestackItems)
 
 executeEffect :: OneShotEffect -> Engine [Event]
