@@ -7,7 +7,7 @@ import Magic.Engine (fullGame, newWorld)
 import Magic.Engine.Types (runEngine, GameOver(..))
 import Magic.Types hiding (view)
 import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction,
-  describeEvent, describeTarget, describeManaPool, describePayManaAction)
+  describeEvent, describeTarget, describeManaPool, describePayManaAction, describeObjectName)
 
 import Control.Monad (forM_)
 import Control.Monad.Operational (ProgramT, ProgramViewT(..), viewT)
@@ -64,6 +64,10 @@ askQuestions = eval . viewT
         let costDesc = desc world (describeManaPool cost)
         let options = [ (desc world (describePayManaAction action), action) | action <- actions ]
         chosen <- offerOptions p ("Pay " <> costDesc) options
+        askQuestions (k chosen)
+      AskQuestion p world (AskPickTrigger lkis) :>>= k -> do
+        let options = [ (desc world (describeObjectName o), i) | (i, (_, o)) <- zip [0..] lkis ]
+        chosen <- offerOptions p "Choose trigger to put on the stack:" options
         askQuestions (k chosen)
 
 

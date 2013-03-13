@@ -277,15 +277,10 @@ processPrestacks = do
   liftM or $ for ips $ \(i,p) -> do
     let pending = get prestack p
     when (not (null pending)) $ do
-      pending' <- askReorder i pending
-      player i .^ prestack =: []
-      forM_ pending' executeMagic
+      index <- askQuestion i (AskPickTrigger (map fst pending))
+      executeMagic (snd (pending !! index))
+      player i .^ prestack ~: deleteAtIndex index
     return (not (null pending))
-
-askReorder :: PlayerRef -> [a] -> Engine [a]
-askReorder _ [] = return []
-askReorder _ [x] = return [x]
-askReorder p xs = askQuestion p (AskReorder xs)
 
 untilFalse :: Monad m => m Bool -> m Bool
 untilFalse p = do

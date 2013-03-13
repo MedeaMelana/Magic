@@ -104,6 +104,8 @@ type ActivatedAbilityRef = (ObjectRef, Int)
 data ZoneRef = Library PlayerRef | Hand PlayerRef | Battlefield | Graveyard PlayerRef | Stack | Exile | Command
   deriving (Eq, Ord, Show)
 
+type LastKnownObjectInfo = (ObjectRef, Object)
+
 
 
 -- WORLD
@@ -162,7 +164,7 @@ data EndStep
 data Player = Player
   { _life            :: Int
   , _manaPool        :: Bag (Maybe Color)
-  , _prestack        :: [Magic ()]  -- triggered abilities about to be put on the stack
+  , _prestack        :: [(LastKnownObjectInfo, Magic ())]  -- triggered abilities about to be put on the stack, together with their source
   , _library         :: IdList Object
   , _hand            :: IdList Object
   , _graveyard       :: IdList Object
@@ -517,8 +519,8 @@ data Question a where
   AskPriorityAction        :: [PriorityAction] -> Question (Maybe PriorityAction)
   AskManaAbility           :: ManaPool -> [PayManaAction] -> Question PayManaAction
   AskTarget                :: [Target] -> Question Target
-  AskReorder               :: [a] -> Question [a]
   AskPickReplacementEffect :: [(ReplacementEffect, Magic [OneShotEffect])] -> Question (Pick (ReplacementEffect, Magic [OneShotEffect]))
+  AskPickTrigger           :: [LastKnownObjectInfo] -> Question Int
 
 type Pick a = (a, [a])
 

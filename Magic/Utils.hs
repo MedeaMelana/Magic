@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Magic.Utils (mkCard, emptyObject, countCountersOfType, sortOn, textShow) where
+module Magic.Utils (mkCard, emptyObject, countCountersOfType, sortOn, textShow, deleteAtIndex) where
 
 import Magic.Types
 
@@ -49,3 +49,8 @@ sortOn = sortBy . comparing
 
 textShow :: Show a => a -> Text
 textShow = pack . show
+
+deleteAtIndex :: Int -> [a] -> [a]
+deleteAtIndex i xs = ys ++ zs
+  where
+    (ys, z:zs) = splitAt i xs

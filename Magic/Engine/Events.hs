@@ -28,7 +28,7 @@ import Control.Monad.Reader (ask, runReaderT)
 import Control.Monad.Operational (singleton, Program, ProgramT, viewT, ProgramViewT(..))
 import Data.Either (partitionEithers)
 import Data.Label.Pure (get, set)
-import Data.Label.PureM (gets, puts, (=:))
+import Data.Label.PureM (gets, puts, (=:), asks)
 import Data.List ((\\))
 import Data.Monoid ((<>))
 import Data.Traversable (for)
@@ -79,8 +79,11 @@ raise events = do
     let tas = get triggeredAbilities o
     let p = get controller o
     forM_ tas $ \ta -> do
-      programs <- view (ta ro p events)
-      player p .^ prestack ~: (++ programs)
+      prestackItems <- view $ do
+        programs <- ta ro p events
+        o <- asks (object ro)
+        return (map (\program -> ((ro, o), program)) programs)
+      player p .^ prestack ~: (++ prestackItems)
 
 executeEffect :: OneShotEffect -> Engine [Event]
 executeEffect = executeEffects . (: [])
