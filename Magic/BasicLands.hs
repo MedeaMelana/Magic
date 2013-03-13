@@ -27,7 +27,7 @@ forest   = mkBasicLandCard Forest   Green
 mkBasicLandCard :: LandSubtype -> Color -> Card
 mkBasicLandCard ty color = mkCard $ do
   name               =: Just (fromString (show ty))
-  types              =: basicType <> objectType ty
+  types              =: basicType <> landTypes [ty]
   play               =: Just playLand
   activatedAbilities =: [tapToAddMana (Just color)]
 

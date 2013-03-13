@@ -7,16 +7,17 @@ module Magic.ObjectTypes (
     PlaneswalkerSubtype(..),
 
     -- * Convenient type sets
-    -- | These type sets all contain a single value. This, in combination with
-    -- the 'ObjectTypes' 'Monoid' instance, allows for convenient type set construction.
-    -- For example, to construct the type line @Basic Land@, use
-    -- @'basicType' \<\> 'landType'@.
+    -- | These helper values, in combination with the 'ObjectTypes' 'Monoid' instance,
+    -- allow for convenient type set construction. For example, to construct the type
+    -- line @Basic Land@, use @'basicType' \<\> 'landType'@.
     basicType, legendaryType,
-    artifactType, creatureType, enchantmentType, instantType, landType,
-    planeswalkerType, sorceryType,
-
-    -- * Class @ObjectType@
-    ObjectType(..), objectTypes, objectType,
+    artifactType, equipmentType,
+    creatureType, creatureTypes,
+    enchantmentType, auraType, curseType,
+    instantType, instantTypes,
+    landType, landTypes,
+    planeswalkerType, planeswalkerWithType,
+    sorceryType, sorceryTypes,
 
     -- * Testing
     isObjectTypesSubsetOf, hasTypes, hasPermanentType
@@ -25,7 +26,6 @@ module Magic.ObjectTypes (
 import Magic.Types
 
 import Data.Boolean (Boolean(..))
-import Data.Label.Pure (set, (:->))
 import Data.Monoid (mempty)
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -47,65 +47,61 @@ legendaryType = mempty { _supertypes = Set.singleton Legendary }
 artifactType :: ObjectTypes
 artifactType = mempty { _artifactSubtypes = Just mempty }
 
+-- | Card type @Artifact - 'Equipment'@.
+equipmentType :: ObjectTypes
+equipmentType = mempty { _artifactSubtypes = Just (Set.singleton Equipment) }
+
 -- | Card type @Creature@.
 creatureType :: ObjectTypes
-creatureType = mempty { _creatureSubtypes = Just mempty }
+creatureType = creatureTypes []
+
+-- | Card type @Creature@ with the specified creature types.
+creatureTypes :: [CreatureSubtype] -> ObjectTypes
+creatureTypes tys = mempty { _creatureSubtypes = Just (Set.fromList tys) }
 
 -- | Card type @Enchantment@.
 enchantmentType :: ObjectTypes
 enchantmentType = mempty { _enchantmentSubtypes = Just mempty }
 
+-- | Card type @Enchantment - 'Aura'@.
+auraType :: ObjectTypes
+auraType = mempty { _enchantmentSubtypes = Just (Set.singleton Aura) }
+
+-- | Card type @Enchantment - 'Curse'@.
+curseType :: ObjectTypes
+curseType = mempty { _enchantmentSubtypes = Just (Set.singleton Curse) }
+
 -- | Card type @Instant@.
 instantType :: ObjectTypes
-instantType = mempty { _instantSubtypes = Just mempty }
+instantType = instantTypes []
+
+-- | Card type @Instant@ with the specified spell types.
+instantTypes :: [SpellSubtype] -> ObjectTypes
+instantTypes tys = mempty { _instantSubtypes = Just (Set.fromList tys) }
 
 -- | Card type @Land@.
 landType :: ObjectTypes
-landType = mempty { _landSubtypes = Just mempty }
+landType = landTypes []
+
+-- | Card type @Land@ with the specified land types.
+landTypes :: [LandSubtype] -> ObjectTypes
+landTypes tys = mempty { _landSubtypes = Just (Set.fromList tys) }
 
 -- | Card type @Planeswalker@.
 planeswalkerType :: ObjectTypes
-planeswalkerType = mempty { _planeswalkerSubtypes = Just mempty }
+planeswalkerType = mempty { _planeswalkerSubtypes = mempty }
+
+-- | Card type @Planeswalker@ with the specified planeswalker type.
+planeswalkerWithType :: [PlaneswalkerSubtype] -> ObjectTypes
+planeswalkerWithType tys = mempty { _planeswalkerSubtypes = Just (Set.fromList tys) }
 
 -- | Card type @Sorcery@.
 sorceryType :: ObjectTypes
 sorceryType = mempty { _sorcerySubtypes = Just mempty }
 
-
-
--- CLASS OBJECTTYPE
-
-
--- | Convenient access to 'ObjectTypes' labels for various subtypes.
-class ObjectType a where
-  objectTypeLabel :: ObjectTypes :-> Maybe (Set a)
-
-instance ObjectType ArtifactSubtype where
-  objectTypeLabel = artifactSubtypes
-
-instance ObjectType CreatureSubtype where
-  objectTypeLabel = creatureSubtypes
-
-instance ObjectType EnchantmentSubtype where
-  objectTypeLabel = enchantmentSubtypes
-
-instance ObjectType LandSubtype where
-  objectTypeLabel = landSubtypes
-
-instance ObjectType PlaneswalkerSubtype where
-  objectTypeLabel = planeswalkerSubtypes
-
--- | Allows for convenient construction of type lines with
--- multiple subtypes of one card type. For example, to create Snapcaster Mage's
--- typeline, use @objectTypes ['Human', 'Wizard']@.
-objectTypes :: Ord a => ObjectType a => [a] -> ObjectTypes
-objectTypes tys = set objectTypeLabel (Just (Set.fromList tys)) mempty
-
--- | Allows for convenient construction of type lines with
--- subtypes of various card types. For example, to create Dryad Arbor's
--- typeline, use @objectType 'Forest' \<\> objectType 'Dryad'@.
-objectType :: ObjectType a => a -> ObjectTypes
-objectType ty = set objectTypeLabel (Just (Set.singleton ty)) mempty
+-- | Card type @Sorcery@ with the specified spell types.
+sorceryTypes :: [SpellSubtype] -> ObjectTypes
+sorceryTypes tys = mempty { _sorcerySubtypes = Just (Set.fromList tys) }
 
 
 
@@ -133,6 +129,7 @@ isObjectTypesSubsetOf x y =
 hasTypes :: ObjectTypes -> Object -> Bool
 hasTypes t o = t `isObjectTypesSubsetOf` _types o
 
+-- | Checks whether the object has at least one of the permanent card types.
 hasPermanentType :: Object -> Bool
 hasPermanentType = gor $ map hasTypes [artifactType, creatureType, enchantmentType, landType, planeswalkerType]
 

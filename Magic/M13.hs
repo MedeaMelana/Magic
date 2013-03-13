@@ -67,7 +67,7 @@ mkTriggerObject p item = void $ executeEffect $ WillMoveObject Nothing Stack $
 ajani'sSunstriker :: Card
 ajani'sSunstriker = mkCard $ do
   name      =: Just "Ajani's Sunstriker"
-  types     =: objectTypes [Cat, Cleric]
+  types     =: creatureTypes [Cat, Cleric]
   pt        =: Just (2, 2)
   play      =: Just Ability
     { _available       = sorcerySpeed
@@ -143,7 +143,7 @@ exalted _ _ _ = return []
 attendedKnight :: Card
 attendedKnight = mkCard $ do
     name      =: Just "Attended Knight"
-    types     =: objectTypes [Human, Knight]
+    types     =: creatureTypes [Human, Knight]
     pt        =: Just (2, 2)
     play      =: Just Ability
       { _available       = sorcerySpeed
@@ -164,7 +164,7 @@ attendedKnight = mkCard $ do
       WillMoveObject Nothing Battlefield $ (emptyObject undefined p)
         { _name      = Just "Soldier"
         , _colors    = Set.singleton White
-        , _types     = objectType Soldier
+        , _types     = creatureTypes [Soldier]
         , _tapStatus = Just Untapped
         , _pt        = Just (1, 1)
         }
