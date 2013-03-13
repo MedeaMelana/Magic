@@ -15,6 +15,7 @@ module Magic.Types (
 
     -- * Reference types
     PlayerRef, ObjectRef, ActivatedAbilityRef, ZoneRef(..),
+    LastKnownObjectInfo,
 
     -- * World
     World(..), players, activePlayer, activeStep, time, turnStructure, exile, battlefield, stack, command, turnHistory,
