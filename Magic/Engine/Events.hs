@@ -201,6 +201,7 @@ destroyPermanent i reg = do
 
 -- | Cause an object to move from one zone to another in the specified form. If the object was actually moved, a 'DidMoveObject' event is raised.
 moveObject :: Maybe ObjectRef -> ZoneRef -> Object -> Engine [Event]
+-- TODO 303.4f-g Auras entering the battlefield without being cast
 moveObject mOldRef rToZone obj =
     case mOldRef of
       Nothing -> createObject
