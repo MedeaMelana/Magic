@@ -148,6 +148,7 @@ compileEffect e =
     Will (PlayLand p ro)            -> playLand p ro
     Will (AddToManaPool p pool)     -> addToManaPool p pool
     Will (SpendFromManaPool p pool) -> spendFromManaPool p pool
+    Will (DamageObject source r amount isCombatDamage isPreventable) -> damageObject source r amount isCombatDamage isPreventable
     Will (DamagePlayer source p amount isCombatDamage isPreventable) -> damagePlayer source p amount isCombatDamage isPreventable
     Will (LoseGame p)               -> loseGame p
     Will (WinGame p)                -> winGame p
@@ -237,8 +238,19 @@ spendFromManaPool p pool = do
   player p .^ manaPool ~: (\\ pool)
   return [Did (SpendFromManaPool p pool)]
 
+damageObject :: Object -> ObjectRef -> Int -> Bool -> Bool -> Engine [Event]
+-- 119.8. If a source would deal 0 damage, it does not deal damage at all.
+damageObject _ _ 0 _ _ = return []
+damageObject source r amount isCombatDamage isPreventable = do
+  -- TODO check for protection, infect, wither, lifelink
+  object r .^ damage ~: (+ amount)
+  return [Did (DamageObject source r amount isCombatDamage isPreventable)]
+
 damagePlayer :: Object -> PlayerRef -> Int -> Bool -> Bool -> Engine [Event]
+-- 119.8. If a source would deal 0 damage, it does not deal damage at all.
+damagePlayer _ _ 0 _ _ = return []
 damagePlayer source p amount isCombatDamage isPreventable = do
+  -- TODO check for protection, infect, wither, lifelink
   player p .^ life ~: subtract amount
   return [Did (DamagePlayer source p amount isCombatDamage isPreventable)]
 

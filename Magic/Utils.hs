@@ -29,7 +29,7 @@ emptyObject ts rOwner = Object
   , _stackItem = Nothing
 
   , _pt = Nothing
-  , _damage = Nothing
+  , _damage = 0
   , _deathtouched = False
 
   , _play = Nothing

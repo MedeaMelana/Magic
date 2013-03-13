@@ -201,7 +201,7 @@ data Object = Object
   , _pt         :: Maybe (Int, Int)
 
   -- for creatures on the battlefield
-  , _damage        :: Maybe Int
+  , _damage        :: Int
   , _deathtouched  :: Bool
   --, _mustBeBlocked :: Maybe Bool
   --, _mustAttack    :: Maybe Bool

@@ -330,7 +330,7 @@ collectSBAs = execWriterT $ do
           -- [704.5h]
           let hasLethalDamage =
                 case (get pt o, get damage o) of
-                  (Just (_, t), Just d) -> t > 0 && d >= t
+                  (Just (_, t), d) -> t > 0 && d >= t
                   _                -> False
           when (hasLethalDamage || get deathtouched o) $
             tell [Will (DestroyPermanent i True)]

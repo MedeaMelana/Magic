@@ -124,6 +124,9 @@ describeObject (i, o) = intercalate ", " components
         Just ts' -> [sh ts']
         Nothing -> []
 
+describeObjectNameByRef :: ObjectRef -> Description
+describeObjectNameByRef ro@(_, i) = withWorld $ \world -> describeObjectName (get (object ro) world)
+
 describeObjectName :: Object -> Description
 describeObjectName o =
   case (get name o, get types o) of
@@ -197,6 +200,8 @@ describeEvent e =
     case e of
       Did (DrawCard p) -> "Player " <> sh p <> " draws a card"
       Did (ShuffleLibrary p) -> "Player " <> sh p <> " shuffles their library"
+      Did (DamageObject source r amount _ _) ->
+        describeObjectName source <> " deals " <> sh amount <> " damage to " <> describeObjectNameByRef r
       Did (DamagePlayer source p amount _ _) ->
         describeObjectName source <> " deals " <> sh amount <> " damage to player " <> sh p
       Did (AddToManaPool p pool) ->
