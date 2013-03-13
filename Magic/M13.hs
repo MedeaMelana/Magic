@@ -41,16 +41,16 @@ playPermanentEffect rSelf _ = void $
     resolvePermanent _source = return ()
 
 stackingPlayAbility :: ManaPool -> [AdditionalCost] -> Ability
-stackingPlayAbility mc ac rSelf rActivator =
-  ClosedAbility
-    { _available       = do
-      self <- asks (object rSelf)
-      if hasTypes instantType self || Flash `elem` get staticKeywordAbilities self
-        then instantSpeed rSelf rActivator
-        else sorcerySpeed rSelf rActivator
+stackingPlayAbility mc ac =
+  Ability
+    { _available       = \rSelf rActivator -> do
+        self <- asks (object rSelf)
+        if hasTypes instantType self || Flash `elem` get staticKeywordAbilities self
+          then instantSpeed rSelf rActivator
+          else sorcerySpeed rSelf rActivator
     , _manaCost        = mc
     , _additionalCosts = ac
-    , _effect          = playPermanentEffect rSelf rActivator
+    , _effect          = playPermanentEffect
     , _isManaAbility   = False
     }
 
@@ -69,44 +69,39 @@ ajani'sSunstriker = mkCard $ do
   name      =: Just "Ajani's Sunstriker"
   types     =: objectTypes [Cat, Cleric]
   pt        =: Just (2, 2)
-  play     =: (Just $ \rSelf rActivator ->
-    ClosedAbility
-      { _available       = sorcerySpeed rSelf rActivator
-      , _manaCost        = [Just White, Just White]
-      , _additionalCosts = []
-      , _effect          = playPermanentEffect rSelf rActivator
-      , _isManaAbility   = False
-      })
+  play      =: Just Ability
+    { _available       = sorcerySpeed
+    , _manaCost        = [Just White, Just White]
+    , _additionalCosts = []
+    , _effect          = playPermanentEffect
+    , _isManaAbility   = False
+    }
   staticKeywordAbilities =: [Lifelink]
 
 angel'sMercy :: Card
 angel'sMercy = mkCard $ do
   name =: Just "Angel's Mercy"
   types =: instantType
-  play =: (Just $ \rSelf rActivator ->
-    ClosedAbility
-      { _available = instantSpeed rSelf rActivator
-      , _manaCost = [Nothing, Nothing, Just White, Just White]
-      , _additionalCosts = []
-      , _effect = stackTargetlessEffect rSelf $ \_ ->
-                    void $ executeEffect (Will (AdjustLife rActivator 7))
-      , _isManaAbility = False
-      }
-    )
+  play =: Just Ability
+    { _available       = instantSpeed
+    , _manaCost        = [Nothing, Nothing, Just White, Just White]
+    , _additionalCosts = []
+    , _effect          = \rSelf rActivator -> stackTargetlessEffect rSelf $ \_ ->
+      void $ executeEffect (Will (AdjustLife rActivator 7))
+    , _isManaAbility = False
+    }
 
 angelicBenediction :: Card
 angelicBenediction = mkCard $ do
     name =: Just "Angelic Benediction"
     types =: enchantmentType
-    play =: (Just $ \rSelf rActivator ->
-      ClosedAbility
-        { _available       = sorcerySpeed rSelf rActivator
-        , _manaCost        = [Nothing, Nothing, Nothing, Just White]
-        , _additionalCosts = []
-        , _effect          = playPermanentEffect rSelf rActivator
-        , _isManaAbility   = False
-        }
-      )
+    play =: Just Ability
+      { _available       = sorcerySpeed
+      , _manaCost        = [Nothing, Nothing, Nothing, Just White]
+      , _additionalCosts = []
+      , _effect          = playPermanentEffect
+      , _isManaAbility   = False
+      }
     triggeredAbilities =: [exalted, tapTrigger]
   where
     tapTrigger :: TriggeredAbility
@@ -150,14 +145,13 @@ attendedKnight = mkCard $ do
     name      =: Just "Attended Knight"
     types     =: objectTypes [Human, Knight]
     pt        =: Just (2, 2)
-    play      =: (Just $ \rSelf rActivator ->
-      ClosedAbility
-        { _available       = sorcerySpeed rSelf rActivator
-        , _manaCost        = [Nothing, Nothing, Just White]
-        , _additionalCosts = []
-        , _effect          = playPermanentEffect rSelf rActivator
-        , _isManaAbility   = False
-        })
+    play      =: Just Ability
+      { _available       = sorcerySpeed
+      , _manaCost        = [Nothing, Nothing, Just White]
+      , _additionalCosts = []
+      , _effect          = playPermanentEffect
+      , _isManaAbility   = False
+      }
     staticKeywordAbilities =: [FirstStrike]
     triggeredAbilities     =: [trigger]
   where
@@ -179,14 +173,13 @@ searingSpear :: Card
 searingSpear = mkCard $ do
   name  =: Just "Searing Spear"
   types =: instantType
-  play  =: (Just $ \rSelf rActivator ->
-    ClosedAbility
-      { _available = instantSpeed rSelf rActivator
-      , _manaCost = [Nothing, Just Red]
-      , _additionalCosts = []
-      , _effect = searingSpearEffect rSelf rActivator
-      , _isManaAbility = False
-      })
+  play  =: Just Ability
+    { _available = instantSpeed
+    , _manaCost = [Nothing, Just Red]
+    , _additionalCosts = []
+    , _effect = searingSpearEffect
+    , _isManaAbility = False
+    }
 
 searingSpearEffect :: ObjectRef -> PlayerRef -> Magic ()
 searingSpearEffect rSelf rActivator = do

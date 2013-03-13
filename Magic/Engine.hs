@@ -366,14 +366,14 @@ collectPriorityActions p = do
   plays <- map PlayCard <$> collectPlayableCards p
   return (as <> plays)
 
-collectAvailableActivatedAbilities :: (ClosedAbility -> Bool) -> PlayerRef -> Engine [ActivatedAbilityRef]
+collectAvailableActivatedAbilities :: (Ability -> Bool) -> PlayerRef -> Engine [ActivatedAbilityRef]
 collectAvailableActivatedAbilities predicate p = do
   objects <- view allObjects
   execWriterT $ do
     for objects $ \(r,o) -> do
       for (zip [0..] (get activatedAbilities o)) $ \(i, ability) -> do
         ok <- lift (shouldOfferAbility ability r p)
-        when (predicate (ability r p) && ok) (tell [(r, i)])
+        when (predicate ability && ok) (tell [(r, i)])
 
 collectPlayableCards :: PlayerRef -> Engine [ObjectRef]
 collectPlayableCards p = do
@@ -388,17 +388,15 @@ collectPlayableCards p = do
 
 shouldOfferAbility :: Ability -> ObjectRef -> PlayerRef -> Engine Bool
 shouldOfferAbility ability rSource rActivator = do
-  let closedAbility = ability rSource rActivator
-  abilityOk <- executeMagic (view (get available closedAbility))
-  payCostsOk <- canPayAdditionalCosts rSource rActivator (get additionalCosts closedAbility)
+  abilityOk <- executeMagic (view ((get available ability) rSource rActivator))
+  payCostsOk <- canPayAdditionalCosts rSource rActivator (get additionalCosts ability)
   return (abilityOk && payCostsOk)
 
 activateAbility :: Ability -> ObjectRef -> PlayerRef -> Engine ()
 activateAbility ability rSource rActivator  = do
-  let closedAbility = ability rSource rActivator
-  offerManaAbilitiesToPay rActivator (get manaCost closedAbility)
-  forM_ (get additionalCosts closedAbility) (payAdditionalCost rSource rActivator)
-  executeMagic (get effect closedAbility)
+  offerManaAbilitiesToPay rActivator (get manaCost ability)
+  forM_ (get additionalCosts ability) (payAdditionalCost rSource rActivator)
+  executeMagic ((get effect ability) rSource rActivator)
 
 executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
 executePriorityAction p a = do

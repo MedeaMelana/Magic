@@ -46,8 +46,7 @@ module Magic.Types (
     PlaneswalkerSubtype(..),
 
     -- * Abilities
-    Ability,
-    ClosedAbility(..), available, manaCost, additionalCosts, effect, isManaAbility,
+    Ability(..), available, manaCost, additionalCosts, effect, isManaAbility,
     StackItem, ManaPool, AdditionalCost(..),
     StaticKeywordAbility(..), ContinuousEffect(..), Layer(..),
     ReplacementEffect, TriggeredAbility,
@@ -320,13 +319,11 @@ data PlaneswalkerSubtype = Chandra | Elspeth | Garruk | Gideon | Jace
 -- ABILITIES
 
 
-type Ability = ObjectRef -> PlayerRef -> ClosedAbility
-
-data ClosedAbility = ClosedAbility
-  { _available       :: View Bool  -- check for cost is implied
+data Ability = Ability
+  { _available       :: ObjectRef -> PlayerRef -> View Bool  -- check for cost is implied
   , _manaCost        :: ManaPool
   , _additionalCosts :: [AdditionalCost]
-  , _effect          :: Magic ()
+  , _effect          :: ObjectRef -> PlayerRef -> Magic ()
   , _isManaAbility   :: Bool
   }
 
@@ -549,4 +546,4 @@ instance Monoid a => Monoid (Magic a) where
   mappend = liftM2 mappend
 
 
-$(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''ClosedAbility])
+$(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''Ability])

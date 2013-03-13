@@ -32,8 +32,8 @@ mkBasicLandCard ty color = mkCard $ do
   activatedAbilities =: [tapToAddMana (Just color)]
 
 playLand :: Ability
-playLand rSource rActivator = ClosedAbility
-  { _available =
+playLand = Ability
+  { _available = \rSource rActivator ->
       case rSource of
         (Hand _, _) -> do
           control <- checkObject rSource (isControlledBy rActivator)
@@ -46,7 +46,7 @@ playLand rSource rActivator = ClosedAbility
         _           -> return False
   , _manaCost = mempty
   , _additionalCosts = []
-  , _effect = void (executeEffect (Will (PlayLand rActivator rSource)))
+  , _effect = \rSource rActivator -> void (executeEffect (Will (PlayLand rActivator rSource)))
   , _isManaAbility = False
   }
 
@@ -58,14 +58,14 @@ countLandsPlayedThisTurn f = length . filter isPlayLand <$> asks turnHistory
 
 
 tapToAddMana :: Maybe Color -> Ability
-tapToAddMana mc rSource rActivator = ClosedAbility
-  { _available =
+tapToAddMana mc = Ability
+  { _available = \rSource rActivator ->
       case rSource of
         (Battlefield, _) -> checkObject rSource (isControlledBy rActivator)
         _                -> return False
   , _manaCost = mempty
   , _additionalCosts = [TapSelf]
-  , _effect = void (executeEffect (Will (AddToManaPool rActivator [mc])))
+  , _effect = \_rSource rActivator -> void (executeEffect (Will (AddToManaPool rActivator [mc])))
   , _isManaAbility = True
   }
 
