@@ -128,6 +128,7 @@ affectedPlayer e =
     Will (PlayLand p _)           -> return p
     Will (LoseGame p)             -> return p
     Will (WinGame p)              -> return p
+    Will (CeaseToExist o)         -> controllerOf o
   where controllerOf o = gets (object o .^ controller)
 
 
@@ -150,6 +151,7 @@ compileEffect e =
     Will (DamagePlayer source p amount isCombatDamage isPreventable) -> damagePlayer source p amount isCombatDamage isPreventable
     Will (LoseGame p)               -> loseGame p
     Will (WinGame p)                -> winGame p
+    Will (CeaseToExist r)           -> ceaseToExist r
     _ -> error "compileEffect: effect not implemented"
 
 tapPermanent :: Id -> Engine [Event]
@@ -252,6 +254,13 @@ loseGame p = do
 
 winGame :: PlayerRef -> Engine a
 winGame p = throwError (GameWin p)
+
+ceaseToExist :: ObjectRef -> Engine [Event]
+ceaseToExist r@(z, i) = do
+  m <- IdList.removeM (compileZoneRef z) i
+  case m of
+    Nothing -> return []
+    Just _ -> return [Did (CeaseToExist r)]
 
 tick :: Engine Timestamp
 tick = do

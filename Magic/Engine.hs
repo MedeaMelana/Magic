@@ -363,7 +363,7 @@ resolve i = do
   else if hasPermanentType o
   then void $ executeEffect $
     WillMoveObject (Just (Stack, i)) Battlefield o'
-  else void $ IdList.removeM stack i
+  else void $ executeEffect $ Will $ CeaseToExist (Stack, i)
 
 collectPriorityActions :: PlayerRef -> Engine [PriorityAction]
 collectPriorityActions p = do

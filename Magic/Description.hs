@@ -205,6 +205,7 @@ describeEvent e =
         "Player " <> sh p <> " spends " <> describeManaPool pool <> " from their mana pool"
       Did (LoseGame p) -> "Player " <> sh p <> " loses"
       Did (WinGame p) -> "Player " <> sh p <> " wins the game"
+      Did (CeaseToExist r) -> sh r <> " ceased to exist"
       DidMoveObject (Just (rFromZone, _)) r@(rToZone, _) ->
         describeObjectName (get (object r) world) <> " moves from " <>
         describeZoneRef rFromZone <> " to " <> describeZoneRef rToZone

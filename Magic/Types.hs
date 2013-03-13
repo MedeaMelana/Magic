@@ -443,6 +443,7 @@ data SimpleOneShotEffect
   | LoseGame PlayerRef
   | WinGame PlayerRef
   | InstallContinuousEffect ObjectRef ContinuousEffect
+  | CeaseToExist ObjectRef
 
 
 
