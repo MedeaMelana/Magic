@@ -44,8 +44,8 @@ askQuestions = eval . viewT
       Debug t :>>= k -> do
         Text.putStrLn ("[DEBUG] " <> t)
         askQuestions (k ())
-      LogEvent e world :>>= k -> do
-        Text.putStrLn (desc world (">>> " <> describeEvent e))
+      LogEvents es world :>>= k -> do
+        forM_ es $ \e -> Text.putStrLn (desc world (">>> " <> describeEvent e))
         askQuestions (k ())
       AskQuestion p world AskKeepHand :>>= k -> do
         Text.putStrLn (desc world (describeZone (Hand p)))

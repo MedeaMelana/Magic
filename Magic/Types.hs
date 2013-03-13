@@ -511,7 +511,7 @@ instance Monad m => MonadView (ViewT m) where
 
 data Interact a where
   Debug       :: Text -> Interact ()
-  LogEvent    :: Event -> World -> Interact ()
+  LogEvents   :: [Event] -> World -> Interact ()
   AskQuestion :: PlayerRef -> World -> Question a -> Interact a
 
 data Question a where

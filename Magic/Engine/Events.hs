@@ -72,7 +72,7 @@ raise :: [Event] -> Engine ()
 raise events = do
   world <- view ask
 
-  interact $ forM_ events $ \event -> singleton (LogEvent event world)
+  interact $ singleton (LogEvents events world)
 
   ros <- view allObjects
   forM_ ros $ \(ro, o) -> do
