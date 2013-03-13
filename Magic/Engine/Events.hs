@@ -17,6 +17,7 @@ import Magic.Core
 import Magic.IdList (Id)
 import qualified Magic.IdList as IdList
 import Magic.Labels
+import Magic.Events (willMoveToGraveyard)
 import Magic.Types
 import Magic.Engine.Types
 
@@ -144,6 +145,7 @@ compileEffect e =
     Will (TapPermanent i)           -> tapPermanent i
     Will (UntapPermanent i)         -> untapPermanent i
     Will (DrawCard rp)              -> drawCard rp
+    Will (DestroyPermanent i reg)   -> destroyPermanent i reg
     Will (ShuffleLibrary rPlayer)   -> shuffleLibrary rPlayer
     Will (PlayLand p ro)            -> playLand p ro
     Will (AddToManaPool p pool)     -> addToManaPool p pool
@@ -185,6 +187,14 @@ drawCard rp = do
     (ro, o) : _ -> do
       events <- compileEffect (WillMoveObject (Just (Library rp, ro)) (Hand rp) o)
       return (events ++ [Did (DrawCard rp)])
+
+destroyPermanent :: Id -> Bool -> Engine [Event]
+destroyPermanent i reg = do
+  let r = (Battlefield, i)
+  o <- gets (object r)
+  events <- compileEffect (willMoveToGraveyard i o)
+  return (events ++ [Did (DestroyPermanent i reg)])
+
 
 -- | Cause an object to move from one zone to another in the specified form. If the object was actually moved, a 'DidMoveObject' event is raised.
 moveObject :: Maybe ObjectRef -> ZoneRef -> Object -> Engine [Event]
