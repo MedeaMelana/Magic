@@ -37,19 +37,19 @@ import qualified Data.Set as Set
 
 -- | Supertype 'Basic'.
 basicType :: ObjectTypes
-basicType = mempty { _supertypes = Set.singleton Basic }
+basicType = mempty { supertypes = Set.singleton Basic }
 
 -- | Supertype 'Legendary'.
 legendaryType :: ObjectTypes
-legendaryType = mempty { _supertypes = Set.singleton Legendary }
+legendaryType = mempty { supertypes = Set.singleton Legendary }
 
 -- | Card type @Artifact@.
 artifactType :: ObjectTypes
-artifactType = mempty { _artifactSubtypes = Just mempty }
+artifactType = mempty { artifactSubtypes = Just mempty }
 
 -- | Card type @Artifact - 'Equipment'@.
 equipmentType :: ObjectTypes
-equipmentType = mempty { _artifactSubtypes = Just (Set.singleton Equipment) }
+equipmentType = mempty { artifactSubtypes = Just (Set.singleton Equipment) }
 
 -- | Card type @Creature@.
 creatureType :: ObjectTypes
@@ -57,19 +57,19 @@ creatureType = creatureTypes []
 
 -- | Card type @Creature@ with the specified creature types.
 creatureTypes :: [CreatureSubtype] -> ObjectTypes
-creatureTypes tys = mempty { _creatureSubtypes = Just (Set.fromList tys) }
+creatureTypes tys = mempty { creatureSubtypes = Just (Set.fromList tys) }
 
 -- | Card type @Enchantment@.
 enchantmentType :: ObjectTypes
-enchantmentType = mempty { _enchantmentSubtypes = Just mempty }
+enchantmentType = mempty { enchantmentSubtypes = Just mempty }
 
 -- | Card type @Enchantment - 'Aura'@.
 auraType :: ObjectTypes
-auraType = mempty { _enchantmentSubtypes = Just (Set.singleton Aura) }
+auraType = mempty { enchantmentSubtypes = Just (Set.singleton Aura) }
 
 -- | Card type @Enchantment - 'Curse'@.
 curseType :: ObjectTypes
-curseType = mempty { _enchantmentSubtypes = Just (Set.singleton Curse) }
+curseType = mempty { enchantmentSubtypes = Just (Set.singleton Curse) }
 
 -- | Card type @Instant@.
 instantType :: ObjectTypes
@@ -77,7 +77,7 @@ instantType = instantTypes []
 
 -- | Card type @Instant@ with the specified spell types.
 instantTypes :: [SpellSubtype] -> ObjectTypes
-instantTypes tys = mempty { _instantSubtypes = Just (Set.fromList tys) }
+instantTypes tys = mempty { instantSubtypes = Just (Set.fromList tys) }
 
 -- | Card type @Land@.
 landType :: ObjectTypes
@@ -85,23 +85,23 @@ landType = landTypes []
 
 -- | Card type @Land@ with the specified land types.
 landTypes :: [LandSubtype] -> ObjectTypes
-landTypes tys = mempty { _landSubtypes = Just (Set.fromList tys) }
+landTypes tys = mempty { landSubtypes = Just (Set.fromList tys) }
 
 -- | Card type @Planeswalker@.
 planeswalkerType :: ObjectTypes
-planeswalkerType = mempty { _planeswalkerSubtypes = mempty }
+planeswalkerType = mempty { planeswalkerSubtypes = mempty }
 
 -- | Card type @Planeswalker@ with the specified planeswalker type.
 planeswalkerWithType :: [PlaneswalkerSubtype] -> ObjectTypes
-planeswalkerWithType tys = mempty { _planeswalkerSubtypes = Just (Set.fromList tys) }
+planeswalkerWithType tys = mempty { planeswalkerSubtypes = Just (Set.fromList tys) }
 
 -- | Card type @Sorcery@.
 sorceryType :: ObjectTypes
-sorceryType = mempty { _sorcerySubtypes = Just mempty }
+sorceryType = mempty { sorcerySubtypes = Just mempty }
 
 -- | Card type @Sorcery@ with the specified spell types.
 sorceryTypes :: [SpellSubtype] -> ObjectTypes
-sorceryTypes tys = mempty { _sorcerySubtypes = Just (Set.fromList tys) }
+sorceryTypes tys = mempty { sorcerySubtypes = Just (Set.fromList tys) }
 
 
 
@@ -111,19 +111,19 @@ sorceryTypes tys = mempty { _sorcerySubtypes = Just (Set.fromList tys) }
 -- | @x \`isObjectTypesSubsetOf\` y@ returns whether all types in @x@ are also in @y@.
 isObjectTypesSubsetOf :: ObjectTypes -> ObjectTypes -> Bool
 isObjectTypesSubsetOf x y =
-    _supertypes x           `Set.isSubsetOf`  _supertypes y &&
-    _artifactSubtypes x     `isMaybeSubsetOf` _artifactSubtypes y &&
-    _creatureSubtypes x     `isMaybeSubsetOf` _creatureSubtypes y &&
-    _enchantmentSubtypes x  `isMaybeSubsetOf` _enchantmentSubtypes y &&
-    _instantSubtypes x      `isMaybeSubsetOf` _instantSubtypes y &&
-    _landSubtypes x         `isMaybeSubsetOf` _landSubtypes y &&
-    _planeswalkerSubtypes x `isMaybeSubsetOf` _planeswalkerSubtypes y &&
-    _sorcerySubtypes x      `isMaybeSubsetOf` _sorcerySubtypes y
+    supertypes x           `Set.isSubsetOf`  supertypes y &&
+    artifactSubtypes x     `isMaybeSubsetOf` artifactSubtypes y &&
+    creatureSubtypes x     `isMaybeSubsetOf` creatureSubtypes y &&
+    enchantmentSubtypes x  `isMaybeSubsetOf` enchantmentSubtypes y &&
+    instantSubtypes x      `isMaybeSubsetOf` instantSubtypes y &&
+    landSubtypes x         `isMaybeSubsetOf` landSubtypes y &&
+    planeswalkerSubtypes x `isMaybeSubsetOf` planeswalkerSubtypes y &&
+    sorcerySubtypes x      `isMaybeSubsetOf` sorcerySubtypes y
   where
     isMaybeSubsetOf :: Ord a => Maybe (Set a) -> Maybe (Set a) -> Bool
-    Nothing `isMaybeSubsetOf` _ = True
+    Nothing `isMaybeSubsetOf` _       = True
     Just _  `isMaybeSubsetOf` Nothing = False
-    Just x'  `isMaybeSubsetOf` Just y' = x' `Set.isSubsetOf` y'
+    Just x' `isMaybeSubsetOf` Just y' = x' `Set.isSubsetOf` y'
 
 -- | Checks whether the object's types are a superset of the given type set.
 hasTypes :: ObjectTypes -> Object -> Bool

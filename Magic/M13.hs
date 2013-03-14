@@ -43,15 +43,15 @@ playPermanentEffect rSelf _ = void $
 stackingPlayAbility :: ManaPool -> [AdditionalCost] -> Ability
 stackingPlayAbility mc ac =
   Ability
-    { _available       = \rSelf rActivator -> do
+    { available       = \rSelf rActivator -> do
         self <- asks (object rSelf)
         if hasTypes instantType self || Flash `elem` get staticKeywordAbilities self
           then instantSpeed rSelf rActivator
           else sorcerySpeed rSelf rActivator
-    , _manaCost        = mc
-    , _additionalCosts = ac
-    , _effect          = playPermanentEffect
-    , _isManaAbility   = False
+    , manaCost        = mc
+    , additionalCosts = ac
+    , effect          = playPermanentEffect
+    , isManaAbility   = False
     }
 
 stackTargetlessEffect :: ObjectRef -> (Object -> Magic ()) -> Magic ()
@@ -70,11 +70,11 @@ ajani'sSunstriker = mkCard $ do
   types     =: creatureTypes [Cat, Cleric]
   pt        =: Just (2, 2)
   play      =: Just Ability
-    { _available       = sorcerySpeed
-    , _manaCost        = [Just White, Just White]
-    , _additionalCosts = []
-    , _effect          = playPermanentEffect
-    , _isManaAbility   = False
+    { available       = sorcerySpeed
+    , manaCost        = [Just White, Just White]
+    , additionalCosts = []
+    , effect          = playPermanentEffect
+    , isManaAbility   = False
     }
   staticKeywordAbilities =: [Lifelink]
 
@@ -83,12 +83,12 @@ angel'sMercy = mkCard $ do
   name =: Just "Angel's Mercy"
   types =: instantType
   play =: Just Ability
-    { _available       = instantSpeed
-    , _manaCost        = [Nothing, Nothing, Just White, Just White]
-    , _additionalCosts = []
-    , _effect          = \rSelf rActivator -> stackTargetlessEffect rSelf $ \_ ->
+    { available       = instantSpeed
+    , manaCost        = [Nothing, Nothing, Just White, Just White]
+    , additionalCosts = []
+    , effect          = \rSelf rActivator -> stackTargetlessEffect rSelf $ \_ ->
       void $ executeEffect (Will (AdjustLife rActivator 7))
-    , _isManaAbility = False
+    , isManaAbility = False
     }
 
 angelicBenediction :: Card
@@ -96,11 +96,11 @@ angelicBenediction = mkCard $ do
     name =: Just "Angelic Benediction"
     types =: enchantmentType
     play =: Just Ability
-      { _available       = sorcerySpeed
-      , _manaCost        = [Nothing, Nothing, Nothing, Just White]
-      , _additionalCosts = []
-      , _effect          = playPermanentEffect
-      , _isManaAbility   = False
+      { available       = sorcerySpeed
+      , manaCost        = [Nothing, Nothing, Nothing, Just White]
+      , additionalCosts = []
+      , effect          = playPermanentEffect
+      , isManaAbility   = False
       }
     triggeredAbilities =: [exalted, tapTrigger]
   where
@@ -134,9 +134,9 @@ exalted (Battlefield, _) p events = return [ mkTriggerObject p (boostPT r)
     boostPT r = pure $ \_self ->
       void $ executeEffect $ Will $ InstallContinuousEffect r $
         ContinuousEffect
-          { _layer       = Layer7c
-          , _efTimestamp = undefined
-          , _efEffect    = undefined
+          { layer       = Layer7c
+          , efTimestamp = undefined
+          , efEffect    = undefined
           }
 exalted _ _ _ = return []
 
@@ -146,11 +146,11 @@ attendedKnight = mkCard $ do
     types     =: creatureTypes [Human, Knight]
     pt        =: Just (2, 2)
     play      =: Just Ability
-      { _available       = sorcerySpeed
-      , _manaCost        = [Nothing, Nothing, Just White]
-      , _additionalCosts = []
-      , _effect          = playPermanentEffect
-      , _isManaAbility   = False
+      { available       = sorcerySpeed
+      , manaCost        = [Nothing, Nothing, Just White]
+      , additionalCosts = []
+      , effect          = playPermanentEffect
+      , isManaAbility   = False
       }
     staticKeywordAbilities =: [FirstStrike]
     triggeredAbilities     =: [trigger]
@@ -174,11 +174,11 @@ searingSpear = mkCard $ do
   name  =: Just "Searing Spear"
   types =: instantType
   play  =: Just Ability
-    { _available = instantSpeed
-    , _manaCost = [Nothing, Just Red]
-    , _additionalCosts = []
-    , _effect = searingSpearEffect
-    , _isManaAbility = False
+    { available = instantSpeed
+    , manaCost = [Nothing, Just Red]
+    , additionalCosts = []
+    , effect = searingSpearEffect
+    , isManaAbility = False
     }
 
 searingSpearEffect :: ObjectRef -> PlayerRef -> Magic ()

@@ -389,15 +389,15 @@ collectPlayableCards p = do
 
 shouldOfferAbility :: Ability -> ObjectRef -> PlayerRef -> Engine Bool
 shouldOfferAbility ability rSource rActivator = do
-  abilityOk <- executeMagic (view ((get available ability) rSource rActivator))
-  payCostsOk <- canPayAdditionalCosts rSource rActivator (get additionalCosts ability)
+  abilityOk <- executeMagic (view (available ability rSource rActivator))
+  payCostsOk <- canPayAdditionalCosts rSource rActivator (additionalCosts ability)
   return (abilityOk && payCostsOk)
 
 activateAbility :: Ability -> ObjectRef -> PlayerRef -> Engine ()
 activateAbility ability rSource rActivator  = do
-  offerManaAbilitiesToPay rActivator (get manaCost ability)
-  forM_ (get additionalCosts ability) (payAdditionalCost rSource rActivator)
-  executeMagic ((get effect ability) rSource rActivator)
+  offerManaAbilitiesToPay rActivator (manaCost ability)
+  forM_ (additionalCosts ability) (payAdditionalCost rSource rActivator)
+  executeMagic (effect ability rSource rActivator)
 
 executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
 executePriorityAction p a = do
@@ -413,7 +413,7 @@ offerManaAbilitiesToPay :: PlayerRef -> ManaPool -> Engine ()
 offerManaAbilitiesToPay _ []   = return ()
 offerManaAbilitiesToPay p cost = do
   amas <- map ActivateManaAbility <$>
-          collectAvailableActivatedAbilities (get isManaAbility) p
+          collectAvailableActivatedAbilities isManaAbility p
   pool <- gets (player p .^ manaPool)
   let pms =
         if Nothing `elem` cost

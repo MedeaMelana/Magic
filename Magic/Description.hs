@@ -140,7 +140,7 @@ describeTypes tys = withWorld $ \world ->
     intercalate " - " (filter (not . nullDesc world) [pre, post])
   where
     pre :: Description
-    pre = intercalate " " $ ls (_supertypes tys) <> map fst subtypes
+    pre = intercalate " " $ ls (supertypes tys) <> map fst subtypes
 
     post :: Description
     post = intercalate " " (mconcat (map snd subtypes))
@@ -152,13 +152,13 @@ describeTypes tys = withWorld $ \world ->
     ls = map sh . sort . Set.toList
 
     subtypes :: [(Description, [Description])]
-    subtypes = catMaybes [ subtype "Artifact"     _artifactSubtypes
-                         , subtype "Creature"     _creatureSubtypes
-                         , subtype "Enchantment"  _enchantmentSubtypes
-                         , subtype "Instant"      _instantSubtypes
-                         , subtype "Land"         _landSubtypes
-                         , subtype "Planeswalker" _planeswalkerSubtypes
-                         , subtype "Sorcery"      _sorcerySubtypes
+    subtypes = catMaybes [ subtype "Artifact"     artifactSubtypes
+                         , subtype "Creature"     creatureSubtypes
+                         , subtype "Enchantment"  enchantmentSubtypes
+                         , subtype "Instant"      instantSubtypes
+                         , subtype "Land"         landSubtypes
+                         , subtype "Planeswalker" planeswalkerSubtypes
+                         , subtype "Sorcery"      sorcerySubtypes
                          ]
 
     subtype :: (Ord a, Show a) => Description -> (ObjectTypes -> Maybe (Set a)) ->

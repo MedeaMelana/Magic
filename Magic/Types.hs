@@ -39,15 +39,13 @@ module Magic.Types (
     Timestamp, Color(..), TapStatus(..), CounterType(..),
 
     -- * Object types
-    ObjectTypes(..), supertypes, artifactSubtypes, creatureSubtypes,
-      enchantmentSubtypes, instantSubtypes, landSubtypes,
-      planeswalkerSubtypes, sorcerySubtypes,
+    ObjectTypes(..),
     Supertype(..), ArtifactSubtype(..), CreatureSubtype(..),
     EnchantmentSubtype(..), SpellSubtype(..), LandSubtype(..),
     PlaneswalkerSubtype(..),
 
     -- * Abilities
-    Ability(..), available, manaCost, additionalCosts, effect, isManaAbility,
+    Ability(..),
     StackItem, ManaPool, AdditionalCost(..),
     StaticKeywordAbility(..), ContinuousEffect(..), Layer(..),
     ReplacementEffect, TriggeredAbility,
@@ -241,27 +239,27 @@ data CounterType
 
 
 data ObjectTypes = ObjectTypes
-  { _supertypes           :: Set Supertype
-  , _artifactSubtypes     :: Maybe (Set ArtifactSubtype)
-  , _creatureSubtypes     :: Maybe (Set CreatureSubtype)
-  , _enchantmentSubtypes  :: Maybe (Set EnchantmentSubtype)
-  , _instantSubtypes      :: Maybe (Set SpellSubtype)
-  , _landSubtypes         :: Maybe (Set LandSubtype)
-  , _planeswalkerSubtypes :: Maybe (Set PlaneswalkerSubtype)
-  , _sorcerySubtypes      :: Maybe (Set SpellSubtype)
+  { supertypes           :: Set Supertype
+  , artifactSubtypes     :: Maybe (Set ArtifactSubtype)
+  , creatureSubtypes     :: Maybe (Set CreatureSubtype)
+  , enchantmentSubtypes  :: Maybe (Set EnchantmentSubtype)
+  , instantSubtypes      :: Maybe (Set SpellSubtype)
+  , landSubtypes         :: Maybe (Set LandSubtype)
+  , planeswalkerSubtypes :: Maybe (Set PlaneswalkerSubtype)
+  , sorcerySubtypes      :: Maybe (Set SpellSubtype)
   } deriving (Eq, Ord, Show)
 
 instance Monoid ObjectTypes where
   mempty = ObjectTypes mempty mempty mempty mempty mempty mempty mempty mempty
   x  `mappend` y = ObjectTypes
-    { _supertypes           = _supertypes x           `mappend` _supertypes y
-    , _artifactSubtypes     = _artifactSubtypes x     `mappend` _artifactSubtypes y
-    , _creatureSubtypes     = _creatureSubtypes x     `mappend` _creatureSubtypes y
-    , _enchantmentSubtypes  = _enchantmentSubtypes x  `mappend` _enchantmentSubtypes y
-    , _instantSubtypes      = _instantSubtypes x      `mappend` _instantSubtypes y
-    , _landSubtypes         = _landSubtypes x         `mappend` _landSubtypes y
-    , _planeswalkerSubtypes = _planeswalkerSubtypes x `mappend` _planeswalkerSubtypes y
-    , _sorcerySubtypes      = _sorcerySubtypes x      `mappend` _sorcerySubtypes y
+    { supertypes           = supertypes x           `mappend` supertypes y
+    , artifactSubtypes     = artifactSubtypes x     `mappend` artifactSubtypes y
+    , creatureSubtypes     = creatureSubtypes x     `mappend` creatureSubtypes y
+    , enchantmentSubtypes  = enchantmentSubtypes x  `mappend` enchantmentSubtypes y
+    , instantSubtypes      = instantSubtypes x      `mappend` instantSubtypes y
+    , landSubtypes         = landSubtypes x         `mappend` landSubtypes y
+    , planeswalkerSubtypes = planeswalkerSubtypes x `mappend` planeswalkerSubtypes y
+    , sorcerySubtypes      = sorcerySubtypes x      `mappend` sorcerySubtypes y
     }
 
 data Supertype = Basic | Legendary
@@ -321,11 +319,11 @@ data PlaneswalkerSubtype = Chandra | Elspeth | Garruk | Gideon | Jace
 
 
 data Ability = Ability
-  { _available       :: ObjectRef -> PlayerRef -> View Bool  -- check for cost is implied
-  , _manaCost        :: ManaPool
-  , _additionalCosts :: [AdditionalCost]
-  , _effect          :: ObjectRef -> PlayerRef -> Magic ()
-  , _isManaAbility   :: Bool
+  { available       :: ObjectRef -> PlayerRef -> View Bool  -- check for cost is implied
+  , manaCost        :: ManaPool
+  , additionalCosts :: [AdditionalCost]
+  , effect          :: ObjectRef -> PlayerRef -> Magic ()
+  , isManaAbility   :: Bool
   }
 
 type StackItem = TargetList Target (Object -> Magic ())
@@ -362,9 +360,9 @@ data StaticKeywordAbility
   deriving (Eq, Ord, Show, Read)
 
 data ContinuousEffect = ContinuousEffect
-  { _layer       :: Layer
-  , _efTimestamp :: Timestamp
-  , _efEffect    :: World -> World
+  { layer       :: Layer
+  , efTimestamp :: Timestamp
+  , efEffect    :: World -> World
   }
 
 data Layer
@@ -547,4 +545,4 @@ instance Monoid a => Monoid (Magic a) where
   mappend = liftM2 mappend
 
 
-$(mkLabels [''World, ''Player, ''Object, ''ObjectTypes, ''Ability])
+$(mkLabels [''World, ''Player, ''Object])
