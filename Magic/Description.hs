@@ -199,7 +199,7 @@ describeEvent e =
   withWorld $ \world ->
     case e of
       Did (DrawCard p) -> "Player " <> sh p <> " draws a card"
-      Did (DestroyPermanent i _) -> "Permanent #" <> sh i <> " was destroyed"
+      Did (DestroyPermanent i _) -> "Permanent #" <> sh i <> " is destroyed"
       Did (ShuffleLibrary p) -> "Player " <> sh p <> " shuffles their library"
       Did (DamageObject source r amount _ _) ->
         describeObjectName source <> " deals " <> sh amount <> " damage to " <> describeObjectNameByRef r
@@ -220,7 +220,7 @@ describeEvent e =
         describeZoneRef rToZone
       WillEndStep s -> "End of " <> sh s
       DidBeginStep s -> "Beginning of " <> sh s
-      _ -> "(event)"
+      _ -> sh e
 
 describeZoneRef :: ZoneRef -> Description
 describeZoneRef z =
