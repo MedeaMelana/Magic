@@ -80,7 +80,7 @@ import Data.Boolean
 import Data.Label (mkLabels)
 import Data.Monoid
 import Data.Set (Set)
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 import Prelude hiding (interact)
 
 
@@ -215,6 +215,12 @@ data Object = Object
   , _triggeredAbilities     :: [TriggeredAbility]
   , _replacementEffects     :: [ReplacementEffect]
   }
+
+instance Show Object where
+  show o =
+    case _name o of
+      Nothing -> "(anonymous)"
+      Just n  -> unpack n
 
 
 
@@ -365,6 +371,9 @@ data ContinuousEffect = ContinuousEffect
   , efEffect    :: World -> World
   }
 
+instance Show ContinuousEffect where
+  show _ = "(continuous effect)"
+
 data Layer
   = Layer1       -- copy effects
   | Layer2       -- control-changing effects
@@ -414,11 +423,13 @@ data Event
   | DidRevealCard ObjectRef
   | DidBeginStep Step
   | WillEndStep Step
+  deriving Show
 
 -- | A one-shot effect causes a mutation in the game's state. A value of @OneShotEffect@ describes something that is about to happen. When one-shot effects are executed, they may be replaced or prevented by replacement effects, and cause an 'Event' to be raised, triggering abilities.
 data OneShotEffect
   = Will SimpleOneShotEffect
   | WillMoveObject (Maybe ObjectRef) ZoneRef Object  -- optional current zone/id, new zone, suggested form
+  deriving Show
 
 -- | A one-shot effect is simple if its fields contain enough information to serve as an 'Event' unchanged, using the 'Did' constructor.
 data SimpleOneShotEffect
@@ -442,6 +453,7 @@ data SimpleOneShotEffect
   | WinGame PlayerRef
   | InstallContinuousEffect ObjectRef ContinuousEffect
   | CeaseToExist ObjectRef
+  deriving Show
 
 
 
