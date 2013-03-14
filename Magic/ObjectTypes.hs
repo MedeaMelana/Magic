@@ -89,7 +89,7 @@ landTypes tys = mempty { landSubtypes = Just (Set.fromList tys) }
 
 -- | Card type @Planeswalker@.
 planeswalkerType :: ObjectTypes
-planeswalkerType = mempty { planeswalkerSubtypes = mempty }
+planeswalkerType = mempty { planeswalkerSubtypes = Just mempty }
 
 -- | Card type @Planeswalker@ with the specified planeswalker type.
 planeswalkerWithType :: [PlaneswalkerSubtype] -> ObjectTypes
