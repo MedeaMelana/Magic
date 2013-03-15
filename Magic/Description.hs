@@ -209,6 +209,7 @@ describeEvent e =
         "Player " <> sh p <> " adds " <> describeManaPool pool <> " to their mana pool"
       Did (SpendFromManaPool p pool) ->
         "Player " <> sh p <> " spends " <> describeManaPool pool <> " from their mana pool"
+      Did (PlayLand p _) -> "Player " <> sh p <> " plays a land"
       Did (LoseGame p) -> "Player " <> sh p <> " loses"
       Did (WinGame p) -> "Player " <> sh p <> " wins the game"
       Did (CeaseToExist r) -> sh r <> " ceases to exist"
