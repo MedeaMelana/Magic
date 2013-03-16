@@ -14,6 +14,7 @@ build-type:         Simple
 cabal-version:      >=1.8
 
 library
+  hs-source-dirs:   src
   exposed-modules:  Magic.BasicLands,
                     Magic.Core,
                     Magic.CLI,
@@ -23,7 +24,6 @@ library
                     Magic.Events,
                     Magic.IdList,
                     Magic.Labels,
-                    Magic.M13,
                     Magic.ObjectTypes,
                     Magic.Predicates,
                     Magic.Target

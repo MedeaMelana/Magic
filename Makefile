@@ -1,17 +1,9 @@
 run:
-	ghci -Wall -i.:tests Main
-
-configure:
-	cabal configure
-
-docs: configure
-	cabal haddock
-
-opendocs: docs
-	open dist/doc/html/Magic/index.html
+	ghci -Wall -iMagic/src:Magic-Cards/src:tests Main
 
 clean:
 	find . \( -name '*.o' -or -name '*.hi' \) -exec rm {} \;
+	rm -rf Magic/dist Magic-Cards/dist
 
 compile:
-	ghc --make -Wall -i.:tests Main
+	ghc --make -Wall -iMagic:Magic-Cards:tests Main

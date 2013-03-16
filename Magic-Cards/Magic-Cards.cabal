@@ -1,0 +1,23 @@
+name:               Magic-Cards
+version:            0.1
+-- synopsis:
+-- description:
+license:            BSD3
+homepage:           https://github.com/MedeaMelana/Magic
+bug-reports:        https://github.com/MedeaMelana/Magic/issues
+license-file:       LICENSE
+author:             Martijn van Steenbergen
+maintainer:         martijn@van.steenbergen.nl
+-- copyright:
+category:           Game
+build-type:         Simple
+cabal-version:      >=1.8
+
+library
+  hs-source-dirs:   src
+  exposed-modules:  Magic.M13
+  build-depends:    base < 5,
+                    Magic ==0.1.*,
+                    containers,
+                    fclabels ==1.1.*,
+                    Boolean ==0.1.*
