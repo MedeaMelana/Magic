@@ -35,23 +35,23 @@ import Data.Traversable (for)
 import Prelude hiding (interact)
 
 
-executeMagic :: Magic a -> Engine a
-executeMagic m = do
+executeMagic :: EventSource -> Magic a -> Engine a
+executeMagic source m = do
   world <- view ask
-  runExecuteEffectsProgram (runReaderT (runViewT (runMagic m)) world)
+  runExecuteEffectsProgram source (runReaderT (runViewT (runMagic m)) world)
 
-runExecuteEffectsProgram :: ProgramT ExecuteEffects (Program Interact) a -> Engine a
-runExecuteEffectsProgram program = interact (viewT program) >>= eval
+runExecuteEffectsProgram :: EventSource -> ProgramT ExecuteEffects (Program Interact) a -> Engine a
+runExecuteEffectsProgram source program = interact (viewT program) >>= eval
   where
     eval (Return x) = return x
-    eval (ExecuteEffects effs :>>= k) = executeEffects effs >>= runExecuteEffectsProgram . k
+    eval (ExecuteEffects effs :>>= k) = executeEffects source effs >>= runExecuteEffectsProgram source . k
 
 -- Execute multiple effects as a single event, applying replacement effects and
 -- triggering abilities.
-executeEffects :: [OneShotEffect] -> Engine [Event]
-executeEffects [] = return []
-executeEffects effects = do
-  effects' <- concat <$> for effects applyReplacementEffects
+executeEffects :: EventSource -> [OneShotEffect] -> Engine [Event]
+executeEffects _ [] = return []
+executeEffects source effects = do
+  effects' <- concat <$> for effects (applyReplacementEffects source)
 
   -- If enough players lose to end the game, end the game right now
   let losingPlayers = [ p | Will (LoseGame p) <- effects' ]
@@ -65,14 +65,14 @@ executeEffects effects = do
 
   turnHistory ~: (++ events)
 
-  raise events
+  raise source events
   return events
 
-raise :: [Event] -> Engine ()
-raise events = do
+raise :: EventSource -> [Event] -> Engine ()
+raise source events = do
   world <- view ask
 
-  interact $ singleton (LogEvents events world)
+  interact $ singleton (LogEvents source events world)
 
   ros <- view allObjects
   forM_ ros $ \(ro, o) -> do
@@ -85,30 +85,31 @@ raise events = do
         return (map (\program -> ((ro, viewedObject), program)) programs)
       player p .^ prestack ~: (++ prestackItems)
 
-executeEffect :: OneShotEffect -> Engine [Event]
-executeEffect = executeEffects . (: [])
+executeEffect :: EventSource -> OneShotEffect -> Engine [Event]
+executeEffect source = executeEffects source . (: [])
 
 -- [616] Interaction of Replacement and/or Prevention Effects
 -- TODO Handle multiple effects (in a single event) at once, to be able to adhere
 -- to APNAP order; see http://draw3cards.com/questions/9618
-applyReplacementEffects :: OneShotEffect -> Engine [OneShotEffect]
-applyReplacementEffects eff = do
-    objects <- map snd <$> view allObjects
-    go (concatMap (get replacementEffects) objects) eff
-  where
-    go :: [ReplacementEffect] -> OneShotEffect -> Engine [OneShotEffect]
-    go availableEffects effectToReplace = do
-      p <- affectedPlayer effectToReplace
-      let (notApplicable, applicable) =
-            partitionEithers $ map (\f -> maybe (Left f) (\m -> Right (f, m)) (f effectToReplace)) availableEffects
-      if null applicable
-        then return [effectToReplace]
-        else do
-          ((_, mReplacements), notChosen) <-
-            askQuestion p (AskPickReplacementEffect applicable)
-          replacements <- executeMagic mReplacements
-          -- TODO Resolve replacements in affected player APNAP order.
-          fmap concat $ for replacements (go (map fst notChosen ++ notApplicable))
+applyReplacementEffects :: EventSource -> OneShotEffect -> Engine [OneShotEffect]
+applyReplacementEffects _ eff = return [eff]
+  --applyReplacementEffects source eff = do
+  --  objects <- map snd <$> view allObjects
+  --  go (concatMap (get replacementEffects) objects) eff
+  --where
+  --  go :: [ReplacementEffect] -> OneShotEffect -> Engine [OneShotEffect]
+  --  go availableEffects effectToReplace = do
+  --    p <- affectedPlayer effectToReplace
+  --    let (notApplicable, applicable) =
+  --          partitionEithers $ map (\f -> maybe (Left f) (\m -> Right (f, m)) (f effectToReplace)) availableEffects
+  --    if null applicable
+  --      then return [effectToReplace]
+  --      else do
+  --        ((_, mReplacements), notChosen) <-
+  --          askQuestion p (AskPickReplacementEffect applicable)
+  --        replacements <- executeMagic undefined mReplacements
+  --        -- TODO Resolve replacements in affected player APNAP order.
+  --        fmap concat $ for replacements (go (map fst notChosen ++ notApplicable))
 
 -- [616.1] The affected player chooses which replacement effect to apply first.
 affectedPlayer :: OneShotEffect -> Engine PlayerRef

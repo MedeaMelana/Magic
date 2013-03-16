@@ -19,6 +19,7 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import Safe
+import qualified System.IO as IO
 
 runGame :: [Deck] -> IO ()
 runGame decks = do
@@ -44,7 +45,8 @@ askQuestions = eval . viewT
       Debug t :>>= k -> do
         Text.putStrLn ("[DEBUG] " <> t)
         askQuestions (k ())
-      LogEvents es world :>>= k -> do
+      LogEvents source es world :>>= k -> do
+        IO.putStrLn ("[EVENT] Caused by " <> show source)
         forM_ es $ \e -> Text.putStrLn (desc world (">>> " <> describeEvent e))
         askQuestions (k ())
       AskQuestion p world AskKeepHand :>>= k -> do

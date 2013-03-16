@@ -61,7 +61,7 @@ module Magic.Types (
     ViewT(..), View, MonadView(..),
 
     -- * Monadic interaction with players
-    Interact(..), Question(..), Pick, MonadInteract(..),
+    Interact(..), EventSource(..), Question(..), Pick, MonadInteract(..),
 
     -- * Executing effects
     ExecuteEffects(..),
@@ -398,6 +398,7 @@ type TriggeredAbility = ObjectRef -> PlayerRef -> [Event] -> View [Magic ()]
 data PriorityAction
   = PlayCard ObjectRef
   | ActivateAbility ActivatedAbilityRef
+  deriving Show
 
 -- Actions that may be taken when paying a mana cost
 data PayManaAction
@@ -519,8 +520,21 @@ instance Monad m => MonadView (ViewT m) where
 
 data Interact a where
   Debug       :: Text -> Interact ()
-  LogEvents   :: [Event] -> World -> Interact ()
+  LogEvents   :: EventSource -> [Event] -> World -> Interact ()
   AskQuestion :: PlayerRef -> World -> Question a -> Interact a
+
+data EventSource
+  = TurnBasedActions
+    -- ^ Events caused by turn-based actions
+  | StateBasedActions
+    -- ^ Events caused by state-based actions
+  | StackTrigger LastKnownObjectInfo
+    -- ^ Events caused by putting a trigger on the stack
+  | ResolutionOf Id
+    -- ^ Events caused by the resolution of a spell or ability
+  | PriorityActionExecution PriorityAction
+    -- ^ Events caused by casting a spell or activating an ability
+  deriving Show
 
 data Question a where
   AskKeepHand              :: Question Bool

@@ -113,9 +113,9 @@ fullGame = do
     players ~:* set manaPool []
     (step, newTurn) <- nextStep
     when newTurn (turnHistory =: [])
-    raise [DidBeginStep step]
+    raise TurnBasedActions [DidBeginStep step]
     executeStep step
-    raise [WillEndStep step]
+    raise TurnBasedActions [WillEndStep step]
 
 -- | Moves to the next step. Returns the new step, and whether a new turn has begun.
 nextStep :: Engine (Step, Bool)
@@ -138,7 +138,7 @@ executeStep (BeginningPhase UntapStep) = do
   -- [502.2] untap permanents
   rp <- gets activePlayer
   ios <- IdList.filter (isControlledBy rp) <$> gets battlefield
-  _ <- for ios $ \(i, _) -> executeEffect (Will (UntapPermanent i))
+  _ <- executeEffects TurnBasedActions (map (\(i, _) -> Will (UntapPermanent i)) ios)
   return ()
 
 executeStep (BeginningPhase UpkeepStep) = do
@@ -150,7 +150,7 @@ executeStep (BeginningPhase UpkeepStep) = do
 executeStep (BeginningPhase DrawStep) = do
   -- [504.1]
   ap <- gets activePlayer
-  _ <- executeEffect (Will (DrawCard ap))
+  _ <- executeEffect TurnBasedActions (Will (DrawCard ap))
 
   -- TODO [504.2]  handle triggers
 
@@ -268,7 +268,9 @@ executeSBAsAndProcessPrestacks = untilFalse ((||) <$> checkSBAs <*> processPrest
 -- | Repeatedly checks and executes state-based effects until no more actions need to be taken.
 --   Returns whether any actions were taken at all.
 checkSBAs :: Engine Bool
-checkSBAs = untilFalse $ (not . null) <$> (collectSBAs >>= executeEffects)
+checkSBAs = untilFalse $ (not . null) <$> checkSBAsOnce
+  where
+    checkSBAsOnce = collectSBAs >>= executeEffects StateBasedActions
 
 -- | Ask players to put pending items on the stack in APNAP order. [405.3]
 --   Returns whether anything was put on the stack as a result.
@@ -279,7 +281,8 @@ processPrestacks = do
     let pending = get prestack p
     when (not (null pending)) $ do
       index <- askQuestion i (AskPickTrigger (map fst pending))
-      executeMagic (snd (pending !! index))
+      let (lki, program) = pending !! index
+      executeMagic (StackTrigger lki) program
       player i .^ prestack ~: deleteAtIndex index
     return (not (null pending))
 
@@ -349,17 +352,18 @@ resolve i = do
   o <- gets (stack .^ listEl i)
   let Just item = get stackItem o
   let (_, mkEffects) = evaluateTargetList item
-  executeMagic (mkEffects o)
+  let eventSource = ResolutionOf i
+  executeMagic eventSource (mkEffects o)
 
   -- if the object is now still on the stack, move it to the appropriate zone
   let o' = set stackItem Nothing o
   if (hasTypes instantType o || hasTypes sorceryType o)
-  then void $ executeEffect $
+  then void $ executeEffect eventSource $
     WillMoveObject (Just (Stack, i)) (Graveyard (get controller o)) o'
   else if hasPermanentType o
-  then void $ executeEffect $
-    WillMoveObject (Just (Stack, i)) Battlefield o'
-  else void $ executeEffect $ Will $ CeaseToExist (Stack, i)
+  then void $ executeEffect eventSource $
+    WillMoveObject (Just (Stack, i)) Battlefield (set tapStatus (Just Untapped) o')
+  else void $ executeEffect eventSource $ Will $ CeaseToExist (Stack, i)
 
 collectPriorityActions :: PlayerRef -> Engine [PriorityAction]
 collectPriorityActions p = do
@@ -389,29 +393,29 @@ collectPlayableCards p = do
 
 shouldOfferAbility :: Ability -> ObjectRef -> PlayerRef -> Engine Bool
 shouldOfferAbility ability rSource rActivator = do
-  abilityOk <- executeMagic (view (available ability rSource rActivator))
+  abilityOk <- view (available ability rSource rActivator)
   payCostsOk <- canPayAdditionalCosts rSource rActivator (additionalCosts ability)
   return (abilityOk && payCostsOk)
 
-activateAbility :: Ability -> ObjectRef -> PlayerRef -> Engine ()
-activateAbility ability rSource rActivator  = do
-  offerManaAbilitiesToPay rActivator (manaCost ability)
-  forM_ (additionalCosts ability) (payAdditionalCost rSource rActivator)
-  executeMagic (effect ability rSource rActivator)
+activateAbility :: EventSource -> Ability -> ObjectRef -> PlayerRef -> Engine ()
+activateAbility source ability rSource rActivator  = do
+  offerManaAbilitiesToPay source rActivator (manaCost ability)
+  forM_ (additionalCosts ability) (payAdditionalCost source rSource rActivator)
+  executeMagic source (effect ability rSource rActivator)
 
 executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
 executePriorityAction p a = do
   case a of
     PlayCard r -> do
       Just ability <- gets (object r .^ play)
-      activateAbility ability r p
+      activateAbility (PriorityActionExecution a) ability r p
     ActivateAbility (r, i) -> do
       abilities <- gets (object r .^ activatedAbilities)
-      activateAbility (abilities !! i) r p
+      activateAbility (PriorityActionExecution a) (abilities !! i) r p
 
-offerManaAbilitiesToPay :: PlayerRef -> ManaPool -> Engine ()
-offerManaAbilitiesToPay _ []   = return ()
-offerManaAbilitiesToPay p cost = do
+offerManaAbilitiesToPay :: EventSource -> PlayerRef -> ManaPool -> Engine ()
+offerManaAbilitiesToPay _ _ []   = return ()
+offerManaAbilitiesToPay source p cost = do
   amas <- map ActivateManaAbility <$>
           collectAvailableActivatedAbilities isManaAbility p
   pool <- gets (player p .^ manaPool)
@@ -422,14 +426,14 @@ offerManaAbilitiesToPay p cost = do
   action <- askQuestion p (AskManaAbility cost (amas <> pms))
   case action of
     PayManaFromManaPool mc -> do
-      _ <- executeEffect (Will (SpendFromManaPool p [mc]))
+      _ <- executeEffect source (Will (SpendFromManaPool p [mc]))
       if mc `elem` cost
-        then offerManaAbilitiesToPay p (delete mc cost)
-        else offerManaAbilitiesToPay p (delete Nothing cost)
+        then offerManaAbilitiesToPay source p (delete mc cost)
+        else offerManaAbilitiesToPay source p (delete Nothing cost)
     ActivateManaAbility (r, i) -> do
       abilities <- gets (object r .^ activatedAbilities)
-      activateAbility (abilities !! i) r p
-      offerManaAbilitiesToPay p cost
+      activateAbility source (abilities !! i) r p
+      offerManaAbilitiesToPay source p cost
 
 canPayAdditionalCosts :: ObjectRef -> PlayerRef -> [AdditionalCost] -> Engine Bool
 canPayAdditionalCosts _ _ [] = return True
@@ -440,10 +444,10 @@ canPayAdditionalCosts rSource _ (c:cs) =
       return (ts == Just Untapped)
     (_, TapSelf) -> return False
 
-payAdditionalCost :: ObjectRef -> PlayerRef -> AdditionalCost -> Engine ()
-payAdditionalCost rSource _ c =
+payAdditionalCost :: EventSource -> ObjectRef -> PlayerRef -> AdditionalCost -> Engine ()
+payAdditionalCost source rSource _ c =
   case c of
-    TapSelf -> case rSource of (Battlefield, i) -> void (executeEffect (Will (TapPermanent i)))
+    TapSelf -> case rSource of (Battlefield, i) -> void (executeEffect source (Will (TapPermanent i)))
 
 -- | Returns player IDs in APNAP order (active player, non-active player).
 apnap :: Engine [(PlayerRef, Player)]
