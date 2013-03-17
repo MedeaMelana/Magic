@@ -1,5 +1,3 @@
 language: haskell
 
-script:
-  - cd Magic
-  - cabal install --only-dependencies --enable-tests
+script: "cd Magic && cabal install --only-dependencies --enable-tests"
