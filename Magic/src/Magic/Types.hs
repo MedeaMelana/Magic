@@ -161,7 +161,7 @@ data EndStep
 
 data Player = Player
   { _life            :: Int
-  , _manaPool        :: Bag (Maybe Color)
+  , _manaPool        :: ManaPool
   , _prestack        :: [(LastKnownObjectInfo, Magic ())]  -- triggered abilities about to be put on the stack, together with their source
   , _library         :: IdList Object
   , _hand            :: IdList Object
