@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+
+<html ng-app>
+
+<head>
+<title>Magic: The Haskelling</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.5/angular.min.js"></script>
+<script src="magic.js"></script>
+</head>
+
+<body>
+
+<div id="output"/>
+
+<div ng-controller="MagicCtrl">
+  <ul>
+    <li ng-repeat="message in messages">
+      {{message}}
+    </li>
+  </ul>
+
+  <form ng-submit="sendMessage()">
+    <input type="text" ng-model="message" size="30" autofocus>
+    <input type="submit" value="send">
+  </form>
+</div>
+
+</body>
+
+</html>
