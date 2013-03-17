@@ -11,7 +11,11 @@ function MagicCtrl($scope) {
 
   $scope.socket.onmessage = function(event) {
     $scope.$apply(function () {
-      console.log(event.data);
+      try {
+        console.log(JSON.parse(event.data));
+      } catch (e) {
+        console.log(event.data);
+      }
     });
   };
 

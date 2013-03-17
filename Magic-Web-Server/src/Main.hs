@@ -5,22 +5,23 @@ module Main where
 
 import Magic
 import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction,
-  describeEvent, describeTarget, describeManaPool, describePayManaAction, describeObjectName)
+  describeTarget, describeManaPool, describePayManaAction, describeObjectName)
 import Magic.Engine.Types
 import Magic.BasicLands
 import Magic.M13
+import Magic.Json ()
 
-import Control.Monad (forever, forM_)
+import Control.Monad (forM_)
 import Control.Monad.Operational (ProgramT, ProgramViewT(..), viewT)
-import Control.Monad.Random (evalRandT, newStdGen, RandT(..), StdGen)
+import Control.Monad.Random (evalRandT, newStdGen, RandT, StdGen)
 import Control.Monad.Reader (runReader)
 import Control.Monad.State (evalStateT)
 import Control.Monad.Trans (liftIO)
 
+import Data.Aeson (encode)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as Text
-import qualified Data.Text.IO as Text
 
 import Network.WebSockets (WebSockets, Hybi00, Request, TextProtocol,
   acceptRequest, sendTextData, receiveData, runServer)
@@ -63,9 +64,8 @@ askQuestions = eval . viewT
       Debug t :>>= k -> do
         sendText ("[DEBUG] " <> t)
         askQuestions (k ())
-      LogEvents source es world :>>= k -> do
-        sendText ("[EVENT] Caused by " <> textShow source)
-        forM_ es $ \e -> sendText (desc world (">>> " <> describeEvent e))
+      instr@(LogEvents _ _ _) :>>= k -> do
+        sendTextData (encode instr)
         askQuestions (k ())
       AskQuestion p world AskKeepHand :>>= k -> do
         sendText (desc world (describeZone (Hand p)))
