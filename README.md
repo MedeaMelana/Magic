@@ -13,6 +13,6 @@ The code is currently far from finished and in very experimental state.
 
 ## Current progress
 
-A good indication of the current progress is to open [module M13](/MedeaMelana/Magic/blob/master/Magic/M13.hs) and see how many M13 cards have been implemented yet.
+A good indication of the current progress is to open [module M13](/Magic-Cards/src/Magic/M13.hs) and see how many M13 cards have been implemented yet.
 
 There is also a command-line interface that allows you to play the game. To run it, download the source and `runghc -i.:tests CLITest`. This will run a two-player game with preselected decks.
