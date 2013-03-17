@@ -1,4 +1,4 @@
-module Magic.Predicates where
+module Magic.Predicates (hasColor, isOwnedBy, isControlledBy) where
 
 import Magic.Types
 

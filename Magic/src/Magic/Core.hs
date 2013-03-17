@@ -2,10 +2,7 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Magic.Core
-  --( compileZoneRef
-  --, evaluateTargetList, singleTarget, (<?>), askMagicTargets, allTargets, allObjects
-  --, module Types
-  --)
+  ( compileZoneRef, allObjects, askQuestion, debug, object, player, isStackEmpty )
   where
 
 import Magic.IdList (IdList)

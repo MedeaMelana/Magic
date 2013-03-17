@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DoAndIfThenElse #-}
 
-module Magic.Engine where
+module Magic.Engine (newWorld, fullGame, Engine(..)) where
 
 import Magic.Core
 import Magic.Events hiding (executeEffect, executeEffects)

@@ -2,13 +2,7 @@
 
 module Magic.M13 where
 
-import Magic.Types
-import Magic.ObjectTypes
-import Magic.Target
-import Magic.Utils
-import Magic.Core
-import Magic.Events
-import Magic.Labels
+import Magic
 
 import Control.Applicative
 import Control.Monad (void)

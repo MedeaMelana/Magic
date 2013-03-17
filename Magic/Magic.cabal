@@ -15,7 +15,8 @@ cabal-version:      >=1.8
 
 library
   hs-source-dirs:   src
-  exposed-modules:  Magic.BasicLands,
+  exposed-modules:  Magic,
+                    Magic.Abilities,
                     Magic.Core,
                     Magic.CLI,
                     Magic.Engine,
@@ -24,12 +25,14 @@ library
                     Magic.Events,
                     Magic.IdList,
                     Magic.Labels,
+                    Magic.Monads,
+                    Magic.Object,
                     Magic.ObjectTypes,
                     Magic.Predicates,
-                    Magic.Target
-                    Magic.Types,
-                    Magic.Utils
-  -- other-modules:
+                    Magic.Target,
+                    Magic.Utils,
+                    Magic.World
+  other-modules:    Magic.Types
   build-depends:    base < 5,
                     containers,
                     fclabels ==1.1.*,

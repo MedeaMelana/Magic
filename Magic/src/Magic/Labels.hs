@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Magic.Labels where
+module Magic.Labels (listEl, (.^), (~:), (~:*)) where
 
 import Magic.IdList (Id, IdList)
 import qualified Magic.IdList as IdList
