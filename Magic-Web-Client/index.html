@@ -13,12 +13,6 @@
 <div id="output"/>
 
 <div ng-controller="MagicCtrl">
-  <ul>
-    <li ng-repeat="message in messages">
-      {{message}}
-    </li>
-  </ul>
-
   <form ng-submit="sendMessage()">
     <input type="text" ng-model="message" size="30" autofocus>
     <input type="submit" value="send">

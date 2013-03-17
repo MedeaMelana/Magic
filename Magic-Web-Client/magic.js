@@ -4,7 +4,6 @@ function MagicCtrl($scope) {
 
   $scope.sendMessage = function() {
     $scope.socket.send($scope.message);
-    $scope.messages.push('> ' + $scope.message);
     $scope.message = '';
   };
 
@@ -12,25 +11,25 @@ function MagicCtrl($scope) {
 
   $scope.socket.onmessage = function(event) {
     $scope.$apply(function () {
-      $scope.messages.push('< ' + event.data);
+      console.log(event.data);
     });
   };
 
   $scope.socket.onerror = function(event) {
     $scope.$apply(function () {
-      $scope.messages.push('Error: ' + event.data);
+      console.log('Error: ' + event.data);
     });
   };
 
   $scope.socket.onopen = function(event) {
     $scope.$apply(function () {
-      $scope.messages.push('CONNECTED');
+      console.log('CONNECTED');
     });
   };
 
   $scope.socket.onclose = function(event) {
     $scope.$apply(function () {
-      $scope.messages.push('DISCONNECTED');
+      console.log('DISCONNECTED');
     });
   };
 
