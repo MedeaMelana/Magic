@@ -414,7 +414,6 @@ data PayManaAction
 data Event
   = Did SimpleOneShotEffect
   | DidMoveObject (Maybe ObjectRef) ObjectRef  -- old ref, new ref
-  | DidCreateObject ObjectRef
   | DidDeclareAttackers PlayerRef [ObjectRef]
 
   -- Keyword actions [701]
