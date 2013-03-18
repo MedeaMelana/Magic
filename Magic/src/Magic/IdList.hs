@@ -3,7 +3,7 @@
 module Magic.IdList (
 
     -- * Types
-    Id, IdList,
+    Id, idToInt, IdList,
 
     -- * Construction
     empty, fromList, fromListWithId,
@@ -34,6 +34,9 @@ import System.Random.Shuffle (shuffleM)
 
 newtype Id = Id Int
   deriving (Eq, Ord)
+
+idToInt :: Id -> Int
+idToInt (Id i) = i
 
 data IdList a = IdList [(Id, a)] Id
 
