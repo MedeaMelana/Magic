@@ -6,6 +6,7 @@
 <title>Magic: The Haskelling</title>
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.5/angular.min.js"></script>
 <script src="magic.js"></script>
+<link rel="stylesheet" href="magic.css">
 </head>
 
 <body>
@@ -15,6 +16,18 @@
     <input type="text" ng-model="message" size="30" autofocus>
     <input type="submit" value="send">
   </form>
+
+  <header>Players:</header>
+  <ul>
+    <li ng-repeat="p in world.players.order" class="activePlayer-{{p == world.activePlayerId}}">
+      Player {{p}} ({{world.players[p].life}} life)
+    </li>
+  </ul>
+
+  <dl>
+    <dt>Active step:</dt>
+    <dd>{{describeActiveStep()}}</dd>
+  </dl>
 </div>
 
 </body>

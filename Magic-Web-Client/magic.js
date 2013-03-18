@@ -12,7 +12,11 @@ function MagicCtrl($scope) {
   $scope.socket.onmessage = function(event) {
     $scope.$apply(function () {
       try {
-        console.log(JSON.parse(event.data));
+        var message = JSON.parse(event.data);
+        console.log(message);
+        if (message.type === 'logEvents') {
+          $scope.world = message.world;
+        }
       } catch (e) {
         console.log(event.data);
       }
@@ -35,6 +39,17 @@ function MagicCtrl($scope) {
     $scope.$apply(function () {
       console.log('DISCONNECTED');
     });
+  };
+
+  $scope.describeActiveStep = function() {
+    if ($scope.world && $scope.world.activeStep) {
+      var activeStep = $scope.world.activeStep;
+      if (activeStep.step) {
+        return activeStep.step + ' step (' + activeStep.phase + ' phase)';
+      } else {
+        return activeStep.phase + ' phase';
+      }
+    }
   };
 
 };
