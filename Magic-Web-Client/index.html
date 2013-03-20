@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 
-<html ng-app>
+<html ng-app="magicApp">
 
 <head>
 <title>Magic: The Haskelling</title>
 <script src="angular.min.js"></script>
+<script src="angular-ui.min.js"></script>
 <script src="magic.js"></script>
 <link rel="stylesheet" href="magic.css">
 </head>
@@ -12,6 +13,7 @@
 <body>
 
 <div ng-controller="MagicCtrl">
+
   <form ng-submit="sendMessage()">
     <input type="text" ng-model="message" size="30" autofocus>
     <input type="submit" value="send">
@@ -48,6 +50,14 @@
       </span>
     </li>
   </ul>
+
+  <header>Question for player {{playerIdToAnswer}}:</header>
+  <p>{{question.type}}?</p>
+
+  <button ui-if="question.type == 'keepHand'" ng-click="answer(0)">yes</button>
+  <button ui-if="question.type == 'keepHand'" ng-click="answer(1)">no</button>
+  <button ui-if="question.type == 'priorityAction'" ng-click="answer(0)">pass</button>
+
 </div>
 
 </body>

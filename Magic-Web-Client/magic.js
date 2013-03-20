@@ -1,10 +1,14 @@
-function MagicCtrl($scope) {
+angular.module('magicApp',['ui']);
 
-  $scope.messages = [];
+function MagicCtrl($scope) {
 
   $scope.sendMessage = function() {
     $scope.socket.send($scope.message);
     $scope.message = '';
+  };
+
+  $scope.answer = function(a) {
+    $scope.socket.send(a);
   };
 
   $scope.socket = new WebSocket("ws://localhost:8080");
@@ -16,6 +20,10 @@ function MagicCtrl($scope) {
         console.log(message);
         if (message.type === 'logEvents') {
           $scope.world = message.world;
+        } else if (message.type === 'askQuestion') {
+          $scope.world = message.world;
+          $scope.question = message.question;
+          $scope.playerIdToAnswer = message.playerId;
         }
       } catch (e) {
         console.log(event.data);
