@@ -28,6 +28,26 @@
     <dt>Active step:</dt>
     <dd>{{describeActiveStep()}}</dd>
   </dl>
+
+  <header>Their hand:</header>
+  <ul class="their-hand">
+    <li ng-repeat="i in world.players[1].hand.order" class="card">
+      {{world.players[1].hand[i].name}}
+      <span ng-show="world.players[1].hand[i].pt" class="pt">
+        {{world.players[1].hand[i].pt.power}}/{{world.players[1].hand[i].pt.toughness}}
+      </span>
+    </li>
+  </ul>
+
+  <header>My hand:</header>
+  <ul class="my-hand">
+    <li ng-repeat="i in world.players[0].hand.order" class="card">
+      {{world.players[0].hand[i].name}}
+      <span ng-show="world.players[0].hand[i].pt" class="pt">
+        {{world.players[0].hand[i].pt.power}}/{{world.players[0].hand[i].pt.toughness}}
+      </span>
+    </li>
+  </ul>
 </div>
 
 </body>

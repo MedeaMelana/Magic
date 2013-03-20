@@ -1,1 +1,36 @@
+body {
+  background-color: #eee;
+}
+
 .activePlayer-true { font-weight: bold; }
+
+ul {
+  list-style-type: none;
+}
+
+header {
+  clear: both;
+}
+
+.card {
+  position: relative;
+  float: left;
+  width: 70px;
+  height: 100px;
+  font-family: sans-serif;
+  font-size: 12px;
+  text-wrap: unrestricted;
+  border: 1px solid black;
+  padding: 2px;
+  margin-right: 4px;
+}
+
+.card:hover {
+  box-shadow: 1px 1px 15px 1px #888888;
+}
+
+.card .pt {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+}
