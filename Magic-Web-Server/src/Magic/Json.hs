@@ -1,10 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GADTs #-}
 
-module Magic.Json (ToJSONPairs(..)) where
+module Magic.Json (interactToJSON) where
 
 import Magic
 import qualified Magic.IdList as IdList
+
+import Control.Monad (liftM)
 
 import Data.Aeson (ToJSON(..), Value(..), (.=))
 import Data.Aeson.Types (Pair)
@@ -12,6 +14,8 @@ import qualified Data.Aeson as Aeson
 import Data.Char (toLower)
 import Data.Text (Text)
 import qualified Data.Text as Text
+
+import Safe (atMay, readMay)
 
 
 
@@ -195,20 +199,41 @@ instance ToJSON Target where
     TargetPlayer p -> ("player", [ "playerId" .= p ])
     TargetObject r -> ("object", [ "objectRef" .= r ])
 
-instance ToJSON (Interact a) where
-  toJSON op = typedObject $ case op of
-    Debug msg -> ("debug", [ "message" .= msg ])
-    LogEvents _source events world ->
-      ("logEvents", [ "events" .= events, "world" .= world ])
-    AskQuestion p w q ->
-      ("askQuestion", [ "playerId" .= p, "world" .= w, "question" .= q])
+interactToJSON :: Monad m => m Text -> Interact a -> (Value, m a)
+interactToJSON receiveData op = (typedObject (instrType, props), receiveAnswer)
+  where
+    (instrType, props, receiveAnswer) = case op of
+      Debug msg -> ("debug", [ "message" .= msg ], return ())
+      LogEvents _source events world ->
+        ("logEvents", [ "events" .= events, "world" .= world ], return ())
+      AskQuestion p w q ->
+        let (json, select) = questionToJSON q
+            getAnswer = do
+              input <- Text.unpack `liftM` receiveData
+              case readMay input >>= select of
+                Nothing -> do
+                  --sendText ("Invalid option" :: Text)
+                  getAnswer
+                Just x ->
+                  return x
+          in ("askQuestion", [ "playerId" .= p, "world" .= w, "question" .= json], getAnswer)
 
+questionToJSON :: Question a -> (Value, Int -> Maybe a)
+questionToJSON q = (typedObject (questionType, props), select)
+  where
+    (questionType, props, select) = case q of
+      AskKeepHand ->
+        ("keepHand", [ "options" .= [True, False] ], atMay [True, False])
+      AskPriorityAction opts ->
+        ("priorityAction", [ "options" .= (passOption : map toJSON opts) ],
+          \i -> case i of 0 -> Just Nothing; _ -> Just (atMay opts i))
+      AskManaAbility m opts ->
+        ("manaAbility", [ "manaToPay" .= m, "options" .= opts ], atMay opts)
+      AskTarget ts ->
+        ("target", ["options" .= ts], atMay ts)
+      AskPickTrigger lkis ->
+        ("pickTrigger", ["options" .= map lkiToJSON lkis],
+          \i -> if i < length lkis then Just i else Nothing)
 
-instance ToJSON (Question a) where
-  toJSON q = typedObject $ case q of
-    AskKeepHand -> ("keepHand", [])
-    AskPriorityAction opts -> ("priorityAction", [ "options" .= opts ])
-    AskManaAbility m opts ->
-      ("manaAbility", [ "manaToPay" .= m, "options" .= opts ])
-    AskTarget ts -> ("target", ["options" .= ts])
-    AskPickTrigger lkis -> ("pickTrigger", ["options" .= map lkiToJSON lkis])
+passOption :: Value
+passOption = toJSON (typedObject ("pass", []))
