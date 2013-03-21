@@ -150,8 +150,8 @@ instance ToJSON CounterType where
 
 instance ToJSON PriorityAction where
   toJSON a = typedObject $ case a of
-    PlayCard r        -> ("playCard", [ "objectRef" .= r ])
-    ActivateAbility r -> ("activateAbility", [ "activatedAbillityRef" .= r ])
+    PlayCard r        -> ("playCard", [ "objectRef" .= objectRefToJSON r ])
+    ActivateAbility r -> ("activateAbility", [ "activatedAbillityRef" .= activatedAbilityRefToJSON r ])
 
 instance ToJSON PayManaAction where
   toJSON a = typedObject $ case a of
@@ -226,7 +226,7 @@ questionToJSON q = (typedObject (questionType, props), select)
         ("keepHand", [ "options" .= [True, False] ], atMay [True, False])
       AskPriorityAction opts ->
         ("priorityAction", [ "options" .= (passOption : map toJSON opts) ],
-          \i -> case i of 0 -> Just Nothing; _ -> Just (atMay opts i))
+          \i -> case i of 0 -> Just Nothing; _ -> fmap Just (atMay opts (i - 1)))
       AskManaAbility m opts ->
         ("manaAbility", [ "manaToPay" .= m, "options" .= opts ], atMay opts)
       AskTarget ts ->
