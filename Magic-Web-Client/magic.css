@@ -25,8 +25,13 @@ header {
   margin-right: 4px;
 }
 
+.card.choice-true {
+  background-color: #dfd;
+  cursor: pointer;
+}
+
 .card:hover {
-  box-shadow: 1px 1px 15px 1px #888888;
+  box-shadow: 1px 1px 10px 0px black;
 }
 
 .card .pt {
@@ -34,3 +39,5 @@ header {
   right: 2px;
   bottom: 0;
 }
+
+p { clear: both; }

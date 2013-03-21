@@ -8,6 +8,7 @@ function MagicCtrl($scope) {
   };
 
   $scope.answer = function(a) {
+    console.log("SEND " + a);
     $scope.socket.send(a);
   };
 
@@ -58,6 +59,50 @@ function MagicCtrl($scope) {
         return activeStep.phase + ' phase';
       }
     }
+  };
+
+  $scope.isCardClickable = function(objectRef) {
+    return $scope.getClickCardAction(objectRef) != null;
+  };
+
+  $scope.isObjectRefEqual = function(objectRef1, objectRef2) {
+    return $scope.isZoneRefEqual(objectRef1.zone, objectRef2.zone) &&
+      objectRef1.objectId == objectRef2.objectId;
+  };
+
+  $scope.isZoneRefEqual = function(zoneRef1, zoneRef2) {
+    return zoneRef1.name === zoneRef2.name &&
+      zoneRef1.playerId === zoneRef2.playerId;
+  };
+
+  $scope.clickCard = function(objectRef) {
+    var action = $scope.getClickCardAction(objectRef);
+    if (action) {
+      action();
+    }
+  };
+
+  $scope.getClickCardAction = function(objectRef) {
+    if ($scope.question.type === 'priorityAction') {
+      var i = $scope.indexOf($scope.question.options, function(option) {
+        return option.type === 'playCard' &&
+          $scope.isObjectRefEqual(option.objectRef, objectRef);
+      });
+      if (i >= 0) {
+        return function() { $scope.answer(i); };
+      } else {
+        return null;
+      }
+    }
+  };
+
+  $scope.indexOf = function(list, iterator) {
+    for (var i = 0; i < list.length; i++) {
+      var el = list[i];
+      if (iterator(el))
+        return i;
+    }
+    return -1;
   };
 
 };

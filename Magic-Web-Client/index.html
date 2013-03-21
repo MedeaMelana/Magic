@@ -33,7 +33,7 @@
 
   <header>Their hand:</header>
   <ul class="their-hand">
-    <li ng-repeat="i in world.players[1].hand.order" class="card">
+    <li ng-repeat="i in world.players[1].hand.order" class="card choice-{{isCardClickable({ zone: { name : 'hand', playerId : 1 }, objectId: i })}}" ng-click="clickCard({ zone: { name : 'hand', playerId : 1 }, objectId: i })">
       {{world.players[1].hand[i].name}}
       <span ng-show="world.players[1].hand[i].pt" class="pt">
         {{world.players[1].hand[i].pt.power}}/{{world.players[1].hand[i].pt.toughness}}
@@ -43,7 +43,7 @@
 
   <header>My hand:</header>
   <ul class="my-hand">
-    <li ng-repeat="i in world.players[0].hand.order" class="card">
+    <li ng-repeat="i in world.players[0].hand.order" class="card choice-{{isCardClickable({ zone: { name : 'hand', playerId : 0 }, objectId: i })}}" ng-click="clickCard({ zone: { name : 'hand', playerId : 0 }, objectId: i })">
       {{world.players[0].hand[i].name}}
       <span ng-show="world.players[0].hand[i].pt" class="pt">
         {{world.players[0].hand[i].pt.power}}/{{world.players[0].hand[i].pt.toughness}}
@@ -51,8 +51,7 @@
     </li>
   </ul>
 
-  <header>Question for player {{playerIdToAnswer}}:</header>
-  <p>{{question.type}}?</p>
+  <p>Question for player {{playerIdToAnswer}}: {{question.type}}?</p>
 
   <button ui-if="question.type == 'keepHand'" ng-click="answer(0)">yes</button>
   <button ui-if="question.type == 'keepHand'" ng-click="answer(1)">no</button>
