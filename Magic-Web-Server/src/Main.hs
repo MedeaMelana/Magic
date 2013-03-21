@@ -59,7 +59,7 @@ askQuestions = eval . viewT
     eval (Right program) = case program of
       Return x -> return x
       instr :>>= k -> do
-        let (instrJSON, getAnswer) = interactToJSON (receiveData) instr
+        let (instrJSON, getAnswer) = interactToJSON receiveData instr
         sendTextData (encode instrJSON)
         answer <- getAnswer
         askQuestions (k answer)
