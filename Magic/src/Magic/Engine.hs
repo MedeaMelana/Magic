@@ -351,7 +351,7 @@ resolve :: Id -> Engine ()
 resolve i = do
   o <- gets (stack .^ listEl i)
   let Just item = get stackItem o
-  let (_, mkEffects) = evaluateTargetList item
+  let (_, Just mkEffects) = evaluateTargetList item
   let eventSource = ResolutionOf i
   executeMagic eventSource (mkEffects o)
 

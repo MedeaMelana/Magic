@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Magic.Target (
     -- * Types
@@ -20,39 +21,44 @@ import Control.Monad (forM, filterM)
 import Data.Label.PureM (asks)
 
 
-evaluateTargetList :: TargetList Target a -> ([Target], a)
-evaluateTargetList (Nil x)       = ([], x)
-evaluateTargetList (Snoc xs t)   = (ts ++ [t], f t) where (ts, f) = evaluateTargetList xs
-evaluateTargetList (Test f _ xs) = (ts,        f x) where (ts, x) = evaluateTargetList xs
+evaluateTargetList :: TargetList Target a -> ([Target], Maybe a)
+evaluateTargetList (Nil x) = ([], Just x)
+evaluateTargetList (Snoc xs cast t) = (ts ++ [t], mf <*> cast t)
+  where (ts, mf) = evaluateTargetList xs
+evaluateTargetList (Test f _ xs) = (ts, f <$> mx)
+  where (ts, mx) = evaluateTargetList xs
 
 singleTarget :: TargetList () Target
-singleTarget = Snoc (Nil id) ()
+singleTarget = Snoc (Nil id) Just ()
 
 infixl 4 <?>
 (<?>) :: TargetList t a -> (a -> View Bool) -> TargetList t a
 xs <?> ok = Test id ok xs
 
-askTargets :: forall a. ([Target] -> Magic Target) -> [Target] -> TargetList () a -> Magic (TargetList Target a)
+askTargets :: forall a. ([Target] -> Magic Target) -> [Target] -> TargetList () a -> Magic (TargetList Target a, a)
 askTargets choose = askTargets' (const (return True))
   where
-    askTargets' :: forall b. (b -> View Bool) -> [Target] -> TargetList () b -> Magic (TargetList Target b)
+    askTargets' :: forall b. (b -> View Bool) -> [Target] -> TargetList () b -> Magic (TargetList Target b, b)
     askTargets' ok ts scheme =
       case scheme of
-        Nil x -> return (Nil x)
-        Snoc xs () -> do
-          xs' <- askTargets choose ts xs
-          let (_, f) = evaluateTargetList xs'
-          eligibleTargets <- view (filterM (ok . f) ts)
+        Nil x -> return (Nil x, x)
+        Snoc tsf cast () -> do
+          (tsf', f) <- askTargets' (const (return True)) ts tsf
+          eligibleTargets <- view $ flip filterM ts $ \t -> do
+            case cast t of
+              Just y -> ok (f y)
+              Nothing -> return False
           chosen <- choose eligibleTargets
-          return (Snoc xs' chosen)
-        Test f ok' scheme' -> do
-          z <- askTargets' (\x -> (&&) <$> ok (f x) <*> ok' x) ts scheme'
-          return (f <$> z)
+          let Just x = cast chosen
+          return (Snoc tsf' cast chosen, f x)
+        Test f ok' tsx -> do
+          (tsx', x) <- askTargets' (\x -> (&&) <$> ok (f x) <*> ok' x) ts tsx
+          return (f <$> tsx', f x)
 
 askMagicTargets :: PlayerRef -> TargetList () a -> Magic (TargetList Target a)
 askMagicTargets p ts = do
   ats <- allTargets
-  askTargets (askQuestion p . AskTarget) ats ts
+  fst <$> askTargets (askQuestion p . AskTarget) ats ts
 
 allTargets :: Magic [Target]
 allTargets = do

@@ -464,21 +464,20 @@ data Target
   = TargetPlayer PlayerRef
   | TargetObject ObjectRef
 
-
 data TargetList t a where
   Nil  :: a -> TargetList t a
-  Snoc :: TargetList t (Target -> a) -> t -> TargetList t a
+  Snoc :: TargetList t (x -> a) -> (Target -> Maybe x) -> t -> TargetList t a
   Test :: (x -> a) -> (x -> View Bool) -> TargetList t x -> TargetList t a
 
 instance Functor (TargetList t) where
   fmap f (Nil x)        = Nil (f x)
-  fmap f (Snoc xs t)    = Snoc (fmap (f .) xs) t
+  fmap f (Snoc xs ok t) = Snoc (fmap (f .) xs) ok t
   fmap f (Test g ok xs) = Test (f . g) ok xs
 
 instance Applicative (TargetList t) where
   pure = Nil
   xs <*> Nil b     = fmap ($ b) xs
-  xs <*> Snoc ys t = Snoc ((.) <$> xs <*> ys) t
+  xs <*> Snoc ys ok t = Snoc ((.) <$> xs <*> ys) ok t
   xs <*> Test f ok ys = Test fst snd ((\g x -> (g (f x), ok x)) <$> xs <*> ys)
 
 instance Monoid a => Monoid (TargetList t a) where
