@@ -116,7 +116,8 @@ affectedPlayer :: OneShotEffect -> Engine PlayerRef
 affectedPlayer e =
   case e of
     WillMoveObject _ _ o          -> return (get controller o)
-    Will (AdjustLife p _)         -> return p
+    Will (GainLife p _)           -> return p
+    Will (LoseLife p _)           -> return p
     Will (DamageObject _ o _ _ _) -> controllerOf o
     Will (DamagePlayer _ p _ _ _) -> return p
     Will (ShuffleLibrary p)       -> return p
@@ -146,6 +147,8 @@ compileEffect :: OneShotEffect -> Engine [Event]
 compileEffect e =
   case e of
     WillMoveObject mrObj rToZone obj -> moveObject mrObj rToZone obj
+    Will (GainLife p n)             -> gainLife p n
+    Will (LoseLife p n)             -> loseLife p n
     Will (TapPermanent i)           -> tapPermanent i
     Will (UntapPermanent i)         -> untapPermanent i
     Will (DrawCard rp)              -> drawCard rp
@@ -160,6 +163,20 @@ compileEffect e =
     Will (WinGame p)                -> winGame p
     Will (CeaseToExist r)           -> ceaseToExist r
     _ -> error "compileEffect: effect not implemented"
+
+gainLife :: PlayerRef -> Int -> Engine [Event]
+gainLife p n
+  | n <= 0     = return []
+  | otherwise  = do
+      player p .^ life ~: (+ n)
+      return [Did (GainLife p n)]
+
+loseLife :: PlayerRef -> Int -> Engine [Event]
+loseLife p n
+  | n <= 0     = return []
+  | otherwise  = do
+      player p .^ life ~: (subtract n)
+      return [Did (GainLife p n)]
 
 tapPermanent :: Id -> Engine [Event]
 tapPermanent i = do

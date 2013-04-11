@@ -433,7 +433,8 @@ data OneShotEffect
 
 -- | A one-shot effect is simple if its fields contain enough information to serve as an 'Event' unchanged, using the 'Did' constructor.
 data SimpleOneShotEffect
-  = AdjustLife PlayerRef Int
+  = GainLife PlayerRef Int
+  | LoseLife PlayerRef Int
   | DamageObject Object ObjectRef Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
   | DamagePlayer Object PlayerRef Int Bool Bool  -- source, player, amount, combat damage?, preventable?
   | ShuffleLibrary PlayerRef

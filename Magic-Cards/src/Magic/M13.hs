@@ -82,7 +82,7 @@ angel'sMercy = mkCard $ do
     , manaCost        = [Nothing, Nothing, Just White, Just White]
     , additionalCosts = []
     , effect          = \rSelf rActivator -> stackTargetlessEffect rSelf $ \_ ->
-      void $ executeEffect (Will (AdjustLife rActivator 7))
+      void $ executeEffect (Will (GainLife rActivator 7))
     , isManaAbility = False
     }
 
