@@ -118,7 +118,7 @@ affectedPlayer e =
     WillMoveObject _ _ o          -> return (get controller o)
     Will (GainLife p _)           -> return p
     Will (LoseLife p _)           -> return p
-    Will (DamageObject _ o _ _ _) -> controllerOf o
+    Will (DamageObject _ i _ _ _) -> controllerOf (Battlefield, i)
     Will (DamagePlayer _ p _ _ _) -> return p
     Will (ShuffleLibrary p)       -> return p
     Will (DrawCard p)             -> return p
@@ -157,7 +157,7 @@ compileEffect e =
     Will (PlayLand p ro)            -> playLand p ro
     Will (AddToManaPool p pool)     -> addToManaPool p pool
     Will (SpendFromManaPool p pool) -> spendFromManaPool p pool
-    Will (DamageObject source r amount isCombatDamage isPreventable) -> damageObject source r amount isCombatDamage isPreventable
+    Will (DamageObject source i amount isCombatDamage isPreventable) -> damageObject source i amount isCombatDamage isPreventable
     Will (DamagePlayer source p amount isCombatDamage isPreventable) -> damagePlayer source p amount isCombatDamage isPreventable
     Will (LoseGame p)               -> loseGame p
     Will (WinGame p)                -> winGame p
@@ -270,13 +270,13 @@ spendFromManaPool p pool = do
   player p .^ manaPool ~: (\\ pool)
   return [Did (SpendFromManaPool p pool)]
 
-damageObject :: Object -> ObjectRef -> Int -> Bool -> Bool -> Engine [Event]
+damageObject :: Object -> Id -> Int -> Bool -> Bool -> Engine [Event]
 -- 119.8. If a source would deal 0 damage, it does not deal damage at all.
 damageObject _ _ 0 _ _ = return []
-damageObject source r amount isCombatDamage isPreventable = do
+damageObject source i amount isCombatDamage isPreventable = do
   -- TODO check for protection, infect, wither, lifelink
-  object r .^ damage ~: (+ amount)
-  return [Did (DamageObject source r amount isCombatDamage isPreventable)]
+  object (Battlefield, i) .^ damage ~: (+ amount)
+  return [Did (DamageObject source i amount isCombatDamage isPreventable)]
 
 damagePlayer :: Object -> PlayerRef -> Int -> Bool -> Bool -> Engine [Event]
 -- 119.8. If a source would deal 0 damage, it does not deal damage at all.

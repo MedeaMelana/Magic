@@ -435,7 +435,7 @@ data OneShotEffect
 data SimpleOneShotEffect
   = GainLife PlayerRef Int
   | LoseLife PlayerRef Int
-  | DamageObject Object ObjectRef Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
+  | DamageObject Object Id Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
   | DamagePlayer Object PlayerRef Int Bool Bool  -- source, player, amount, combat damage?, preventable?
   | ShuffleLibrary PlayerRef
   -- ReorderLibraryCards

@@ -178,7 +178,7 @@ searingSpearEffect rSelf rActivator = do
   ts <- askMagicTargets rActivator targetCreatureOrPlayer
   let f :: Either Id PlayerRef -> Object -> Magic ()
       f t source = void $ executeEffect $ case t of
-        Left i  -> Will (DamageObject source (Battlefield, i) 3 False True)
+        Left i  -> Will (DamageObject source i 3 False True)
         Right p -> Will (DamagePlayer source p 3 False True)
   void (view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect)
 
