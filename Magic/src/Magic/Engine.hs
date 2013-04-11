@@ -91,13 +91,13 @@ drawOpeningHands :: [PlayerRef] -> Int -> Engine ()
 drawOpeningHands [] _ =
   return ()
 drawOpeningHands playerIds 0 =
-  forM_ playerIds shuffleLibrary
+  void $ executeEffects TurnBasedActions (map (Will . ShuffleLibrary) playerIds)
 drawOpeningHands playerIds handSize = do
   mulliganingPlayers <- do
     forM_ playerIds $ \playerId -> do
-      _ <- moveAllObjects (Hand playerId) (Library playerId)
-      _ <- shuffleLibrary playerId
-      replicateM_ handSize (drawCard playerId)
+      _ <- moveAllObjects TurnBasedActions (Hand playerId) (Library playerId)
+      _ <- executeEffect TurnBasedActions (Will (ShuffleLibrary playerId))
+      executeEffects TurnBasedActions (replicate handSize (Will (DrawCard playerId)))
     for playerIds $ \playerId -> do
       keepHand <- askQuestion playerId AskKeepHand
       if keepHand

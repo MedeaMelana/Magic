@@ -4,13 +4,7 @@
 module Magic.Engine.Events (
     -- * Executing effects
     executeMagic, executeEffects, executeEffect, raise, applyReplacementEffects,
-
-    -- * Compiling effects
-    -- | These functions all immediately execute their effect, bypassing any
-    -- replacement effects that might apply to them. They will cause triggered
-    -- abilities to trigger.
-    compileEffect,
-    untapPermanent, drawCard, moveObject, moveAllObjects, shuffleLibrary, tick
+    compileEffect, moveAllObjects, tick
   ) where
 
 import Magic.Core
@@ -21,7 +15,7 @@ import Magic.Events (willMoveToGraveyard)
 import Magic.Types
 import Magic.Engine.Types
 
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (<$))
 import Control.Monad (forM_,)
 import Control.Monad.Error (throwError)
 import Control.Monad.Reader (ask, runReaderT)
@@ -146,165 +140,109 @@ affectedPlayer e =
 compileEffect :: OneShotEffect -> Engine [Event]
 compileEffect e =
   case e of
-    WillMoveObject mrObj rToZone obj -> moveObject mrObj rToZone obj
-    Will (GainLife p n)             -> gainLife p n
-    Will (LoseLife p n)             -> loseLife p n
-    Will (TapPermanent i)           -> tapPermanent i
-    Will (UntapPermanent i)         -> untapPermanent i
-    Will (DrawCard rp)              -> drawCard rp
-    Will (DestroyPermanent i reg)   -> destroyPermanent i reg
-    Will (ShuffleLibrary rPlayer)   -> shuffleLibrary rPlayer
-    Will (PlayLand p ro)            -> playLand p ro
-    Will (AddToManaPool p pool)     -> addToManaPool p pool
-    Will (SpendFromManaPool p pool) -> spendFromManaPool p pool
-    Will (DamageObject source i amount isCombatDamage isPreventable) -> damageObject source i amount isCombatDamage isPreventable
-    Will (DamagePlayer source p amount isCombatDamage isPreventable) -> damagePlayer source p amount isCombatDamage isPreventable
-    Will (LoseGame p)               -> loseGame p
-    Will (WinGame p)                -> winGame p
-    Will (CeaseToExist r)           -> ceaseToExist r
-    _ -> error "compileEffect: effect not implemented"
+    WillMoveObject mOldRef rToZone obj ->
+      let createObject = do
+            t <- tick
+            let insertOp
+                  | rToZone == Stack  = IdList.consM
+                  | otherwise         = IdList.snocM
+            newId <- insertOp (compileZoneRef rToZone) (set timestamp t obj)
+            return [DidMoveObject mOldRef (rToZone, newId)]
+      in case mOldRef of
+        -- TODO 303.4f-g Auras entering the battlefield without being cast
+        Nothing -> createObject
+        Just (rFromZone, i) -> do
+          mObj <- IdList.removeM (compileZoneRef rFromZone) i
+          case mObj of
+            Nothing -> return []
+            Just _  -> createObject
 
-gainLife :: PlayerRef -> Int -> Engine [Event]
-gainLife p n
-  | n <= 0     = return []
-  | otherwise  = do
-      player p .^ life ~: (+ n)
-      return [Did (GainLife p n)]
+    Will simpleEffect ->
+      let simply      = ([Did simpleEffect] <$)
+          combine eff = (++ [Did simpleEffect]) <$> compileEffect eff
+      in case simpleEffect of
 
-loseLife :: PlayerRef -> Int -> Engine [Event]
-loseLife p n
-  | n <= 0     = return []
-  | otherwise  = do
-      player p .^ life ~: (subtract n)
-      return [Did (GainLife p n)]
+        GainLife p n
+          | n <= 0    -> return []
+          | otherwise -> simply $ player p .^ life ~: (+ n)
 
-tapPermanent :: Id -> Engine [Event]
-tapPermanent i = do
-  Just ts <- gets (object (Battlefield, i) .^ tapStatus)
-  case ts of
-    Untapped -> do
-      object (Battlefield, i) .^ tapStatus =: Just Tapped
-      return [Did (TapPermanent i)]
-    Tapped   -> return []
+        LoseLife p n
+          | n <= 0    -> return []
+          | otherwise -> simply $ player p .^ life ~: (subtract n)
 
--- | Cause a permanent on the battlefield to untap. If it was previously tapped, a 'Did' 'UntapPermanent' event is raised.
-untapPermanent :: Id -> Engine [Event]
-untapPermanent i = do
-  Just ts <- gets (object (Battlefield, i) .^ tapStatus)
-  case ts of
-    Untapped -> return []
-    Tapped -> do
-      object (Battlefield, i) .^ tapStatus =: Just Untapped
-      return [Did (UntapPermanent i)]
+        TapPermanent i -> do
+          Just ts <- gets (object (Battlefield, i) .^ tapStatus)
+          case ts of
+            Untapped -> simply $ object (Battlefield, i) .^ tapStatus =: Just Tapped
+            Tapped   -> return []
 
--- | Cause the given player to draw a card. If a card was actually drawn, a 'Did' 'DrawCard' event is raised. If not, the player loses the game the next time state-based actions are checked.
-drawCard :: PlayerRef -> Engine [Event]
-drawCard rp = do
-  lib <- gets (players .^ listEl rp .^ library)
-  case IdList.toList lib of
-    []          -> do
-      players .^ listEl rp .^ failedCardDraw =: True
-      return []
-    (ro, o) : _ -> do
-      events <- compileEffect (WillMoveObject (Just (Library rp, ro)) (Hand rp) o)
-      return (events ++ [Did (DrawCard rp)])
+        UntapPermanent i -> do
+          Just ts <- gets (object (Battlefield, i) .^ tapStatus)
+          case ts of
+            Untapped -> return []
+            Tapped   -> simply $ object (Battlefield, i) .^ tapStatus =: Just Untapped
 
-destroyPermanent :: Id -> Bool -> Engine [Event]
-destroyPermanent i reg = do
-  let r = (Battlefield, i)
-  o <- gets (object r)
-  events <- compileEffect (willMoveToGraveyard i o)
-  return (events ++ [Did (DestroyPermanent i reg)])
+        DrawCard rp -> do
+          lib <- gets (players .^ listEl rp .^ library)
+          case IdList.toList lib of
+            [] -> do
+              players .^ listEl rp .^ failedCardDraw =: True
+              return []
+            (ro, o) : _ ->
+              combine $ WillMoveObject (Just (Library rp, ro)) (Hand rp) o
 
+        DestroyPermanent i reg -> do
+          o <- gets (object (Battlefield, i))
+          combine $ willMoveToGraveyard i o
 
--- | Cause an object to move from one zone to another in the specified form. If the object was actually moved, a 'DidMoveObject' event is raised.
-moveObject :: Maybe ObjectRef -> ZoneRef -> Object -> Engine [Event]
--- TODO 303.4f-g Auras entering the battlefield without being cast
-moveObject mOldRef rToZone obj =
-    case mOldRef of
-      Nothing -> createObject
-      Just (rFromZone, i) -> do
-        mObj <- IdList.removeM (compileZoneRef rFromZone) i
-        case mObj of
-          Nothing -> return []
-          Just _  -> createObject
-  where
-    createObject = do
-      t <- tick
-      let insertOp
-            | rToZone == Stack  = IdList.consM
-            | otherwise         = IdList.snocM
-      newId <- insertOp (compileZoneRef rToZone) (set timestamp t obj)
-      return [DidMoveObject mOldRef (rToZone, newId)]
+        ShuffleLibrary rPlayer -> simply $ do
+          let libraryLabel = players .^ listEl rPlayer .^ library
+          lib <- gets libraryLabel
+          lib' <- IdList.shuffle lib
+          puts libraryLabel lib'
 
--- | @moveAllObjects z1 z2@ moves all objects from zone @z1@ to zone @z2@, raising a 'DidMoveObject' event for every object that was moved this way.
-moveAllObjects :: ZoneRef -> ZoneRef -> Engine [Event]
-moveAllObjects rFromZone rToZone = do
-  ois <- IdList.toList <$> gets (compileZoneRef rFromZone)
-  concat <$> (for ois $ \(i, o) -> moveObject (Just (rFromZone, i)) rToZone o)
+        PlayLand p ro -> do
+          o <- gets (object ro)
+          -- TODO apply replacement effects on the move effect
+          -- TODO store more sensible data in the PlayLand event
+          combine $ WillMoveObject (Just ro) Battlefield o { _tapStatus = Just Untapped, _controller = p }
 
--- | Shuffle a player's library. A 'ShuffleLibrary' event is raised.
-shuffleLibrary :: PlayerRef -> Engine [Event]
-shuffleLibrary rPlayer = do
-  let libraryLabel = players .^ listEl rPlayer .^ library
-  lib <- gets libraryLabel
-  lib' <- IdList.shuffle lib
-  puts libraryLabel lib'
-  return [Did (ShuffleLibrary rPlayer)]
+        AddToManaPool p pool ->
+          simply $ player p .^ manaPool ~: (pool <>)
 
-playLand :: PlayerRef -> ObjectRef -> Engine [Event]
-playLand p ro = do
-  o <- gets (object ro)
-  -- TODO apply replacement effects on the move effect
-  -- TODO store more sensible data in the PlayLand event
-  events <- moveObject (Just ro) Battlefield o { _tapStatus = Just Untapped, _controller = p }
-  return (events ++ [Did (PlayLand p ro)])
+        SpendFromManaPool p pool ->
+          simply $ player p .^ manaPool ~: (\\ pool)
 
-addToManaPool :: PlayerRef -> ManaPool -> Engine [Event]
-addToManaPool p pool = do
-  player p .^ manaPool ~: (pool <>)
-  return [Did (AddToManaPool p pool)]
+        DamageObject source i amount isCombatDamage isPreventable ->
+          -- TODO check for protection, infect, wither, lifelink
+          simply $ object (Battlefield, i) .^ damage ~: (+ amount)
 
-spendFromManaPool :: PlayerRef -> ManaPool -> Engine [Event]
-spendFromManaPool p pool = do
-  player p .^ manaPool ~: (\\ pool)
-  return [Did (SpendFromManaPool p pool)]
+        DamagePlayer source p amount isCombatDamage isPreventable ->
+          -- TODO check for protection, infect, wither, lifelink
+          simply $ player p .^ life ~: subtract amount
 
-damageObject :: Object -> Id -> Int -> Bool -> Bool -> Engine [Event]
--- 119.8. If a source would deal 0 damage, it does not deal damage at all.
-damageObject _ _ 0 _ _ = return []
-damageObject source i amount isCombatDamage isPreventable = do
-  -- TODO check for protection, infect, wither, lifelink
-  object (Battlefield, i) .^ damage ~: (+ amount)
-  return [Did (DamageObject source i amount isCombatDamage isPreventable)]
+        LoseGame p -> do
+          -- TODO Remove all objects that belong to the player
+          ps <- gets players
+          case IdList.remove p ps of
+            Nothing        -> return []
+            Just (_, ps')  -> simply $ players =: ps'
 
-damagePlayer :: Object -> PlayerRef -> Int -> Bool -> Bool -> Engine [Event]
--- 119.8. If a source would deal 0 damage, it does not deal damage at all.
-damagePlayer _ _ 0 _ _ = return []
-damagePlayer source p amount isCombatDamage isPreventable = do
-  -- TODO check for protection, infect, wither, lifelink
-  player p .^ life ~: subtract amount
-  return [Did (DamagePlayer source p amount isCombatDamage isPreventable)]
+        WinGame p ->
+          throwError (GameWin p)
 
-loseGame :: PlayerRef -> Engine [Event]
-loseGame p = do
-  -- TODO Remove all objects that belong to the player
-  ps <- gets players
-  case IdList.remove p ps of
-    Nothing        -> return []
-    Just (_, ps')  -> do
-      players =: ps'
-      return [Did (LoseGame p)]
+        CeaseToExist (z, i) -> do
+          m <- IdList.removeM (compileZoneRef z) i
+          case m of
+            Nothing -> return []
+            Just _  -> simply $ return ()
 
-winGame :: PlayerRef -> Engine a
-winGame p = throwError (GameWin p)
+        _ -> error "compileEffect: effect not implemented"
 
-ceaseToExist :: ObjectRef -> Engine [Event]
-ceaseToExist r@(z, i) = do
-  m <- IdList.removeM (compileZoneRef z) i
-  case m of
-    Nothing -> return []
-    Just _ -> return [Did (CeaseToExist r)]
+moveAllObjects :: EventSource -> ZoneRef -> ZoneRef -> Engine [Event]
+moveAllObjects source rFromZone rToZone = do
+  idxs <- IdList.toList <$> gets (compileZoneRef rFromZone)
+  executeEffects source (map (\(i, x) -> WillMoveObject (Just (rFromZone, i)) rToZone x) idxs)
 
 tick :: Engine Timestamp
 tick = do
