@@ -3,6 +3,7 @@
 module Magic.M13 where
 
 import Magic
+import Magic.IdList (Id)
 
 import Control.Applicative
 import Control.Monad (void)
@@ -110,13 +111,10 @@ angelicBenediction = mkCard $ do
 
     mkTapTriggerObject :: PlayerRef -> Magic ()
     mkTapTriggerObject p = do
-        let ok t = case t of
-              TargetObject r@(Battlefield, _) -> hasTypes creatureType <$> asks (object r)
-              _                               -> return False
-        ts <- askMagicTargets p (singleTarget <?> ok)
-        let f :: Target -> Object -> Magic ()
-            f t _source = void $ executeEffect $ case t of
-              TargetObject (Battlefield, i) -> Will (TapPermanent i)
+        let ok i = hasTypes creatureType <$> asks (object (Battlefield, i))
+        ts <- askMagicTargets p (target permanent <?> ok)
+        let f :: Id -> Object -> Magic ()
+            f i _source = void $ executeEffect $ Will (TapPermanent i)
         mkTriggerObject p (f <$> ts)
 
 
@@ -177,13 +175,26 @@ searingSpear = mkCard $ do
 
 searingSpearEffect :: ObjectRef -> PlayerRef -> Magic ()
 searingSpearEffect rSelf rActivator = do
-  let ok t = case t of
-              TargetObject r@(Battlefield, _) -> hasTypes creatureType <$> asks (object r)
-              TargetPlayer _                  -> return True
-              _                               -> return False
-  ts <- askMagicTargets rActivator (singleTarget <?> ok)
-  let f :: Target -> Object -> Magic ()
+  ts <- askMagicTargets rActivator targetCreatureOrPlayer
+  let f :: Either Id PlayerRef -> Object -> Magic ()
       f t source = void $ executeEffect $ case t of
-        TargetObject r -> Will (DamageObject source r 3 False True)
-        TargetPlayer r -> Will (DamagePlayer source r 3 False True)
+        Left i  -> Will (DamageObject source (Battlefield, i) 3 False True)
+        Right p -> Will (DamagePlayer source p 3 False True)
   void (view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect)
+
+permanentOrPlayer :: Target -> Maybe (Either Id PlayerRef)
+permanentOrPlayer (TargetPlayer p) = Just (Right p)
+permanentOrPlayer (TargetObject (Battlefield, i)) = Just (Left i)
+permanentOrPlayer _ = Nothing
+
+permanent :: Target -> Maybe Id
+permanent (TargetObject (Battlefield, i)) = Just i
+permanent _ = Nothing
+
+targetCreatureOrPlayer :: TargetList () (Either Id PlayerRef)
+targetCreatureOrPlayer = target permanentOrPlayer <?> ok
+  where
+    ok t = case t of
+      Left i  -> hasTypes creatureType <$> asks (object (Battlefield, i))
+      Right _ -> return True
+      _       -> return False

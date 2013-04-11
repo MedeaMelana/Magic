@@ -6,7 +6,7 @@ module Magic.Target (
     TargetList(..), Target(..),
 
     -- * Producing target lists
-    singleTarget, (<?>),
+    target, (<?>),
 
     -- * Compiling target lists
     evaluateTargetList, askMagicTargets
@@ -28,8 +28,8 @@ evaluateTargetList (Snoc xs cast t) = (ts ++ [t], mf <*> cast t)
 evaluateTargetList (Test f _ xs) = (ts, f <$> mx)
   where (ts, mx) = evaluateTargetList xs
 
-singleTarget :: TargetList () Target
-singleTarget = Snoc (Nil id) Just ()
+target :: (Target -> Maybe a) -> TargetList () a
+target f = Snoc (Nil id) f ()
 
 infixl 4 <?>
 (<?>) :: TargetList t a -> (a -> View Bool) -> TargetList t a
