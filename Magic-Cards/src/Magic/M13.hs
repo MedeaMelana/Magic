@@ -14,6 +14,10 @@ import Data.Monoid (mconcat)
 import qualified Data.Set as Set
 
 
+
+-- HELPER FUNCTIONS: CAST SPEED
+
+
 instantSpeed :: ObjectRef -> PlayerRef -> View Bool
 instantSpeed rSelf rActivator =
   case rSelf of
@@ -27,6 +31,11 @@ sorcerySpeed rSelf rp = instantSpeed rSelf rp &&* myMainPhase &&* isStackEmpty
       ap <- asks activePlayer
       as <- asks activeStep
       return (ap == rp && as == MainPhase)
+
+
+
+-- HELPER FUNCTIONS: PLAY ABILITIES
+
 
 -- | Play a nonland, non-aura permanent.
 playPermanent :: ManaPool -> [AdditionalCost] -> Ability
@@ -49,7 +58,6 @@ playPermanent mc ac =
 
     resolvePermanent _source = return ()
 
-
 stackTargetlessEffect :: ObjectRef -> (Object -> Magic ()) -> Magic ()
 stackTargetlessEffect rSelf item = do
   eff <- view (willMoveToStack rSelf (pure item))
@@ -59,6 +67,52 @@ stackTargetlessEffect rSelf item = do
 mkTriggerObject :: PlayerRef -> StackItem -> Magic ()
 mkTriggerObject p item = void $ executeEffect $ WillMoveObject Nothing Stack $
   (emptyObject undefined p) { _stackItem = Just item }
+
+
+
+-- HELPER FUNCTIONS: TARGETING
+
+
+permanentOrPlayer :: Target -> Maybe (Either Id PlayerRef)
+permanentOrPlayer (TargetPlayer p) = Just (Right p)
+permanentOrPlayer (TargetObject (Battlefield, i)) = Just (Left i)
+permanentOrPlayer _ = Nothing
+
+permanent :: Target -> Maybe Id
+permanent (TargetObject (Battlefield, i)) = Just i
+permanent _ = Nothing
+
+targetCreatureOrPlayer :: TargetList () (Either Id PlayerRef)
+targetCreatureOrPlayer = target permanentOrPlayer <?> ok
+  where
+    ok t = case t of
+      Left i  -> hasTypes creatureType <$> asks (object (Battlefield, i))
+      Right _ -> return True
+      _       -> return False
+
+
+
+-- COMMON ABILITIES
+
+
+exalted :: TriggeredAbility
+exalted (Battlefield, _) p events = return [ mkTriggerObject p (boostPT r)
+    | DidDeclareAttackers p' [r] <- events, p == p' ]
+  where
+    boostPT :: ObjectRef -> StackItem
+    boostPT r = pure $ \_self ->
+      void $ executeEffect $ Will $ InstallContinuousEffect r $
+        ContinuousEffect
+          { layer       = Layer7c
+          , efTimestamp = undefined
+          , efEffect    = undefined
+          }
+exalted _ _ _ = return []
+
+
+
+-- WHITE CARDS
+
 
 ajani'sSunstriker :: Card
 ajani'sSunstriker = mkCard $ do
@@ -106,21 +160,6 @@ angelicBenediction = mkCard $ do
             f i _source = void $ executeEffect $ Will (TapPermanent i)
         mkTriggerObject p (f <$> ts)
 
-
-exalted :: TriggeredAbility
-exalted (Battlefield, _) p events = return [ mkTriggerObject p (boostPT r)
-    | DidDeclareAttackers p' [r] <- events, p == p' ]
-  where
-    boostPT :: ObjectRef -> StackItem
-    boostPT r = pure $ \_self ->
-      void $ executeEffect $ Will $ InstallContinuousEffect r $
-        ContinuousEffect
-          { layer       = Layer7c
-          , efTimestamp = undefined
-          , efEffect    = undefined
-          }
-exalted _ _ _ = return []
-
 attendedKnight :: Card
 attendedKnight = mkCard $ do
     name      =: Just "Attended Knight"
@@ -144,40 +183,28 @@ attendedKnight = mkCard $ do
         , _pt        = Just (1, 1)
         }
 
+
+
+-- RED CARDS
+
+
 searingSpear :: Card
 searingSpear = mkCard $ do
-  name  =: Just "Searing Spear"
-  types =: instantType
-  play  =: Just Ability
-    { available = instantSpeed
-    , manaCost = [Nothing, Just Red]
-    , additionalCosts = []
-    , effect = searingSpearEffect
-    , isManaAbility = False
-    }
-
-searingSpearEffect :: ObjectRef -> PlayerRef -> Magic ()
-searingSpearEffect rSelf rActivator = do
-  ts <- askMagicTargets rActivator targetCreatureOrPlayer
-  let f :: Either Id PlayerRef -> Object -> Magic ()
-      f t source = void $ executeEffect $ case t of
-        Left i  -> Will (DamageObject source i 3 False True)
-        Right p -> Will (DamagePlayer source p 3 False True)
-  void (view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect)
-
-permanentOrPlayer :: Target -> Maybe (Either Id PlayerRef)
-permanentOrPlayer (TargetPlayer p) = Just (Right p)
-permanentOrPlayer (TargetObject (Battlefield, i)) = Just (Left i)
-permanentOrPlayer _ = Nothing
-
-permanent :: Target -> Maybe Id
-permanent (TargetObject (Battlefield, i)) = Just i
-permanent _ = Nothing
-
-targetCreatureOrPlayer :: TargetList () (Either Id PlayerRef)
-targetCreatureOrPlayer = target permanentOrPlayer <?> ok
+    name  =: Just "Searing Spear"
+    types =: instantType
+    play  =: Just Ability
+      { available = instantSpeed
+      , manaCost = [Nothing, Just Red]
+      , additionalCosts = []
+      , effect = searingSpearEffect
+      , isManaAbility = False
+      }
   where
-    ok t = case t of
-      Left i  -> hasTypes creatureType <$> asks (object (Battlefield, i))
-      Right _ -> return True
-      _       -> return False
+    searingSpearEffect :: ObjectRef -> PlayerRef -> Magic ()
+    searingSpearEffect rSelf rActivator = do
+      ts <- askMagicTargets rActivator targetCreatureOrPlayer
+      let f :: Either Id PlayerRef -> Object -> Magic ()
+          f t source = void $ executeEffect $ case t of
+            Left i  -> Will (DamageObject source i 3 False True)
+            Right p -> Will (DamagePlayer source p 3 False True)
+      void (view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect)
