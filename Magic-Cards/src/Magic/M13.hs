@@ -28,19 +28,13 @@ sorcerySpeed rSelf rp = instantSpeed rSelf rp &&* myMainPhase &&* isStackEmpty
       as <- asks activeStep
       return (ap == rp && as == MainPhase)
 
--- | The effect of playing a permanent without targets that uses the stack.
-playPermanentEffect :: ObjectRef -> PlayerRef -> Magic ()
-playPermanentEffect rSelf _ = void $
-    view (willMoveToStack rSelf (pure resolvePermanent)) >>= executeEffect
-  where
-    resolvePermanent _source = return ()
-
-stackingPlayAbility :: ManaPool -> [AdditionalCost] -> Ability
-stackingPlayAbility mc ac =
+-- | Play a nonland, non-aura permanent.
+playPermanent :: ManaPool -> [AdditionalCost] -> Ability
+playPermanent mc ac =
   Ability
     { available       = \rSelf rActivator -> do
         self <- asks (object rSelf)
-        if hasTypes instantType self || Flash `elem` get staticKeywordAbilities self
+        if Flash `elem` get staticKeywordAbilities self
           then instantSpeed rSelf rActivator
           else sorcerySpeed rSelf rActivator
     , manaCost        = mc
@@ -48,6 +42,13 @@ stackingPlayAbility mc ac =
     , effect          = playPermanentEffect
     , isManaAbility   = False
     }
+  where
+    playPermanentEffect :: ObjectRef -> PlayerRef -> Magic ()
+    playPermanentEffect rSelf _ = void $
+        view (willMoveToStack rSelf (pure resolvePermanent)) >>= executeEffect
+
+    resolvePermanent _source = return ()
+
 
 stackTargetlessEffect :: ObjectRef -> (Object -> Magic ()) -> Magic ()
 stackTargetlessEffect rSelf item = do
@@ -61,16 +62,10 @@ mkTriggerObject p item = void $ executeEffect $ WillMoveObject Nothing Stack $
 
 ajani'sSunstriker :: Card
 ajani'sSunstriker = mkCard $ do
-  name      =: Just "Ajani's Sunstriker"
-  types     =: creatureTypes [Cat, Cleric]
-  pt        =: Just (2, 2)
-  play      =: Just Ability
-    { available       = sorcerySpeed
-    , manaCost        = [Just White, Just White]
-    , additionalCosts = []
-    , effect          = playPermanentEffect
-    , isManaAbility   = False
-    }
+  name  =: Just "Ajani's Sunstriker"
+  types =: creatureTypes [Cat, Cleric]
+  pt    =: Just (2, 2)
+  play  =: Just (playPermanent [Just White, Just White] [])
   staticKeywordAbilities =: [Lifelink]
 
 angel'sMercy :: Card
@@ -90,13 +85,7 @@ angelicBenediction :: Card
 angelicBenediction = mkCard $ do
     name =: Just "Angelic Benediction"
     types =: enchantmentType
-    play =: Just Ability
-      { available       = sorcerySpeed
-      , manaCost        = [Nothing, Nothing, Nothing, Just White]
-      , additionalCosts = []
-      , effect          = playPermanentEffect
-      , isManaAbility   = False
-      }
+    play =: Just (playPermanent [Nothing, Nothing, Nothing, Just White] [])
     triggeredAbilities =: [exalted, tapTrigger]
   where
     tapTrigger :: TriggeredAbility
@@ -137,13 +126,7 @@ attendedKnight = mkCard $ do
     name      =: Just "Attended Knight"
     types     =: creatureTypes [Human, Knight]
     pt        =: Just (2, 2)
-    play      =: Just Ability
-      { available       = sorcerySpeed
-      , manaCost        = [Nothing, Nothing, Just White]
-      , additionalCosts = []
-      , effect          = playPermanentEffect
-      , isManaAbility   = False
-      }
+    play      =: Just (playPermanent [Nothing, Nothing, Nothing, Just White] [])
     staticKeywordAbilities =: [FirstStrike]
     triggeredAbilities     =: [trigger]
   where
