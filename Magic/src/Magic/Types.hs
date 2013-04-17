@@ -378,7 +378,7 @@ data Layer
   = Layer1       -- copy effects
   | Layer2       -- control-changing effects
   | Layer3       -- text-changing effects
-  | Layer4       -- type-chaning effects
+  | Layer4       -- type-changing effects
   | Layer5       -- color-changing effects
   | Layer6       -- ability-adding and ability-removing effects
   | Layer7a      -- p/t from characteristic-defining abilities
