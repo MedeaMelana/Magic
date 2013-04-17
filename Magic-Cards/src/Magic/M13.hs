@@ -4,12 +4,14 @@ module Magic.M13 where
 
 import Magic
 import Magic.IdList (Id)
+import qualified Magic.IdList as IdList
 
 import Control.Applicative
 import Control.Monad (void)
 import Data.Boolean ((&&*))
 import Data.Label.Pure (get)
 import Data.Label.PureM ((=:), asks)
+import Data.Maybe (mapMaybe)
 import Data.Monoid (mconcat)
 import qualified Data.Set as Set
 
@@ -88,7 +90,6 @@ targetCreatureOrPlayer = target permanentOrPlayer <?> ok
     ok t = case t of
       Left i  -> hasTypes creatureType <$> asks (object (Battlefield, i))
       Right _ -> return True
-      _       -> return False
 
 
 
@@ -103,9 +104,10 @@ exalted (Battlefield, _) p events = return [ mkTriggerObject p (boostPT r)
     boostPT r = pure $ \_self ->
       void $ executeEffect $ Will $ InstallContinuousEffect r $
         ContinuousEffect
-          { layer       = Layer7c
-          , efTimestamp = undefined
-          , efEffect    = undefined
+          { efTimestamp       = undefined
+          , efAffectedObjects = \_ _ -> return [r]
+          , efEffects         = [ModifyPT (return (1, 1))]
+          , efDuration        = UntilEndOfTurn
           }
 exalted _ _ _ = return []
 
@@ -187,6 +189,27 @@ attendedKnight = mkCard $ do
 
 -- RED CARDS
 
+
+fervor :: Card
+fervor = mkCard $ do
+    name              =: Just "Fervor"
+    types             =: enchantmentType
+    play              =: Just (playPermanent [Nothing, Nothing, Just Red] [])
+    continuousEffects =: [grantHaste]
+  where
+    grantHaste = ContinuousEffect
+      { efTimestamp       = \rSelf _you -> asks (object rSelf .^ timestamp)
+      , efAffectedObjects = \rSelf you ->
+          case rSelf of
+            (Battlefield, _) ->
+              mapMaybe (isAffected you) . IdList.toList <$> asks battlefield
+            _ -> return []
+      , efEffects         = [AddStaticKeywordAbility Haste]
+      , efDuration        = Indefinitely
+      }
+    isAffected you (i, o)
+      | _controller o == you && hasTypes creatureType o = Just (Battlefield, i)
+      | otherwise = Nothing
 
 searingSpear :: Card
 searingSpear = mkCard $ do

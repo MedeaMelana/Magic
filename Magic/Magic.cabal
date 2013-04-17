@@ -25,6 +25,7 @@ library
                     Magic.Events,
                     Magic.IdList,
                     Magic.Labels,
+                    Magic.Layers,
                     Magic.Monads,
                     Magic.Object,
                     Magic.ObjectTypes,

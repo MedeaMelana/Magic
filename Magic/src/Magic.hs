@@ -4,6 +4,7 @@ module Magic (
     module Magic.Engine,
     module Magic.Events,
     module Magic.Labels,
+    module Magic.Layers,
     module Magic.Monads,
     module Magic.Object,
     module Magic.ObjectTypes,
@@ -18,6 +19,7 @@ import Magic.Core
 import Magic.Engine
 import Magic.Events
 import Magic.Labels
+import Magic.Layers
 import Magic.Monads
 import Magic.Object
 import Magic.ObjectTypes

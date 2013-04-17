@@ -9,7 +9,7 @@ module Magic.Object (
       play, staticKeywordAbilities, continuousEffects, activatedAbilities, triggeredAbilities, replacementEffects,
 
     -- * Object properties
-    Timestamp, Color(..), TapStatus(..), CounterType(..),
+    Timestamp, Color(..), TapStatus(..), CounterType(..), PT
   ) where
 
 import Magic.Types

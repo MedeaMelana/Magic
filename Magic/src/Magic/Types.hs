@@ -36,7 +36,7 @@ module Magic.Types (
       play, staticKeywordAbilities, continuousEffects, activatedAbilities, triggeredAbilities, replacementEffects,
 
     -- * Object properties
-    Timestamp, Color(..), TapStatus(..), CounterType(..),
+    Timestamp, Color(..), TapStatus(..), CounterType(..), PT,
 
     -- * Object types
     ObjectTypes(..),
@@ -47,7 +47,8 @@ module Magic.Types (
     -- * Abilities
     Ability(..),
     StackItem, ManaPool, AdditionalCost(..),
-    StaticKeywordAbility(..), ContinuousEffect(..), Layer(..),
+    StaticKeywordAbility(..),
+    ContinuousEffect(..), Duration(..), LayeredEffect(..), Layer(..),
     ReplacementEffect, TriggeredAbility,
     PriorityAction(..), PayManaAction(..),
 
@@ -198,7 +199,7 @@ data Object = Object
   , _stackItem :: Maybe StackItem
 
   -- for creatures
-  , _pt         :: Maybe (Int, Int)
+  , _pt         :: Maybe PT
 
   -- for creatures on the battlefield
   , _damage        :: Int
@@ -238,6 +239,8 @@ data TapStatus = Untapped | Tapped
 data CounterType
   = Charge | Plus1Plus1 | Minus1Minus1 | Poison | Hatchling | Loyalty
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
+
+type PT = (Int, Int)
 
 
 
@@ -366,10 +369,25 @@ data StaticKeywordAbility
   deriving (Eq, Ord, Show, Read)
 
 data ContinuousEffect = ContinuousEffect
-  { layer       :: Layer
-  , efTimestamp :: Timestamp
-  , efEffect    :: World -> World
+  { efTimestamp       :: ObjectRef -> PlayerRef -> View Timestamp
+  , efAffectedObjects :: ObjectRef -> PlayerRef -> View [ObjectRef]
+  , efEffects         :: [LayeredEffect]
+  , efDuration        :: Duration
   }
+
+data LayeredEffect
+  = ChangeController PlayerRef
+  | ChangeTypes (ObjectTypes -> ObjectTypes)
+  | ChangeColors (Set Color -> Set Color)
+  | AddStaticKeywordAbility StaticKeywordAbility
+  | RemoveStaticKeywordAbility StaticKeywordAbility
+  | AddActivatedAbility Ability
+  | AddTriggeredAbility TriggeredAbility
+  | DefinePT (View PT)
+  | SetPT PT
+  | ModifyPT (View PT)
+  | SwitchPT
+
 
 instance Show ContinuousEffect where
   show _ = "(continuous effect)"
@@ -389,6 +407,10 @@ data Layer
   | LayerPlayer  -- player-affecting effects
   | LayerRules   -- rules-affecting effects
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
+
+data Duration
+  = Indefinitely
+  | UntilEndOfTurn
 
 type ReplacementEffect = OneShotEffect -> Maybe (Magic [OneShotEffect])
 
