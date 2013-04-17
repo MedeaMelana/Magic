@@ -371,7 +371,7 @@ collectPriorityActions p = do
   plays <- map PlayCard <$> collectPlayableCards p
   return (as <> plays)
 
-collectAvailableActivatedAbilities :: (Ability -> Bool) -> PlayerRef -> Engine [ActivatedAbilityRef]
+collectAvailableActivatedAbilities :: (ActivatedAbility -> Bool) -> PlayerRef -> Engine [ActivatedAbilityRef]
 collectAvailableActivatedAbilities predicate p = do
   objects <- view allObjects
   execWriterT $ do
@@ -391,15 +391,15 @@ collectPlayableCards p = do
           when ok (tell [r])
         Nothing -> return ()
 
-shouldOfferAbility :: Ability -> ObjectRef -> PlayerRef -> Engine Bool
+shouldOfferAbility :: ActivatedAbility -> ObjectRef -> PlayerRef -> Engine Bool
 shouldOfferAbility ability rSource rActivator = do
   abilityOk <- view (available ability rSource rActivator)
   payCostsOk <- canPayAdditionalCosts rSource rActivator (additionalCosts ability)
   return (abilityOk && payCostsOk)
 
-activateAbility :: EventSource -> Ability -> ObjectRef -> PlayerRef -> Engine ()
+activateAbility :: EventSource -> ActivatedAbility -> ObjectRef -> PlayerRef -> Engine ()
 activateAbility source ability rSource rActivator  = do
-  offerManaAbilitiesToPay source rActivator (manaCost ability)
+  --offerManaAbilitiesToPay source rActivator (manaCost ability)
   forM_ (additionalCosts ability) (payAdditionalCost source rSource rActivator)
   executeMagic source (effect ability rSource rActivator)
 

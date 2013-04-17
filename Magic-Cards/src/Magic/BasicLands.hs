@@ -31,8 +31,8 @@ mkBasicLandCard ty color = mkCard $ do
   play               =: Just playLand
   activatedAbilities =: [tapToAddMana (Just color)]
 
-playLand :: Ability
-playLand = Ability
+playLand :: ActivatedAbility
+playLand = ActivatedAbility
   { available = \rSource rActivator ->
       case rSource of
         (Hand _, _) -> do
@@ -57,8 +57,8 @@ countLandsPlayedThisTurn f = length . filter isPlayLand <$> asks turnHistory
     isPlayLand _                     = False
 
 
-tapToAddMana :: Maybe Color -> Ability
-tapToAddMana mc = Ability
+tapToAddMana :: Maybe Color -> ActivatedAbility
+tapToAddMana mc = ActivatedAbility
   { available = \rSource rActivator ->
       case rSource of
         (Battlefield, _) -> checkObject rSource (isControlledBy rActivator)

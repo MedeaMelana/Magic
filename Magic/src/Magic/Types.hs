@@ -45,7 +45,7 @@ module Magic.Types (
     PlaneswalkerSubtype(..),
 
     -- * Abilities
-    Ability(..),
+    ActivatedAbility(..),
     StackItem, ManaPool, AdditionalCost(..),
     StaticKeywordAbility(..),
     ContinuousEffect(..), Duration(..), LayeredEffect(..), Layer(..),
@@ -209,10 +209,10 @@ data Object = Object
 
   --, _indestructible    :: Bool
 
-  , _play                   :: Maybe Ability
+  , _play                   :: Maybe ActivatedAbility
   , _staticKeywordAbilities :: Bag StaticKeywordAbility
   , _continuousEffects      :: [ContinuousEffect]  -- special form of static ability
-  , _activatedAbilities     :: [Ability]
+  , _activatedAbilities     :: [ActivatedAbility]
   , _triggeredAbilities     :: [TriggeredAbility]
   , _replacementEffects     :: [ReplacementEffect]
   }
@@ -327,7 +327,7 @@ data PlaneswalkerSubtype = Chandra | Elspeth | Garruk | Gideon | Jace
 -- ABILITIES
 
 
-data Ability = Ability
+data ActivatedAbility = ActivatedAbility
   { available       :: ObjectRef -> PlayerRef -> View Bool  -- check for cost is implied
   , manaCost        :: ManaPool
   , additionalCosts :: [AdditionalCost]
@@ -381,7 +381,7 @@ data LayeredEffect
   | ChangeColors (Set Color -> Set Color)
   | AddStaticKeywordAbility StaticKeywordAbility
   | RemoveStaticKeywordAbility StaticKeywordAbility
-  | AddActivatedAbility Ability
+  | AddActivatedAbility ActivatedAbility
   | AddTriggeredAbility TriggeredAbility
   | DefinePT (View PT)
   | SetPT PT

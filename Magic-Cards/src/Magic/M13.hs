@@ -40,9 +40,9 @@ sorcerySpeed rSelf rp = instantSpeed rSelf rp &&* myMainPhase &&* isStackEmpty
 
 
 -- | Play a nonland, non-aura permanent.
-playPermanent :: ManaPool -> [AdditionalCost] -> Ability
+playPermanent :: ManaPool -> [AdditionalCost] -> ActivatedAbility
 playPermanent mc ac =
-  Ability
+  ActivatedAbility
     { available       = \rSelf rActivator -> do
         self <- asks (object rSelf)
         if Flash `elem` get staticKeywordAbilities self
@@ -128,7 +128,7 @@ angel'sMercy :: Card
 angel'sMercy = mkCard $ do
   name =: Just "Angel's Mercy"
   types =: instantType
-  play =: Just Ability
+  play =: Just ActivatedAbility
     { available       = instantSpeed
     , manaCost        = [Nothing, Nothing, Just White, Just White]
     , additionalCosts = []
@@ -215,7 +215,7 @@ searingSpear :: Card
 searingSpear = mkCard $ do
     name  =: Just "Searing Spear"
     types =: instantType
-    play  =: Just Ability
+    play  =: Just ActivatedAbility
       { available = instantSpeed
       , manaCost = [Nothing, Just Red]
       , additionalCosts = []

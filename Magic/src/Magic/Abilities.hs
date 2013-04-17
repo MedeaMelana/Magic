@@ -1,6 +1,6 @@
 module Magic.Abilities (
     -- * Abilities
-    Ability(..),
+    ActivatedAbility(..),
     StackItem, ManaPool, AdditionalCost(..),
     StaticKeywordAbility(..), ContinuousEffect(..), Layer(..),
     ReplacementEffect, TriggeredAbility,
