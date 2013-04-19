@@ -102,12 +102,14 @@ exalted (Battlefield, _) p events = return [ mkTriggerObject p (boostPT r)
   where
     boostPT :: ObjectRef -> StackItem
     boostPT r = pure $ \_self ->
-      void $ executeEffect $ Will $ InstallContinuousEffect r $
-        ContinuousEffect
-          { efTimestamp       = undefined
-          , efAffectedObjects = \_ _ -> return [r]
-          , efEffects         = [ModifyPT (return (1, 1))]
-          , efDuration        = UntilEndOfTurn
+      void $ executeEffect $ Will $ InstallLayeredEffect r $
+        TemporaryLayeredEffect
+          { temporaryTimestamp = undefined
+          , temporaryDuration  = UntilEndOfTurn
+          , temporaryEffect    = LayeredEffect
+            { affectedObjects  = \_ _ -> return [r]
+            , modifications    = [ModifyPT (return (1, 1))]
+            }
           }
 exalted _ _ _ = return []
 
@@ -195,17 +197,15 @@ fervor = mkCard $ do
     name              =: Just "Fervor"
     types             =: enchantmentType
     play              =: Just (playPermanent [Nothing, Nothing, Just Red] [])
-    continuousEffects =: [grantHaste]
+    layeredEffects    =: [grantHaste]
   where
-    grantHaste = ContinuousEffect
-      { efTimestamp       = \rSelf _you -> asks (object rSelf .^ timestamp)
-      , efAffectedObjects = \rSelf you ->
+    grantHaste = LayeredEffect
+      { affectedObjects = \rSelf you ->
           case rSelf of
             (Battlefield, _) ->
               mapMaybe (isAffected you) . IdList.toList <$> asks battlefield
             _ -> return []
-      , efEffects         = [AddStaticKeywordAbility Haste]
-      , efDuration        = Indefinitely
+      , modifications = [AddStaticKeywordAbility Haste]
       }
     isAffected you (i, o)
       | _controller o == you && hasTypes creatureType o = Just (Battlefield, i)

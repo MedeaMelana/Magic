@@ -34,10 +34,12 @@ emptyObject ts rOwner = Object
 
   , _play = Nothing
   , _staticKeywordAbilities = []
-  , _continuousEffects = []
+  , _layeredEffects = []
   , _activatedAbilities = []
   , _triggeredAbilities = []
   , _replacementEffects = []
+
+  , _temporaryEffects = []
   }
 
 

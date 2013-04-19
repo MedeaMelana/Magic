@@ -2,7 +2,7 @@ module Magic.Abilities (
     -- * Abilities
     ActivatedAbility(..),
     StackItem, ManaPool, AdditionalCost(..),
-    StaticKeywordAbility(..), ContinuousEffect(..), Layer(..),
+    StaticKeywordAbility(..),
     ReplacementEffect, TriggeredAbility,
     PriorityAction(..), PayManaAction(..),
   ) where

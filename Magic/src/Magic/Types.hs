@@ -33,7 +33,8 @@ module Magic.Types (
       tapStatus,
       stackItem,
       pt, damage, deathtouched,
-      play, staticKeywordAbilities, continuousEffects, activatedAbilities, triggeredAbilities, replacementEffects,
+      play, staticKeywordAbilities, layeredEffects, activatedAbilities, triggeredAbilities, replacementEffects,
+      temporaryEffects,
 
     -- * Object properties
     Timestamp, Color(..), TapStatus(..), CounterType(..), PT,
@@ -48,7 +49,8 @@ module Magic.Types (
     ActivatedAbility(..),
     StackItem, ManaPool, AdditionalCost(..),
     StaticKeywordAbility(..),
-    ContinuousEffect(..), Duration(..), LayeredEffect(..), Layer(..),
+    LayeredEffect(..), TemporaryLayeredEffect(..), ModifyObject(..),
+    Layer(..), Duration(..),
     ReplacementEffect, TriggeredAbility,
     PriorityAction(..), PayManaAction(..),
 
@@ -211,10 +213,12 @@ data Object = Object
 
   , _play                   :: Maybe ActivatedAbility
   , _staticKeywordAbilities :: Bag StaticKeywordAbility
-  , _continuousEffects      :: [ContinuousEffect]  -- special form of static ability
+  , _layeredEffects         :: [LayeredEffect]
   , _activatedAbilities     :: [ActivatedAbility]
   , _triggeredAbilities     :: [TriggeredAbility]
   , _replacementEffects     :: [ReplacementEffect]
+
+  , _temporaryEffects       :: [TemporaryLayeredEffect]
   }
 
 instance Show Object where
@@ -368,14 +372,31 @@ data StaticKeywordAbility
   | Vigilance
   deriving (Eq, Ord, Show, Read)
 
-data ContinuousEffect = ContinuousEffect
-  { efTimestamp       :: ObjectRef -> PlayerRef -> View Timestamp
-  , efAffectedObjects :: ObjectRef -> PlayerRef -> View [ObjectRef]
-  , efEffects         :: [LayeredEffect]
-  , efDuration        :: Duration
+-- | A layered effect affects a set of objects and applies one or more
+-- modifications to them. The order in which the effects are applied is
+-- managed by layers [613]. By separating the affected objects from the
+-- modifications, we can detect dependencies [613.7].
+data LayeredEffect = LayeredEffect
+  { affectedObjects :: ObjectRef -> PlayerRef -> View [ObjectRef]
+  , modifications   :: [ModifyObject]
   }
 
-data LayeredEffect
+instance Show LayeredEffect where
+  show _ = "(layered effect)"
+
+-- | Temporary layered effects are created by the resolution of instants,
+-- sorceries and activated abilities.
+data TemporaryLayeredEffect = TemporaryLayeredEffect
+  { temporaryTimestamp :: Timestamp
+  , temporaryDuration  :: Duration
+  , temporaryEffect    :: LayeredEffect
+  }
+
+instance Show TemporaryLayeredEffect where
+  show _ = "(temporary layered effect)"
+
+-- | Modifications of objects that are part of layered effects.
+data ModifyObject
   = ChangeController PlayerRef
   | ChangeTypes (ObjectTypes -> ObjectTypes)
   | ChangeColors (Set Color -> Set Color)
@@ -383,34 +404,34 @@ data LayeredEffect
   | RemoveStaticKeywordAbility StaticKeywordAbility
   | AddActivatedAbility ActivatedAbility
   | AddTriggeredAbility TriggeredAbility
+  | RemoveAllAbilities
   | DefinePT (View PT)
   | SetPT PT
   | ModifyPT (View PT)
   | SwitchPT
 
-
-instance Show ContinuousEffect where
-  show _ = "(continuous effect)"
-
+-- | Layers in which a layered effect can apply.
 data Layer
-  = Layer1       -- copy effects
-  | Layer2       -- control-changing effects
-  | Layer3       -- text-changing effects
-  | Layer4       -- type-changing effects
-  | Layer5       -- color-changing effects
-  | Layer6       -- ability-adding and ability-removing effects
-  | Layer7a      -- p/t from characteristic-defining abilities
-  | Layer7b      -- set p/t
-  | Layer7c      -- modify p/t
-  | Layer7d      -- p/t counters
-  | Layer7e      -- switch p/t
-  | LayerPlayer  -- player-affecting effects
-  | LayerRules   -- rules-affecting effects
+  = Layer1       -- ^ Copy effects
+  | Layer2       -- ^ Control-changing effects
+  | Layer3       -- ^ Text-changing effects
+  | Layer4       -- ^ Type-changing effects
+  | Layer5       -- ^ Color-changing effects
+  | Layer6       -- ^ Ability-adding and ability-removing effects
+  | Layer7a      -- ^ Characteristic-defining abilities that set P/T
+  | Layer7b      -- ^ Effects that set P/T
+  | Layer7c      -- ^ Effects that modify P/T
+  | Layer7d      -- ^ P/T counters
+  | Layer7e      -- ^ Effects that switch p/t
+  | LayerPlayer  -- ^ Player-affecting effects
+  | LayerRules   -- ^ Rules-affecting effects
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
+-- | Duration with which a 'TemporaryLayeredEffect' can apply.
 data Duration
   = Indefinitely
   | UntilEndOfTurn
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 type ReplacementEffect = OneShotEffect -> Maybe (Magic [OneShotEffect])
 
@@ -474,7 +495,7 @@ data SimpleOneShotEffect
   | PlayLand PlayerRef ObjectRef
   | LoseGame PlayerRef
   | WinGame PlayerRef
-  | InstallContinuousEffect ObjectRef ContinuousEffect
+  | InstallLayeredEffect ObjectRef TemporaryLayeredEffect
   | CeaseToExist ObjectRef
   deriving Show
 
