@@ -20,13 +20,13 @@ import qualified Data.Set as Set
 -- HELPER FUNCTIONS: CAST SPEED
 
 
-instantSpeed :: ObjectRef -> PlayerRef -> View Bool
+instantSpeed :: Contextual (View Bool)
 instantSpeed rSelf rActivator =
   case rSelf of
     (Hand rp, _) -> return (rp == rActivator)
     _            -> return False
 
-sorcerySpeed :: ObjectRef -> PlayerRef -> View Bool
+sorcerySpeed :: Contextual (View Bool)
 sorcerySpeed rSelf rp = instantSpeed rSelf rp &&* myMainPhase &&* isStackEmpty
   where
     myMainPhase = do
@@ -54,7 +54,7 @@ playPermanent mc ac =
     , isManaAbility   = False
     }
   where
-    playPermanentEffect :: ObjectRef -> PlayerRef -> Magic ()
+    playPermanentEffect :: Contextual (Magic ())
     playPermanentEffect rSelf _ = void $
         view (willMoveToStack rSelf (pure resolvePermanent)) >>= executeEffect
 
@@ -223,7 +223,7 @@ searingSpear = mkCard $ do
       , isManaAbility = False
       }
   where
-    searingSpearEffect :: ObjectRef -> PlayerRef -> Magic ()
+    searingSpearEffect :: Contextual (Magic ())
     searingSpearEffect rSelf rActivator = do
       ts <- askMagicTargets rActivator targetCreatureOrPlayer
       let f :: Either Id PlayerRef -> Object -> Magic ()

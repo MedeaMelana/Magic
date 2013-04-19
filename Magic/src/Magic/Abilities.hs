@@ -1,5 +1,6 @@
 module Magic.Abilities (
     -- * Abilities
+    Contextual,
     ActivatedAbility(..),
     StackItem, ManaPool, AdditionalCost(..),
     StaticKeywordAbility(..),

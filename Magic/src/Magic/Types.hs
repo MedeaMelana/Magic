@@ -46,6 +46,7 @@ module Magic.Types (
     PlaneswalkerSubtype(..),
 
     -- * Abilities
+    Contextual,
     ActivatedAbility(..),
     StackItem, ManaPool, AdditionalCost(..),
     StaticKeywordAbility(..),
@@ -331,11 +332,14 @@ data PlaneswalkerSubtype = Chandra | Elspeth | Garruk | Gideon | Jace
 -- ABILITIES
 
 
+-- | Many abilities are run in the context of a source object (carrying the ability) and a player (activating or otherwise controlling it). By making this context explicit, abilities can be run in different contexts, for example by creatures \'stealing\' other creatures\' abilities.
+type Contextual a = ObjectRef -> PlayerRef -> a
+
 data ActivatedAbility = ActivatedAbility
-  { available       :: ObjectRef -> PlayerRef -> View Bool  -- check for cost is implied
+  { available       :: Contextual (View Bool)  -- check for cost is implied
   , manaCost        :: ManaPool
   , additionalCosts :: [AdditionalCost]
-  , effect          :: ObjectRef -> PlayerRef -> Magic ()
+  , effect          :: Contextual (Magic ())
   , isManaAbility   :: Bool
   }
 
@@ -377,7 +381,7 @@ data StaticKeywordAbility
 -- managed by layers [613]. By separating the affected objects from the
 -- modifications, we can detect dependencies [613.7].
 data LayeredEffect = LayeredEffect
-  { affectedObjects :: ObjectRef -> PlayerRef -> View [ObjectRef]
+  { affectedObjects :: Contextual (View [ObjectRef])
   , modifications   :: [ModifyObject]
   }
 
@@ -436,7 +440,7 @@ data Duration
 type ReplacementEffect = OneShotEffect -> Maybe (Magic [OneShotEffect])
 
 -- | Arguments: source, controller, event
-type TriggeredAbility = ObjectRef -> PlayerRef -> [Event] -> View [Magic ()]
+type TriggeredAbility = Contextual ([Event] -> View [Magic ()])
 
 data PriorityAction
   = PlayCard ObjectRef

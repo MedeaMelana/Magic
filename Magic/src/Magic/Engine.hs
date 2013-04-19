@@ -391,13 +391,13 @@ collectPlayableCards p = do
           when ok (tell [r])
         Nothing -> return ()
 
-shouldOfferAbility :: ActivatedAbility -> ObjectRef -> PlayerRef -> Engine Bool
+shouldOfferAbility :: ActivatedAbility -> Contextual (Engine Bool)
 shouldOfferAbility ability rSource rActivator = do
   abilityOk <- view (available ability rSource rActivator)
   payCostsOk <- canPayAdditionalCosts rSource rActivator (additionalCosts ability)
   return (abilityOk && payCostsOk)
 
-activateAbility :: EventSource -> ActivatedAbility -> ObjectRef -> PlayerRef -> Engine ()
+activateAbility :: EventSource -> ActivatedAbility -> Contextual (Engine ())
 activateAbility source ability rSource rActivator  = do
   --offerManaAbilitiesToPay source rActivator (manaCost ability)
   forM_ (additionalCosts ability) (payAdditionalCost source rSource rActivator)
@@ -435,7 +435,7 @@ offerManaAbilitiesToPay source p cost = do
       activateAbility source (abilities !! i) r p
       offerManaAbilitiesToPay source p cost
 
-canPayAdditionalCosts :: ObjectRef -> PlayerRef -> [AdditionalCost] -> Engine Bool
+canPayAdditionalCosts :: Contextual ([AdditionalCost] -> Engine Bool)
 canPayAdditionalCosts _ _ [] = return True
 canPayAdditionalCosts rSource _ (c:cs) =
   case (rSource, c) of
@@ -444,7 +444,7 @@ canPayAdditionalCosts rSource _ (c:cs) =
       return (ts == Just Untapped)
     (_, TapSelf) -> return False
 
-payAdditionalCost :: EventSource -> ObjectRef -> PlayerRef -> AdditionalCost -> Engine ()
+payAdditionalCost :: EventSource -> Contextual (AdditionalCost -> Engine ())
 payAdditionalCost source rSource _ c =
   case c of
     TapSelf -> case rSource of (Battlefield, i) -> void (executeEffect source (Will (TapPermanent i)))
