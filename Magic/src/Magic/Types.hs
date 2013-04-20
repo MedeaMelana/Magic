@@ -195,7 +195,6 @@ data Object = Object
   , _owner      :: PlayerRef
   , _controller :: PlayerRef
   , _timestamp  :: Timestamp
-  , _counters   :: Bag CounterType
 
   -- for permanents on the battlefield
   , _tapStatus :: Maybe TapStatus
@@ -221,6 +220,8 @@ data Object = Object
   , _triggeredAbilities     :: [TriggeredAbility]
   , _replacementEffects     :: [ReplacementEffect]
 
+  -- these fields are reset whenever this object changes zones
+  , _counters   :: Bag CounterType
   , _temporaryEffects       :: [TemporaryLayeredEffect]
   }
 
