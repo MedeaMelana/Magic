@@ -435,7 +435,7 @@ data Duration
 type ReplacementEffect = OneShotEffect -> Maybe (Magic [OneShotEffect])
 
 -- | Arguments: source, controller, event
-type TriggeredAbility = Contextual ([Event] -> View [Magic ()])
+type TriggeredAbility = [Event] -> Contextual (View [Magic ()])
 
 data PriorityAction
   = PlayCard ObjectRef

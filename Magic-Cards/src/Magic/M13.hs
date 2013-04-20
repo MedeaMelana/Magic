@@ -97,7 +97,7 @@ targetCreatureOrPlayer = target permanentOrPlayer <?> ok
 
 
 exalted :: TriggeredAbility
-exalted (Battlefield, _) p events = return [ mkTriggerObject p (boostPT r)
+exalted events (Battlefield, _) p = return [ mkTriggerObject p (boostPT r)
     | DidDeclareAttackers p' [r] <- events, p == p' ]
   where
     boostPT :: ObjectRef -> StackItem
@@ -147,7 +147,7 @@ angelicBenediction = mkCard $ do
     triggeredAbilities =: [exalted, tapTrigger]
   where
     tapTrigger :: TriggeredAbility
-    tapTrigger (Battlefield, _) p events =
+    tapTrigger events (Battlefield, _) p =
       mconcat [
           do
             p' <- asks (object rAttacker .^ controller)
@@ -175,7 +175,7 @@ attendedKnight = mkCard $ do
     triggeredAbilities     =: [trigger]
   where
     trigger :: TriggeredAbility
-    trigger rSelf p events = return [ mkTriggerObject p (mkSoldier p)
+    trigger events rSelf p = return [ mkTriggerObject p (mkSoldier p)
       | DidMoveObject _ rOther@(Battlefield, _) <- events, rSelf == rOther ]
 
     mkSoldier :: PlayerRef -> StackItem

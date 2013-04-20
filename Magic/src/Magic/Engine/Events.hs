@@ -74,7 +74,7 @@ raise source events = do
     let p = get controller o
     forM_ tas $ \ta -> do
       prestackItems <- view $ do
-        programs <- ta ro p events
+        programs <- ta events ro p
         viewedObject <- asks (object ro)
         return (map (\program -> ((ro, viewedObject), program)) programs)
       player p .^ prestack ~: (++ prestackItems)
