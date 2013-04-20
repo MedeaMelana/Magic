@@ -20,12 +20,11 @@ module Magic.ObjectTypes (
     sorceryType, sorceryTypes,
 
     -- * Testing
-    isObjectTypesSubsetOf, hasTypes, hasPermanentType
+    isObjectTypesSubsetOf
   ) where
 
 import Magic.Types
 
-import Data.Boolean (Boolean(..))
 import Data.Monoid (mempty)
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -124,14 +123,3 @@ isObjectTypesSubsetOf x y =
     Nothing `isMaybeSubsetOf` _       = True
     Just _  `isMaybeSubsetOf` Nothing = False
     Just x' `isMaybeSubsetOf` Just y' = x' `Set.isSubsetOf` y'
-
--- | Checks whether the object's types are a superset of the given type set.
-hasTypes :: ObjectTypes -> Object -> Bool
-hasTypes t o = t `isObjectTypesSubsetOf` _types o
-
--- | Checks whether the object has at least one of the permanent card types.
-hasPermanentType :: Object -> Bool
-hasPermanentType = gor $ map hasTypes [artifactType, creatureType, enchantmentType, landType, planeswalkerType]
-
-gor :: Boolean b => [b] -> b
-gor = foldr (||*) false

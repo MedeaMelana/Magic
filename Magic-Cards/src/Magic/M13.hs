@@ -4,14 +4,12 @@ module Magic.M13 where
 
 import Magic
 import Magic.IdList (Id)
-import qualified Magic.IdList as IdList
 
 import Control.Applicative
 import Control.Monad (void)
 import Data.Boolean ((&&*))
 import Data.Label.Pure (get)
 import Data.Label.PureM ((=:), asks)
-import Data.Maybe (mapMaybe)
 import Data.Monoid (mconcat)
 import qualified Data.Set as Set
 
@@ -107,7 +105,7 @@ exalted events (Battlefield, _) p = return [ mkTriggerObject p (boostPT r)
           { temporaryTimestamp = undefined
           , temporaryDuration  = UntilEndOfTurn
           , temporaryEffect    = LayeredEffect
-            { affectedObjects  = \_ _ -> return [r]
+            { affectedObjects  = affectSelf
             , modifications    = [ModifyPT (return (1, 1))]
             }
           }
@@ -215,7 +213,7 @@ battleflightEagle = mkCard $ do
               { temporaryTimestamp = undefined
               , temporaryDuration  = UntilEndOfTurn
               , temporaryEffect    = LayeredEffect
-                { affectedObjects  = \_ _ -> return [(Battlefield, i)]
+                { affectedObjects  = affectSelf
                 , modifications    = [ ModifyPT (return (2, 2))
                                      , AddStaticKeywordAbility Flying
                                      ]
@@ -234,17 +232,11 @@ captainOfTheWatch = mkCard $ do
     triggeredAbilities     =: [onSelfETB $ \_ p -> mkTriggerObject p (mkSoldiers p)]
   where
     boostSoldiers = LayeredEffect
-      { affectedObjects = \rSelf you ->
-          case rSelf of
-            (Battlefield, _) ->
-              mapMaybe (isAffected you) . IdList.toList <$> asks battlefield
-            _ -> return []
+      { affectedObjects = affectBattlefield $ \you ->
+          isControlledBy you &&* hasTypes (creatureTypes [Soldier])
       , modifications = [ AddStaticKeywordAbility Vigilance
                         , ModifyPT (return (1, 1))]
       }
-    isAffected you (i, o)
-      | _controller o == you && hasTypes (creatureTypes [Soldier]) o = Just (Battlefield, i)
-      | otherwise = Nothing
 
     mkSoldiers :: PlayerRef -> StackItem
     mkSoldiers p = pure $ \_self -> void $ executeEffects $ replicate 3 $
@@ -269,16 +261,10 @@ fervor = mkCard $ do
     layeredEffects    =: [grantHaste]
   where
     grantHaste = LayeredEffect
-      { affectedObjects = \rSelf you ->
-          case rSelf of
-            (Battlefield, _) ->
-              mapMaybe (isAffected you) . IdList.toList <$> asks battlefield
-            _ -> return []
+      { affectedObjects = affectBattlefield $ \you ->
+          isControlledBy you &&* hasTypes creatureType
       , modifications = [AddStaticKeywordAbility Haste]
       }
-    isAffected you (i, o)
-      | _controller o == you && hasTypes creatureType o = Just (Battlefield, i)
-      | otherwise = Nothing
 
 searingSpear :: Card
 searingSpear = mkCard $ do
