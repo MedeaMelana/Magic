@@ -165,10 +165,12 @@ instance ToJSON PayManaAction where
 
 instance ToJSON Event where
   toJSON event = typedObject $ case event of
-    Did (AdjustLife p n)         -> ("adjustLife",
+    Did (GainLife p n)         -> ("gainLife",
       ["playerId" .= p, "amount" .= n])
-    Did (DamageObject _ r n c p) -> ("damageObject",
-      [ "targetRef" .= objectRefToJSON r, "amount" .= n, "isCombatDamage" .= c ])
+    Did (LoseLife p n)         -> ("loseLife",
+      ["playerId" .= p, "amount" .= n])
+    Did (DamageObject _ i n c p) -> ("damageObject",
+      [ "objectId" .= i, "amount" .= n, "isCombatDamage" .= c ])
     Did (DamagePlayer _ r n c p) -> ("damagePlayer",
       [ "playerId" .= r, "amount" .= n, "isCombatDamage" .= c ])
     Did (ShuffleLibrary p)       -> ("shuffleLibrary", [ "playerId" .= p ])
