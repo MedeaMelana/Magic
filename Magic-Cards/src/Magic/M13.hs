@@ -175,8 +175,7 @@ attendedKnight = mkCard $ do
     triggeredAbilities     =: [trigger]
   where
     trigger :: TriggeredAbility
-    trigger events rSelf p = return [ mkTriggerObject p (mkSoldier p)
-      | DidMoveObject _ rOther@(Battlefield, _) <- events, rSelf == rOther ]
+    trigger = onSelfETB $ \_ p -> mkTriggerObject p (mkSoldier p)
 
     mkSoldier :: PlayerRef -> StackItem
     mkSoldier p = pure $ \_self -> void $ executeEffect $
@@ -204,26 +203,25 @@ battleflightEagle = mkCard $ do
     pt        =: Just (2, 2)
     play      =: Just (playPermanent [Nothing, Nothing, Nothing, Nothing, Just White])
     staticKeywordAbilities =: [Flying]
-    triggeredAbilities     =: [trigger]
+    triggeredAbilities     =: [onSelfETB createBoostTrigger]
   where
-    trigger :: TriggeredAbility
-    trigger events rSelf p = return [ do
-        let ok i = hasTypes creatureType <$> asks (object (Battlefield, i))
-        ts <- askMagicTargets p (target permanent <?> ok)
-        let f :: Id -> Object -> Magic ()
-            f i _source = void $ executeEffect $ Will $
-              InstallLayeredEffect (Battlefield, i) TemporaryLayeredEffect
-                { temporaryTimestamp = undefined
-                , temporaryDuration  = UntilEndOfTurn
-                , temporaryEffect    = LayeredEffect
-                  { affectedObjects  = \_ _ -> return [(Battlefield, i)]
-                  , modifications    = [ ModifyPT (return (2, 2))
-                                       , AddStaticKeywordAbility Flying
-                                       ]
-                  }
+    createBoostTrigger :: Contextual (Magic ())
+    createBoostTrigger _ p = do
+      let ok i = hasTypes creatureType <$> asks (object (Battlefield, i))
+      ts <- askMagicTargets p (target permanent <?> ok)
+      let f :: Id -> Object -> Magic ()
+          f i _source = void $ executeEffect $ Will $
+            InstallLayeredEffect (Battlefield, i) TemporaryLayeredEffect
+              { temporaryTimestamp = undefined
+              , temporaryDuration  = UntilEndOfTurn
+              , temporaryEffect    = LayeredEffect
+                { affectedObjects  = \_ _ -> return [(Battlefield, i)]
+                , modifications    = [ ModifyPT (return (2, 2))
+                                     , AddStaticKeywordAbility Flying
+                                     ]
                 }
-        mkTriggerObject p (f <$> ts)
-      | DidMoveObject _ rOther@(Battlefield, _) <- events, rSelf == rOther ]
+              }
+      mkTriggerObject p (f <$> ts)
 
 
 
