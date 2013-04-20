@@ -155,6 +155,7 @@ angelicBenediction = mkCard $ do
               then return [mkTapTriggerObject p]
               else return []
         | DidDeclareAttackers _ [rAttacker] <- events ]
+    tapTrigger _ _ _ = return []
 
     mkTapTriggerObject :: PlayerRef -> Magic ()
     mkTapTriggerObject p = do
