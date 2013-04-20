@@ -3,8 +3,7 @@ module Magic.Layers (
     -- | Layered effects are a type of continuous effects that modify
     -- objects, players, or the game rules. Their interaction is managed by a
     -- layer system, which is why this library calls them layered effects.
-    LayeredEffect(..), ModifyObject(..),
-    Layer(..), layer,
+    LayeredEffect(..), ModifyObject(..), Layer(..), layer,
 
     -- * Temporary layered effects
     TemporaryLayeredEffect(..), Duration(..)

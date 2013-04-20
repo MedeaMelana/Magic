@@ -50,10 +50,12 @@ module Magic.Types (
     ActivatedAbility(..), TapCost(..),
     StackItem, ManaPool,
     StaticKeywordAbility(..),
-    LayeredEffect(..), TemporaryLayeredEffect(..), ModifyObject(..),
-    Layer(..), Duration(..),
     ReplacementEffect, TriggeredAbility,
     PriorityAction(..), PayManaAction(..),
+
+    -- * Layered effects
+    LayeredEffect(..), ModifyObject(..), Layer(..),
+    TemporaryLayeredEffect(..), Duration(..),
 
     -- * Events
     Event(..), OneShotEffect(..), SimpleOneShotEffect(..),
