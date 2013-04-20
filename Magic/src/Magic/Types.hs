@@ -50,7 +50,7 @@ module Magic.Types (
     ActivatedAbility(..), TapCost(..),
     StackItem, ManaPool,
     StaticKeywordAbility(..),
-    ReplacementEffect, TriggeredAbility,
+    ReplacementEffect, TriggeredAbilities,
     PriorityAction(..), PayManaAction(..),
 
     -- * Layered effects
@@ -217,7 +217,7 @@ data Object = Object
   , _staticKeywordAbilities :: Bag StaticKeywordAbility
   , _layeredEffects         :: [LayeredEffect]
   , _activatedAbilities     :: [ActivatedAbility]
-  , _triggeredAbilities     :: [TriggeredAbility]
+  , _triggeredAbilities     :: TriggeredAbilities
   , _replacementEffects     :: [ReplacementEffect]
 
   -- these fields are reset whenever this object changes zones
@@ -405,7 +405,7 @@ data ModifyObject
   | AddStaticKeywordAbility StaticKeywordAbility
   | RemoveStaticKeywordAbility StaticKeywordAbility
   | AddActivatedAbility ActivatedAbility
-  | AddTriggeredAbility TriggeredAbility
+  | AddTriggeredAbilities TriggeredAbilities
   | RemoveAllAbilities
   | DefinePT (View PT)
   | SetPT PT
@@ -438,7 +438,7 @@ data Duration
 type ReplacementEffect = OneShotEffect -> Maybe (Magic [OneShotEffect])
 
 -- | Arguments: source, controller, event
-type TriggeredAbility = [Event] -> Contextual (View [Magic ()])
+type TriggeredAbilities = [Event] -> Contextual (View [Magic ()])
 
 data PriorityAction
   = PlayCard ObjectRef

@@ -36,7 +36,7 @@ emptyObject ts rOwner = Object
   , _staticKeywordAbilities = []
   , _layeredEffects = []
   , _activatedAbilities = []
-  , _triggeredAbilities = []
+  , _triggeredAbilities = mempty
   , _replacementEffects = []
 
   , _temporaryEffects = []

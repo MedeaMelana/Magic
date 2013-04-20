@@ -31,7 +31,7 @@ layer m = case m of
   AddStaticKeywordAbility _    -> Layer6
   RemoveStaticKeywordAbility _ -> Layer6
   AddActivatedAbility _        -> Layer6
-  AddTriggeredAbility _        -> Layer6
+  AddTriggeredAbilities _      -> Layer6
   RemoveAllAbilities           -> Layer6
   DefinePT _                   -> Layer7a
   SetPT _                      -> Layer7b

@@ -70,12 +70,11 @@ raise source events = do
   forM_ ros $ \(ro, o) -> do
     let tas = get triggeredAbilities o
     let p = get controller o
-    forM_ tas $ \ta -> do
-      prestackItems <- view $ do
-        programs <- ta events ro p
-        viewedObject <- asks (object ro)
-        return (map (\program -> ((ro, viewedObject), program)) programs)
-      player p .^ prestack ~: (++ prestackItems)
+    prestackItems <- view $ do
+      programs <- tas events ro p
+      viewedObject <- asks (object ro)
+      return (map (\program -> ((ro, viewedObject), program)) programs)
+    player p .^ prestack ~: (++ prestackItems)
 
 executeEffect :: EventSource -> OneShotEffect -> Engine [Event]
 executeEffect source = executeEffects source . (: [])

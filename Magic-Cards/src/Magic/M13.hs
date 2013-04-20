@@ -10,7 +10,7 @@ import Control.Monad (void)
 import Data.Boolean ((&&*))
 import Data.Label.Pure (get)
 import Data.Label.PureM ((=:), asks)
-import Data.Monoid (mconcat)
+import Data.Monoid ((<>), mconcat)
 import qualified Data.Set as Set
 
 
@@ -94,7 +94,7 @@ targetCreatureOrPlayer = target permanentOrPlayer <?> ok
 -- COMMON ABILITIES
 
 
-exalted :: TriggeredAbility
+exalted :: TriggeredAbilities
 exalted events (Battlefield, _) p = return [ mkTriggerObject p (boostPT r)
     | DidDeclareAttackers p' [r] <- events, p == p' ]
   where
@@ -142,9 +142,9 @@ angelicBenediction = mkCard $ do
     name =: Just "Angelic Benediction"
     types =: enchantmentType
     play =: Just (playPermanent [Nothing, Nothing, Nothing, Just White])
-    triggeredAbilities =: [exalted, tapTrigger]
+    triggeredAbilities =: exalted <> tapTrigger
   where
-    tapTrigger :: TriggeredAbility
+    tapTrigger :: TriggeredAbilities
     tapTrigger events (Battlefield, _) p =
       mconcat [
           do
@@ -170,9 +170,9 @@ attendedKnight = mkCard $ do
     pt        =: Just (2, 2)
     play      =: Just (playPermanent [Nothing, Nothing, Nothing, Just White])
     staticKeywordAbilities =: [FirstStrike]
-    triggeredAbilities     =: [trigger]
+    triggeredAbilities     =: trigger
   where
-    trigger :: TriggeredAbility
+    trigger :: TriggeredAbilities
     trigger = onSelfETB $ \_ p -> mkTriggerObject p (mkSoldier p)
 
     mkSoldier :: PlayerRef -> StackItem
@@ -192,7 +192,7 @@ avenSquire = mkCard $ do
   pt        =: Just (1, 1)
   play      =: Just (playPermanent [Nothing, Just White])
   staticKeywordAbilities =: [Flying]
-  triggeredAbilities     =: [exalted]
+  triggeredAbilities     =: exalted
 
 battleflightEagle :: Card
 battleflightEagle = mkCard $ do
@@ -201,7 +201,7 @@ battleflightEagle = mkCard $ do
     pt        =: Just (2, 2)
     play      =: Just (playPermanent [Nothing, Nothing, Nothing, Nothing, Just White])
     staticKeywordAbilities =: [Flying]
-    triggeredAbilities     =: [onSelfETB createBoostTrigger]
+    triggeredAbilities     =: onSelfETB createBoostTrigger
   where
     createBoostTrigger :: Contextual (Magic ())
     createBoostTrigger _ p = do
@@ -229,7 +229,7 @@ captainOfTheWatch = mkCard $ do
     play      =: Just (playPermanent [Nothing, Nothing, Nothing, Nothing, Just White, Just White])
     staticKeywordAbilities =: [Vigilance]
     layeredEffects         =: [boostSoldiers]
-    triggeredAbilities     =: [onSelfETB $ \_ p -> mkTriggerObject p (mkSoldiers p)]
+    triggeredAbilities     =: (onSelfETB $ \_ p -> mkTriggerObject p (mkSoldiers p))
   where
     boostSoldiers = LayeredEffect
       { affectedObjects = affectBattlefield $ \you ->
