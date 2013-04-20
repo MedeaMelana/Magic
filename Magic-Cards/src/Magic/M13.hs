@@ -188,6 +188,15 @@ attendedKnight = mkCard $ do
         , _pt        = Just (1, 1)
         }
 
+avenSquire :: Card
+avenSquire = mkCard $ do
+  name      =: Just "Aven Squire"
+  types     =: creatureTypes [Bird, Soldier]
+  pt        =: Just (1, 1)
+  play      =: Just (playPermanent [Nothing, Just White])
+  staticKeywordAbilities =: [Flying]
+  triggeredAbilities     =: [exalted]
+
 
 
 -- RED CARDS
