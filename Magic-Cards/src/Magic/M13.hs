@@ -223,6 +223,39 @@ battleflightEagle = mkCard $ do
               }
       mkTriggerObject p (f <$> ts)
 
+captainOfTheWatch :: Card
+captainOfTheWatch = mkCard $ do
+    name      =: Just "Captain of the Watch"
+    types     =: creatureTypes [Human, Soldier]
+    pt        =: Just (3, 3)
+    play      =: Just (playPermanent [Nothing, Nothing, Nothing, Nothing, Just White, Just White])
+    staticKeywordAbilities =: [Vigilance]
+    layeredEffects         =: [boostSoldiers]
+    triggeredAbilities     =: [onSelfETB $ \_ p -> mkTriggerObject p (mkSoldiers p)]
+  where
+    boostSoldiers = LayeredEffect
+      { affectedObjects = \rSelf you ->
+          case rSelf of
+            (Battlefield, _) ->
+              mapMaybe (isAffected you) . IdList.toList <$> asks battlefield
+            _ -> return []
+      , modifications = [ AddStaticKeywordAbility Vigilance
+                        , ModifyPT (return (1, 1))]
+      }
+    isAffected you (i, o)
+      | _controller o == you && hasTypes (creatureTypes [Soldier]) o = Just (Battlefield, i)
+      | otherwise = Nothing
+
+    mkSoldiers :: PlayerRef -> StackItem
+    mkSoldiers p = pure $ \_self -> void $ executeEffects $ replicate 3 $
+      WillMoveObject Nothing Battlefield $ (emptyObject undefined p)
+        { _name      = Just "Soldier"
+        , _colors    = Set.singleton White
+        , _types     = creatureTypes [Soldier]
+        , _tapStatus = Just Untapped
+        , _pt        = Just (1, 1)
+        }
+
 
 
 -- RED CARDS
