@@ -8,7 +8,6 @@ module Magic.Engine.Events (
   ) where
 
 import Magic.Core
-import Magic.IdList (Id)
 import qualified Magic.IdList as IdList
 import Magic.Labels
 import Magic.Events (willMoveToGraveyard)
@@ -20,7 +19,6 @@ import Control.Monad (forM_,)
 import Control.Monad.Error (throwError)
 import Control.Monad.Reader (ask, runReaderT)
 import Control.Monad.Operational (singleton, Program, ProgramT, viewT, ProgramViewT(..))
-import Data.Either (partitionEithers)
 import Data.Label.Pure (get, set)
 import Data.Label.PureM (gets, puts, (=:), asks)
 import Data.List ((\\))
@@ -128,6 +126,7 @@ affectedPlayer e =
     Will (PlayLand p _)           -> return p
     Will (LoseGame p)             -> return p
     Will (WinGame p)              -> return p
+    Will (InstallLayeredEffect r _) -> controllerOf r
     Will (CeaseToExist o)         -> controllerOf o
   where controllerOf o = gets (object o .^ controller)
 
@@ -191,7 +190,7 @@ compileEffect e =
             (ro, o) : _ ->
               combine $ WillMoveObject (Just (Library rp, ro)) (Hand rp) o
 
-        DestroyPermanent i reg -> do
+        DestroyPermanent i _ -> do
           o <- gets (object (Battlefield, i))
           combine $ willMoveToGraveyard i o
 
@@ -213,11 +212,11 @@ compileEffect e =
         SpendFromManaPool p pool ->
           simply $ player p .^ manaPool ~: (\\ pool)
 
-        DamageObject source i amount isCombatDamage isPreventable ->
+        DamageObject _source i amount _isCombatDamage _isPreventable ->
           -- TODO check for protection, infect, wither, lifelink
           simply $ object (Battlefield, i) .^ damage ~: (+ amount)
 
-        DamagePlayer source p amount isCombatDamage isPreventable ->
+        DamagePlayer _source p amount _isCombatDamage _isPreventable ->
           -- TODO check for protection, infect, wither, lifelink
           simply $ player p .^ life ~: subtract amount
 
