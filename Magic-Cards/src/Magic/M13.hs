@@ -197,6 +197,34 @@ avenSquire = mkCard $ do
   staticKeywordAbilities =: [Flying]
   triggeredAbilities     =: [exalted]
 
+battleflightEagle :: Card
+battleflightEagle = mkCard $ do
+    name      =: Just "Battleflight Eagle"
+    types     =: creatureTypes [Bird]
+    pt        =: Just (2, 2)
+    play      =: Just (playPermanent [Nothing, Nothing, Nothing, Nothing, Just White])
+    staticKeywordAbilities =: [Flying]
+    triggeredAbilities     =: [trigger]
+  where
+    trigger :: TriggeredAbility
+    trigger events rSelf p = return [ do
+        let ok i = hasTypes creatureType <$> asks (object (Battlefield, i))
+        ts <- askMagicTargets p (target permanent <?> ok)
+        let f :: Id -> Object -> Magic ()
+            f i _source = void $ executeEffect $ Will $
+              InstallLayeredEffect (Battlefield, i) TemporaryLayeredEffect
+                { temporaryTimestamp = undefined
+                , temporaryDuration  = UntilEndOfTurn
+                , temporaryEffect    = LayeredEffect
+                  { affectedObjects  = \_ _ -> return [(Battlefield, i)]
+                  , modifications    = [ ModifyPT (return (2, 2))
+                                       , AddStaticKeywordAbility Flying
+                                       ]
+                  }
+                }
+        mkTriggerObject p (f <$> ts)
+      | DidMoveObject _ rOther@(Battlefield, _) <- events, rSelf == rOther ]
+
 
 
 -- RED CARDS
