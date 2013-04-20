@@ -19,7 +19,7 @@ import Magic.Engine.Types
 import Magic.Engine.Events
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Monad (forever, forM_, replicateM_, when, void, liftM)
+import Control.Monad (forever, forM_, when, void, liftM)
 import Control.Monad.Trans (lift)
 import Control.Monad.Writer (tell, execWriterT)
 import Data.Label.Pure (get, set)
@@ -394,13 +394,13 @@ collectPlayableCards p = do
 shouldOfferAbility :: ActivatedAbility -> Contextual (Engine Bool)
 shouldOfferAbility ability rSource rActivator = do
   abilityOk <- view (available ability rSource rActivator)
-  payCostsOk <- canPayAdditionalCosts rSource rActivator (additionalCosts ability)
+  payCostsOk <- canPayTapCost (tapCost ability) rSource rActivator
   return (abilityOk && payCostsOk)
 
 activateAbility :: EventSource -> ActivatedAbility -> Contextual (Engine ())
 activateAbility source ability rSource rActivator  = do
-  --offerManaAbilitiesToPay source rActivator (manaCost ability)
-  forM_ (additionalCosts ability) (payAdditionalCost source rSource rActivator)
+  offerManaAbilitiesToPay source rActivator (manaCost ability)
+  payTapCost source (tapCost ability) rSource rActivator
   executeMagic source (effect ability rSource rActivator)
 
 executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
@@ -435,19 +435,17 @@ offerManaAbilitiesToPay source p cost = do
       activateAbility source (abilities !! i) r p
       offerManaAbilitiesToPay source p cost
 
-canPayAdditionalCosts :: Contextual ([AdditionalCost] -> Engine Bool)
-canPayAdditionalCosts _ _ [] = return True
-canPayAdditionalCosts rSource _ (c:cs) =
-  case (rSource, c) of
-    ((Battlefield, i), TapSelf) -> do
-      ts <- gets (object (Battlefield, i) .^ tapStatus)
-      return (ts == Just Untapped)
-    (_, TapSelf) -> return False
+canPayTapCost :: TapCost -> Contextual (Engine Bool)
+canPayTapCost NoTapCost _ _ = return True
+canPayTapCost TapCost rSource@(Battlefield, _) _ =
+  (== Just Untapped) <$> gets (object rSource .^ tapStatus)
+canPayTapCost TapCost _ _ = return False
 
-payAdditionalCost :: EventSource -> Contextual (AdditionalCost -> Engine ())
-payAdditionalCost source rSource _ c =
-  case c of
-    TapSelf -> case rSource of (Battlefield, i) -> void (executeEffect source (Will (TapPermanent i)))
+payTapCost :: EventSource -> TapCost -> Contextual (Engine ())
+payTapCost _ NoTapCost _ _ = return ()
+payTapCost source TapCost (Battlefield, i) _ =
+  void (executeEffect source (Will (TapPermanent i)))
+payTapCost _ _ _ _ = return ()
 
 -- | Returns player IDs in APNAP order (active player, non-active player).
 apnap :: Engine [(PlayerRef, Player)]

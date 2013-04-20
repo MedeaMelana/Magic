@@ -40,18 +40,18 @@ sorcerySpeed rSelf rp = instantSpeed rSelf rp &&* myMainPhase &&* isStackEmpty
 
 
 -- | Play a nonland, non-aura permanent.
-playPermanent :: ManaPool -> [AdditionalCost] -> ActivatedAbility
-playPermanent mc ac =
+playPermanent :: ManaPool -> ActivatedAbility
+playPermanent mc =
   ActivatedAbility
-    { available       = \rSelf rActivator -> do
+    { available     = \rSelf rActivator -> do
         self <- asks (object rSelf)
         if Flash `elem` get staticKeywordAbilities self
           then instantSpeed rSelf rActivator
           else sorcerySpeed rSelf rActivator
-    , manaCost        = mc
-    , additionalCosts = ac
-    , effect          = playPermanentEffect
-    , isManaAbility   = False
+    , manaCost      = mc
+    , tapCost       = NoTapCost
+    , effect        = playPermanentEffect
+    , isManaAbility = False
     }
   where
     playPermanentEffect :: Contextual (Magic ())
@@ -123,7 +123,7 @@ ajani'sSunstriker = mkCard $ do
   name  =: Just "Ajani's Sunstriker"
   types =: creatureTypes [Cat, Cleric]
   pt    =: Just (2, 2)
-  play  =: Just (playPermanent [Just White, Just White] [])
+  play  =: Just (playPermanent [Just White, Just White])
   staticKeywordAbilities =: [Lifelink]
 
 angel'sMercy :: Card
@@ -133,7 +133,7 @@ angel'sMercy = mkCard $ do
   play =: Just ActivatedAbility
     { available       = instantSpeed
     , manaCost        = [Nothing, Nothing, Just White, Just White]
-    , additionalCosts = []
+    , tapCost         = NoTapCost
     , effect          = \rSelf rActivator -> stackTargetlessEffect rSelf $ \_ ->
       void $ executeEffect (Will (GainLife rActivator 7))
     , isManaAbility = False
@@ -143,7 +143,7 @@ angelicBenediction :: Card
 angelicBenediction = mkCard $ do
     name =: Just "Angelic Benediction"
     types =: enchantmentType
-    play =: Just (playPermanent [Nothing, Nothing, Nothing, Just White] [])
+    play =: Just (playPermanent [Nothing, Nothing, Nothing, Just White])
     triggeredAbilities =: [exalted, tapTrigger]
   where
     tapTrigger :: TriggeredAbility
@@ -169,7 +169,7 @@ attendedKnight = mkCard $ do
     name      =: Just "Attended Knight"
     types     =: creatureTypes [Human, Knight]
     pt        =: Just (2, 2)
-    play      =: Just (playPermanent [Nothing, Nothing, Nothing, Just White] [])
+    play      =: Just (playPermanent [Nothing, Nothing, Nothing, Just White])
     staticKeywordAbilities =: [FirstStrike]
     triggeredAbilities     =: [trigger]
   where
@@ -196,7 +196,7 @@ fervor :: Card
 fervor = mkCard $ do
     name              =: Just "Fervor"
     types             =: enchantmentType
-    play              =: Just (playPermanent [Nothing, Nothing, Just Red] [])
+    play              =: Just (playPermanent [Nothing, Nothing, Just Red])
     layeredEffects    =: [grantHaste]
   where
     grantHaste = LayeredEffect
@@ -216,10 +216,10 @@ searingSpear = mkCard $ do
     name  =: Just "Searing Spear"
     types =: instantType
     play  =: Just ActivatedAbility
-      { available = instantSpeed
-      , manaCost = [Nothing, Just Red]
-      , additionalCosts = []
-      , effect = searingSpearEffect
+      { available     = instantSpeed
+      , manaCost      = [Nothing, Just Red]
+      , tapCost       = NoTapCost
+      , effect        = searingSpearEffect
       , isManaAbility = False
       }
   where

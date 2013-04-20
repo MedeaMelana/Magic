@@ -1,8 +1,8 @@
 module Magic.Abilities (
     -- * Abilities
     Contextual,
-    ActivatedAbility(..),
-    StackItem, ManaPool, AdditionalCost(..),
+    ActivatedAbility(..), TapCost(..),
+    StackItem, ManaPool,
     StaticKeywordAbility(..),
     ReplacementEffect, TriggeredAbility,
     PriorityAction(..), PayManaAction(..),

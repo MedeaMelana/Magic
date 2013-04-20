@@ -47,8 +47,8 @@ module Magic.Types (
 
     -- * Abilities
     Contextual,
-    ActivatedAbility(..),
-    StackItem, ManaPool, AdditionalCost(..),
+    ActivatedAbility(..), TapCost(..),
+    StackItem, ManaPool,
     StaticKeywordAbility(..),
     LayeredEffect(..), TemporaryLayeredEffect(..), ModifyObject(..),
     Layer(..), Duration(..),
@@ -338,21 +338,16 @@ type Contextual a = ObjectRef -> PlayerRef -> a
 data ActivatedAbility = ActivatedAbility
   { available       :: Contextual (View Bool)  -- check for cost is implied
   , manaCost        :: ManaPool
-  , additionalCosts :: [AdditionalCost]
+  , tapCost         :: TapCost
   , effect          :: Contextual (Magic ())
   , isManaAbility   :: Bool
   }
 
+data TapCost = NoTapCost | TapCost  -- add later: UntapCost
+
 type StackItem = TargetList Target (Object -> Magic ())
 
 type ManaPool = Bag (Maybe Color)
-
-data AdditionalCost
-  = TapSelf
-  | SacrificePermanentCost (Object -> Bool)
-  | ExileObjectCost        [ZoneRef] (Object -> Bool)  -- exile matching object from any of the listed zones
-  | DiscardCardCost
-  | RemoveCounterCost      CounterType
 
 data StaticKeywordAbility
   = Bloodthirst Int

@@ -45,7 +45,7 @@ playLand = ActivatedAbility
           return (control && ap == rActivator && step == MainPhase && stackEmpty && n < 1)
         _           -> return False
   , manaCost = mempty
-  , additionalCosts = []
+  , tapCost = NoTapCost
   , effect = \rSource rActivator -> void (executeEffect (Will (PlayLand rActivator rSource)))
   , isManaAbility = False
   }
@@ -64,7 +64,7 @@ tapToAddMana mc = ActivatedAbility
         (Battlefield, _) -> checkObject rSource (isControlledBy rActivator)
         _                -> return False
   , manaCost = mempty
-  , additionalCosts = [TapSelf]
+  , tapCost = TapCost
   , effect = \_rSource rActivator -> void (executeEffect (Will (AddToManaPool rActivator [mc])))
   , isManaAbility = True
   }
