@@ -176,14 +176,17 @@ attendedKnight = mkCard $ do
     trigger = onSelfETB $ \_ p -> mkTriggerObject p (mkSoldier p)
 
     mkSoldier :: PlayerRef -> StackItem
-    mkSoldier p = pure $ \_self -> void $ executeEffect $
-      WillMoveObject Nothing Battlefield $ (emptyObject undefined p)
-        { _name      = Just "Soldier"
-        , _colors    = Set.singleton White
-        , _types     = creatureTypes [Soldier]
-        , _tapStatus = Just Untapped
-        , _pt        = Just (1, 1)
-        }
+    mkSoldier p = pure $ \_self -> void $ executeEffect $ mkSoldierEffect p
+
+mkSoldierEffect :: PlayerRef -> OneShotEffect
+mkSoldierEffect p = WillMoveObject Nothing Battlefield $
+  (emptyObject undefined p)
+    { _name      = Just "Soldier"
+    , _colors    = Set.singleton White
+    , _types     = creatureTypes [Soldier]
+    , _tapStatus = Just Untapped
+    , _pt        = Just (1, 1)
+    }
 
 avenSquire :: Card
 avenSquire = mkCard $ do
@@ -239,14 +242,21 @@ captainOfTheWatch = mkCard $ do
       }
 
     mkSoldiers :: PlayerRef -> StackItem
-    mkSoldiers p = pure $ \_self -> void $ executeEffects $ replicate 3 $
-      WillMoveObject Nothing Battlefield $ (emptyObject undefined p)
-        { _name      = Just "Soldier"
-        , _colors    = Set.singleton White
-        , _types     = creatureTypes [Soldier]
-        , _tapStatus = Just Untapped
-        , _pt        = Just (1, 1)
-        }
+    mkSoldiers p = pure $
+      \_self -> void $ executeEffects $ replicate 3 $ mkSoldierEffect p
+
+captain'sCall :: Card
+captain'sCall = mkCard $ do
+  name  =: Just "Captain's Call"
+  types =: sorceryType
+  play  =: Just ActivatedAbility
+    { available       = sorcerySpeed
+    , manaCost        = [Nothing, Nothing, Nothing, Just White]
+    , tapCost         = NoTapCost
+    , effect          = \rSelf rActivator -> stackTargetlessEffect rSelf $
+        \_ -> void $ executeEffects $ replicate 3 $ mkSoldierEffect rActivator
+    , isManaAbility = False
+    }
 
 
 
