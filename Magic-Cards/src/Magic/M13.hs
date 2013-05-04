@@ -65,8 +65,10 @@ stackTargetlessEffect rSelf item = do
 
 -- | Creates a trigger on the stack under the control of the specified player.
 mkTriggerObject :: PlayerRef -> StackItem -> Magic ()
-mkTriggerObject p item = void $ executeEffect $ WillMoveObject Nothing Stack $
-  (emptyObject undefined p) { _stackItem = Just item }
+mkTriggerObject p item = do
+  t <- tick
+  void $ executeEffect $ WillMoveObject Nothing Stack $
+    (emptyObject t p) { _stackItem = Just item }
 
 
 
@@ -99,10 +101,11 @@ exalted events (Battlefield, _) p = return [ mkTriggerObject p (boostPT r)
     | DidDeclareAttackers p' [r] <- events, p == p' ]
   where
     boostPT :: ObjectRef -> StackItem
-    boostPT r = pure $ \_self ->
+    boostPT r = pure $ \_self -> do
+      t <- tick
       void $ executeEffect $ Will $ InstallLayeredEffect r $
         TemporaryLayeredEffect
-          { temporaryTimestamp = undefined
+          { temporaryTimestamp = t
           , temporaryDuration  = UntilEndOfTurn
           , temporaryEffect    = LayeredEffect
             { affectedObjects  = affectSelf
@@ -176,11 +179,13 @@ attendedKnight = mkCard $ do
     trigger = onSelfETB $ \_ p -> mkTriggerObject p (mkSoldier p)
 
     mkSoldier :: PlayerRef -> StackItem
-    mkSoldier p = pure $ \_self -> void $ executeEffect $ mkSoldierEffect p
+    mkSoldier p = pure $ \_self -> do
+      t <- tick
+      void $ executeEffect $ mkSoldierEffect t p
 
-mkSoldierEffect :: PlayerRef -> OneShotEffect
-mkSoldierEffect p = WillMoveObject Nothing Battlefield $
-  (emptyObject undefined p)
+mkSoldierEffect :: Timestamp -> PlayerRef -> OneShotEffect
+mkSoldierEffect t p = WillMoveObject Nothing Battlefield $
+  (emptyObject t p)
     { _name      = Just "Soldier"
     , _colors    = Set.singleton White
     , _types     = creatureTypes [Soldier]
@@ -211,17 +216,19 @@ battleflightEagle = mkCard $ do
       let ok i = hasTypes creatureType <$> asks (object (Battlefield, i))
       ts <- askMagicTargets p (target permanent <?> ok)
       let f :: Id -> Object -> Magic ()
-          f i _source = void $ executeEffect $ Will $
-            InstallLayeredEffect (Battlefield, i) TemporaryLayeredEffect
-              { temporaryTimestamp = undefined
-              , temporaryDuration  = UntilEndOfTurn
-              , temporaryEffect    = LayeredEffect
-                { affectedObjects  = affectSelf
-                , modifications    = [ ModifyPT (return (2, 2))
-                                     , AddStaticKeywordAbility Flying
-                                     ]
+          f i _source = do
+            t <- tick
+            void $ executeEffect $ Will $
+              InstallLayeredEffect (Battlefield, i) TemporaryLayeredEffect
+                { temporaryTimestamp = t
+                , temporaryDuration  = UntilEndOfTurn
+                , temporaryEffect    = LayeredEffect
+                  { affectedObjects  = affectSelf
+                  , modifications    = [ ModifyPT (return (2, 2))
+                                       , AddStaticKeywordAbility Flying
+                                       ]
+                  }
                 }
-              }
       mkTriggerObject p (f <$> ts)
 
 captainOfTheWatch :: Card
@@ -242,8 +249,9 @@ captainOfTheWatch = mkCard $ do
       }
 
     mkSoldiers :: PlayerRef -> StackItem
-    mkSoldiers p = pure $
-      \_self -> void $ executeEffects $ replicate 3 $ mkSoldierEffect p
+    mkSoldiers p = pure $ \_self -> do
+      t <- tick
+      void $ executeEffects $ replicate 3 $ mkSoldierEffect t p
 
 captain'sCall :: Card
 captain'sCall = mkCard $ do
@@ -253,8 +261,10 @@ captain'sCall = mkCard $ do
     { available       = sorcerySpeed
     , manaCost        = [Nothing, Nothing, Nothing, Just White]
     , tapCost         = NoTapCost
-    , effect          = \rSelf rActivator -> stackTargetlessEffect rSelf $
-        \_ -> void $ executeEffects $ replicate 3 $ mkSoldierEffect rActivator
+    , effect          = \rSelf rActivator -> do
+        t <- tick
+        stackTargetlessEffect rSelf $
+          \_ -> void $ executeEffects $ replicate 3 $ mkSoldierEffect t rActivator
     , isManaAbility = False
     }
 
