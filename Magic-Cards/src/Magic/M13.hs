@@ -235,7 +235,7 @@ captainOfTheWatch = mkCard $ do
     triggeredAbilities     =: (onSelfETB $ \_ p -> mkTriggerObject p (mkSoldiers p))
   where
     boostSoldiers = LayeredEffect
-      { affectedObjects = affectBattlefield $ \you ->
+      { affectedObjects = affectRestOfBattlefield $ \you ->
           isControlledBy you &&* hasTypes (creatureTypes [Soldier])
       , modifications = [ AddStaticKeywordAbility Vigilance
                         , ModifyPT (return (1, 1))]

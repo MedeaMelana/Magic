@@ -9,7 +9,7 @@ module Magic.Layers (
     TemporaryLayeredEffect(..), Duration(..),
 
     -- * Creating layered effects
-    affectSelf, affectBattlefield
+    affectSelf, affectBattlefield, affectRestOfBattlefield
   ) where
 
 import qualified Magic.IdList as IdList
@@ -51,3 +51,12 @@ affectBattlefield ok (Battlefield, _) you =
   mapMaybe (\(i,o) -> if ok you o then Just (Battlefield, i) else Nothing) .
     IdList.toList <$> asks battlefield
 affectBattlefield _ _ _ = return []
+
+-- | Affect all other objects on the battlefield, from a layered effect of an
+-- object on the battlefield.
+affectRestOfBattlefield ::
+  (PlayerRef -> Object -> Bool) -> Contextual (View [ObjectRef])
+affectRestOfBattlefield ok (Battlefield, iSelf) you =
+  mapMaybe (\(i,o) -> if iSelf /= i && ok you o then Just (Battlefield, i) else Nothing) .
+    IdList.toList <$> asks battlefield
+affectRestOfBattlefield _ _ _ = return []
