@@ -229,6 +229,9 @@ compileEffect e =
         WinGame p ->
           throwError (GameWin p)
 
+        InstallLayeredEffect r eff ->
+          simply $ object r .^ temporaryEffects ~: (++ [eff])
+
         CeaseToExist (z, i) -> do
           m <- IdList.removeM (compileZoneRef z) i
           case m of
