@@ -11,6 +11,7 @@ import Magic.Core (compileZoneRef, object)
 import Magic.Utils
 
 import Control.Applicative
+import Control.Arrow ((***))
 import Control.Monad.Error (MonadError(..), Error(..))
 import Control.Monad.Identity
 import Control.Monad.Random (MonadRandom, RandT, StdGen)
@@ -84,10 +85,10 @@ applyLayeredEffects = do
         affected = runReader (runViewT vas) world
 
     applyOne :: [ObjectRef] -> ModifyObject -> World -> World
-    applyOne rs m world = foldr (.) id (map (\r -> modify (object r) (compileModifyObject m)) rs) world
+    applyOne rs m world = foldr (.) id (map (\r -> modify (object r) (compileModifyObject world m)) rs) world
 
-compileModifyObject :: ModifyObject -> Object -> Object
-compileModifyObject m =
+compileModifyObject :: World -> ModifyObject -> Object -> Object
+compileModifyObject world m =
   case m of
     ChangeController p -> set controller p
     ChangeTypes f -> modify types f
@@ -100,9 +101,10 @@ compileModifyObject m =
                         . set triggeredAbilities mempty
                         . set staticKeywordAbilities []
                         . set layeredEffects []
-    DefinePT vpt -> undefined
+    DefinePT vpt -> set pt (Just (runReader (runViewT vpt) world))
     SetPT newPT -> set pt (Just newPT)
-    ModifyPT vpt -> undefined
+    ModifyPT vpt -> let (p, t) = runReader (runViewT vpt) world
+                    in modify pt (fmap ((+ p) *** (+ t)))
     SwitchPT -> modify pt (fmap (\(p,t) -> (t,p)))
 
 allObjects :: Engine [(ObjectRef, Object)]
