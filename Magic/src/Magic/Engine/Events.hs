@@ -37,6 +37,8 @@ runExecuteEffectsProgram source program = interact (viewT program) >>= eval
   where
     eval (Return x) = return x
     eval (ExecuteEffects effs :>>= k) = executeEffects source effs >>= runExecuteEffectsProgram source . k
+    eval (Tick :>>= k) =
+      tick >>= runExecuteEffectsProgram source . k
 
 -- Execute multiple effects as a single event, applying replacement effects and
 -- triggering abilities.

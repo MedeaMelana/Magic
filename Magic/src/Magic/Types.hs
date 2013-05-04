@@ -603,6 +603,7 @@ newtype Magic a = Magic { runMagic :: ViewT (ProgramT ExecuteEffects (Program In
 
 data ExecuteEffects a where
   ExecuteEffects :: [OneShotEffect] -> ExecuteEffects [Event]
+  Tick           :: ExecuteEffects Timestamp
 
 instance MonadView Magic where
   view = Magic . view

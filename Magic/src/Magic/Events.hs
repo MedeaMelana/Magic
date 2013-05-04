@@ -5,7 +5,8 @@ module Magic.Events (
     -- * Constructing specific one-shot effects
     willMoveToGraveyard, willMoveToBattlefield, willMoveToStack,
 
-    executeEffects, executeEffect
+    executeEffects, executeEffect,
+    tick
   ) where
 
 import Magic.Core
@@ -48,3 +49,6 @@ executeEffects = Magic . lift . singleton . ExecuteEffects
 
 executeEffect :: OneShotEffect -> Magic [Event]
 executeEffect = executeEffects . (: [])
+
+tick :: Magic Timestamp
+tick = Magic $ lift $ singleton $ Tick
