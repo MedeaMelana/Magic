@@ -183,7 +183,7 @@ data Player = Player
 
 data Card = Card
   -- timestamp, owner (and controller)
-  { instantiateCard :: Timestamp -> PlayerRef-> Object
+  { instantiateCard :: PlayerRef-> Object
   }
 
 type Deck = [Card]

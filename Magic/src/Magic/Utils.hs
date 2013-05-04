@@ -13,16 +13,16 @@ import Data.Text (Text, pack)
 
 
 mkCard :: State Object () -> Card
-mkCard f = Card (\ts rOwner -> execState f (emptyObject ts rOwner))
+mkCard f = Card (execState f . emptyObject 0)
 
 emptyObject :: Timestamp -> PlayerRef -> Object
-emptyObject ts rOwner = Object
+emptyObject t rOwner = Object
   { _name = Nothing
   , _colors = mempty
   , _types = mempty
   , _owner = rOwner
   , _controller = rOwner
-  , _timestamp = ts
+  , _timestamp = t
   , _counters = mempty
 
   , _tapStatus = Nothing
