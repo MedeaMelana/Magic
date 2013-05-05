@@ -348,7 +348,7 @@ data ActivatedAbility = ActivatedAbility
 
 data TapCost = NoTapCost | TapCost  -- add later: UntapCost
 
-type StackItem = TargetList Target (Object -> Magic ())
+type StackItem = TargetList Target (ObjectRef -> Magic ())
 
 type ManaPool = Bag (Maybe Color)
 

@@ -353,7 +353,7 @@ resolve i = do
   let Just item = get stackItem o
   let (_, Just mkEffects) = evaluateTargetList item
   let eventSource = ResolutionOf i
-  executeMagic eventSource (mkEffects o)
+  executeMagic eventSource (mkEffects (Stack, i))
 
   -- if the object is now still on the stack, move it to the appropriate zone
   let o' = set stackItem Nothing o

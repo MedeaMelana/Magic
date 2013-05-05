@@ -162,7 +162,7 @@ angelicBenediction = mkCard $ do
     mkTapTriggerObject p = do
         let ok i = hasTypes creatureType <$> asks (object (Battlefield, i))
         ts <- askMagicTargets p (target permanent <?> ok)
-        let f :: Id -> Object -> Magic ()
+        let f :: Id -> ObjectRef -> Magic ()
             f i _source = void $ executeEffect $ Will (TapPermanent i)
         mkTriggerObject p (f <$> ts)
 
@@ -215,7 +215,7 @@ battleflightEagle = mkCard $ do
     createBoostTrigger _ p = do
       let ok i = hasTypes creatureType <$> asks (object (Battlefield, i))
       ts <- askMagicTargets p (target permanent <?> ok)
-      let f :: Id -> Object -> Magic ()
+      let f :: Id -> ObjectRef -> Magic ()
           f i _source = do
             t <- tick
             void $ executeEffect $ Will $
@@ -301,8 +301,10 @@ searingSpear = mkCard $ do
     searingSpearEffect :: Contextual (Magic ())
     searingSpearEffect rSelf rActivator = do
       ts <- askMagicTargets rActivator targetCreatureOrPlayer
-      let f :: Either Id PlayerRef -> Object -> Magic ()
-          f t source = void $ executeEffect $ case t of
-            Left i  -> Will (DamageObject source i 3 False True)
-            Right p -> Will (DamagePlayer source p 3 False True)
+      let f :: Either Id PlayerRef -> ObjectRef -> Magic ()
+          f t rSelf = do
+            self <- view (asks (object rSelf))
+            void $ executeEffect $ case t of
+              Left i  -> Will (DamageObject self i 3 False True)
+              Right p -> Will (DamagePlayer self p 3 False True)
       void (view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect)
