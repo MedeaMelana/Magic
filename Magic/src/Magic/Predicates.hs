@@ -4,8 +4,8 @@ module Magic.Predicates (
 
 import Magic.Types
 import Magic.ObjectTypes
+import Magic.Utils (gor)
 
-import Data.Boolean
 import Data.Label
 import qualified Data.Set as Set
 
@@ -28,6 +28,3 @@ hasTypes t o = t `isObjectTypesSubsetOf` _types o
 -- | Checks whether the object has at least one of the permanent card types.
 hasPermanentType :: Object -> Bool
 hasPermanentType = gor $ map hasTypes [artifactType, creatureType, enchantmentType, landType, planeswalkerType]
-
-gor :: Boolean b => [b] -> b
-gor = foldr (||*) false

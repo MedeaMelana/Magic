@@ -10,6 +10,7 @@ import Control.Monad (void)
 import Data.Boolean ((&&*))
 import Data.Label.Pure (get)
 import Data.Label.PureM ((=:), asks)
+import Data.Maybe (maybeToList)
 import Data.Monoid ((<>), mconcat)
 import qualified Data.Set as Set
 
@@ -58,7 +59,41 @@ playPermanent mc =
 
     resolvePermanent _source = return ()
 
-stackTargetlessEffect :: ObjectRef -> (Object -> Magic ()) -> Magic ()
+playAura :: ManaPool -> ActivatedAbility
+playAura mc =
+  ActivatedAbility
+    { available     = \rSelf rActivator -> do
+        self <- asks (object rSelf)
+        if Flash `elem` get staticKeywordAbilities self
+          then instantSpeed rSelf rActivator
+          else sorcerySpeed rSelf rActivator
+    , manaCost      = mc
+    , tapCost       = NoTapCost
+    , effect        = playAuraEffect
+    , isManaAbility = False
+    }
+  where
+    playAuraEffect :: Contextual (Magic ())
+    playAuraEffect rSelf p = do
+      aura <- view (asks (object rSelf))  -- TODO Reevaluate rSelf on the stack?
+      let ok i = collectEnchantPredicate aura <$>
+                  asks (object (Battlefield, i))
+      ts <- askMagicTargets p (target permanent <?> ok)
+      let f :: Id -> ObjectRef -> Magic ()
+          f i rStackSelf = do
+            self <- view (asks (object rStackSelf))
+            let self' = self { _attachedTo = Just (Battlefield, i)
+                             , _stackItem = Nothing }
+            void $ executeEffect (WillMoveObject (Just rStackSelf) Battlefield self')
+
+      void $ view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect
+
+collectEnchantPredicate :: Object -> Object -> Bool
+collectEnchantPredicate aura enchanted = gand
+  [ hasTypes tys enchanted
+  | EnchantPermanent tys <- get staticKeywordAbilities aura ]
+
+stackTargetlessEffect :: ObjectRef -> (ObjectRef -> Magic ()) -> Magic ()
 stackTargetlessEffect rSelf item = do
   eff <- view (willMoveToStack rSelf (pure item))
   void $ executeEffect eff
@@ -268,6 +303,22 @@ captain'sCall = mkCard $ do
     , isManaAbility = False
     }
 
+divineFavor :: Card
+divineFavor = mkCard $ do
+    name =: Just "Divine Favor"
+    types =: auraType
+    staticKeywordAbilities =: [EnchantPermanent creatureType]
+    triggeredAbilities =: (onSelfETB $ \_ you -> mkTriggerObject you (gainLifeTrigger you))
+    layeredEffects =: [boostEnchanted]
+    play =: Just (playAura [Nothing, Just White])
+  where
+    gainLifeTrigger you = pure $ \_ -> void $
+      executeEffect (Will (GainLife you 3))
+    boostEnchanted = LayeredEffect
+      { affectedObjects = \rAura _you -> maybeToList <$> asks (object rAura .^ attachedTo)
+      , modifications = [ModifyPT (return (1, 3))]
+      }
+
 
 
 -- RED CARDS
@@ -302,8 +353,8 @@ searingSpear = mkCard $ do
     searingSpearEffect rSelf rActivator = do
       ts <- askMagicTargets rActivator targetCreatureOrPlayer
       let f :: Either Id PlayerRef -> ObjectRef -> Magic ()
-          f t rSelf = do
-            self <- view (asks (object rSelf))
+          f t rStackSelf = do
+            self <- view (asks (object rStackSelf))
             void $ executeEffect $ case t of
               Left i  -> Will (DamageObject self i 3 False True)
               Right p -> Will (DamagePlayer self p 3 False True)

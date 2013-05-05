@@ -1,10 +1,11 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Magic.Utils (mkCard, emptyObject, countCountersOfType, sortOn, textShow, deleteAtIndex) where
+module Magic.Utils (mkCard, emptyObject, countCountersOfType, sortOn, textShow, deleteAtIndex, gor, gand) where
 
 import Magic.Types
 
 import Control.Monad.State (State, execState)
+import Data.Boolean (Boolean(..))
 import Data.Label.Pure
 import Data.List (sortBy)
 import Data.Monoid (mempty)
@@ -40,6 +41,7 @@ emptyObject t rOwner = Object
   , _replacementEffects = []
 
   , _temporaryEffects = []
+  , _attachedTo = Nothing
   }
 
 
@@ -56,3 +58,9 @@ deleteAtIndex :: Int -> [a] -> [a]
 deleteAtIndex i xs = ys ++ zs
   where
     (ys, _:zs) = splitAt i xs
+
+gor :: Boolean b => [b] -> b
+gor = foldr (||*) false
+
+gand :: Boolean b => [b] -> b
+gand = foldr (&&*) true

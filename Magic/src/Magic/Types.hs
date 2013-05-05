@@ -34,7 +34,7 @@ module Magic.Types (
       stackItem,
       pt, damage, deathtouched,
       play, staticKeywordAbilities, layeredEffects, activatedAbilities, triggeredAbilities, replacementEffects,
-      temporaryEffects,
+      temporaryEffects, attachedTo,
 
     -- * Object properties
     Timestamp, Color(..), TapStatus(..), CounterType(..), PT,
@@ -221,8 +221,9 @@ data Object = Object
   , _replacementEffects     :: [ReplacementEffect]
 
   -- these fields are reset whenever this object changes zones
-  , _counters   :: Bag CounterType
+  , _counters               :: Bag CounterType
   , _temporaryEffects       :: [TemporaryLayeredEffect]
+  , _attachedTo             :: Maybe ObjectRef
   }
 
 instance Show Object where
@@ -264,7 +265,7 @@ data ObjectTypes = ObjectTypes
   , landSubtypes         :: Maybe (Set LandSubtype)
   , planeswalkerSubtypes :: Maybe (Set PlaneswalkerSubtype)
   , sorcerySubtypes      :: Maybe (Set SpellSubtype)
-  } deriving (Eq, Ord, Show)
+  } deriving (Eq, Ord, Show, Read)
 
 instance Monoid ObjectTypes where
   mempty = ObjectTypes mempty mempty mempty mempty mempty mempty mempty mempty
@@ -357,7 +358,7 @@ data StaticKeywordAbility
   | Deathtouch
   | Defender
   | DoubleStrike
-  | Enchant
+  | EnchantPermanent ObjectTypes
   | FirstStrike
   | Flash
   | Flashback ManaPool
