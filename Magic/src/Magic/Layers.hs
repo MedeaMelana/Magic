@@ -9,15 +9,18 @@ module Magic.Layers (
     TemporaryLayeredEffect(..), Duration(..),
 
     -- * Creating layered effects
-    affectSelf, affectBattlefield, affectRestOfBattlefield
+    affectSelf, affectBattlefield, affectRestOfBattlefield,
+    affectAttached
   ) where
 
+import Magic.Core (object)
 import qualified Magic.IdList as IdList
+import Magic.Labels
 import Magic.Types
 
 import Control.Applicative ((<$>))
 import Data.Label.PureM (asks)
-import Data.Maybe (mapMaybe)
+import Data.Maybe (mapMaybe, maybeToList)
 
 
 -- | Compute the layer in which a 'ModifyObject' applies. Object 
@@ -60,3 +63,7 @@ affectRestOfBattlefield ok (Battlefield, iSelf) you =
   mapMaybe (\(i,o) -> if iSelf /= i && ok you o then Just (Battlefield, i) else Nothing) .
     IdList.toList <$> asks battlefield
 affectRestOfBattlefield _ _ _ = return []
+
+-- | Affect whatever object this object is attached to.
+affectAttached :: Contextual (View [ObjectRef])
+affectAttached rAura _you = maybeToList <$> asks (object rAura .^ attachedTo)

@@ -10,7 +10,6 @@ import Control.Monad (void)
 import Data.Boolean ((&&*))
 import Data.Label.Pure (get)
 import Data.Label.PureM ((=:), asks)
-import Data.Maybe (maybeToList)
 import Data.Monoid ((<>), mconcat)
 import qualified Data.Set as Set
 
@@ -315,7 +314,7 @@ divineFavor = mkCard $ do
     gainLifeTrigger you = pure $ \_ -> void $
       executeEffect (Will (GainLife you 3))
     boostEnchanted = LayeredEffect
-      { affectedObjects = \rAura _you -> maybeToList <$> asks (object rAura .^ attachedTo)
+      { affectedObjects = affectAttached
       , modifications = [ModifyPT (return (1, 3))]
       }
 
