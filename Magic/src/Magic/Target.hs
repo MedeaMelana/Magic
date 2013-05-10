@@ -9,12 +9,16 @@ module Magic.Target (
     target, (<?>),
 
     -- * Compiling target lists
-    evaluateTargetList, askMagicTargets
+    evaluateTargetList, askMagicTargets,
+    permanent, permanentOrPlayer, targetCreatureOrPlayer
   ) where
 
 import qualified Magic.IdList as IdList
+import Magic.IdList (Id)
 import Magic.Core
 import Magic.Types
+import Magic.Predicates
+import Magic.ObjectTypes
 
 import Control.Applicative
 import Control.Monad (forM, filterM)
@@ -70,3 +74,23 @@ allTargets = do
     return (map (\o -> (zr, o)) os)
   return (map TargetPlayer ps ++ map TargetObject (concat oss))
 
+
+
+-- HELPER FUNCTIONS: TARGETING
+
+
+permanentOrPlayer :: Target -> Maybe (Either Id PlayerRef)
+permanentOrPlayer (TargetPlayer p) = Just (Right p)
+permanentOrPlayer (TargetObject (Battlefield, i)) = Just (Left i)
+permanentOrPlayer _ = Nothing
+
+permanent :: Target -> Maybe Id
+permanent (TargetObject (Battlefield, i)) = Just i
+permanent _ = Nothing
+
+targetCreatureOrPlayer :: TargetList () (Either Id PlayerRef)
+targetCreatureOrPlayer = target permanentOrPlayer <?> ok
+  where
+    ok t = case t of
+      Left i  -> hasTypes creatureType <$> asks (object (Battlefield, i))
+      Right _ -> return True
