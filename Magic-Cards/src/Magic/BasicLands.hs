@@ -2,13 +2,7 @@
 
 module Magic.BasicLands where
 
-import Magic.Core
-import Magic.Labels
-import Magic.Events
-import Magic.ObjectTypes
-import Magic.Predicates
-import Magic.Utils
-import Magic.Types
+import Magic
 
 import Control.Applicative
 import Control.Monad (void)
