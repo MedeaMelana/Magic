@@ -1,9 +1,9 @@
 run: build
-	dist/build/magic-web-server/magic-web-server
+	./magic-web-server
 
 build:
-	cabal configure
-	cabal build
+	ghc --make -Wall -isrc:../Magic/src:../Magic-Cards/src -o magic-web-server Main
+	# codesign -s "Martijn van Steenbergen" -f magic-web-server
 
 clean:
-	rm -rf dist
+	rm -rf dist magic-web-server
