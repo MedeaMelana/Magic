@@ -13,7 +13,15 @@ redDeck :: Deck
 redDeck = replicate 18 mountain <> replicate 42 searingSpear
 
 whiteDeck :: Deck
-whiteDeck = replicate 18 plains <> replicate 42 attendedKnight
+whiteDeck = replicate 24 plains
+         <> replicate 4 angel'sMercy
+         <> replicate 4 angelicBenediction
+         <> replicate 8 attendedKnight
+         <> replicate 4 avenSquire
+         <> replicate 4 battleflightEagle
+         <> replicate 4 captainOfTheWatch
+         <> replicate 4 captain'sCall
+         <> replicate 4 divineFavor
 
 main :: IO ()
 main = do
