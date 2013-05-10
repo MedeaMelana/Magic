@@ -1,0 +1,27 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+module Magic.AvacynRestored where
+
+import Magic
+import Control.Applicative ((<$>))
+import Control.Monad (void)
+import Data.Label.PureM ((=:))
+
+bloodArtist :: Card
+bloodArtist = mkCard $ do
+    name =: Just "Blood Artist"
+    types =: creatureTypes [Vampire]
+    pt =: Just (0, 1)
+    play =: Just (playPermanent [Nothing, Just Black])
+    triggeredAbilities =: trigger
+  where
+    trigger :: TriggeredAbilities
+    trigger events rSelf you = return [ createTriggerObject you
+      | DidMoveObject (Just (Battlefield, _)) (Graveyard _, _) <- events ]
+
+    createTriggerObject :: PlayerRef -> Magic ()
+    createTriggerObject you = do
+      ts <- askMagicTargets you targetPlayer
+      let f :: PlayerRef -> ObjectRef -> Magic ()
+          f p _source = void $ executeEffects [Will (LoseLife p 1), Will (GainLife you 1)]
+      mkTriggerObject you (f <$> ts)
