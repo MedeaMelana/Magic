@@ -10,7 +10,7 @@ module Magic.Target (
 
     -- * Compiling target lists
     evaluateTargetList, askMagicTargets,
-    permanent, permanentOrPlayer, targetCreatureOrPlayer
+    permanent, permanentOrPlayer, targetCreatureOrPlayer, targetPlayer
   ) where
 
 import qualified Magic.IdList as IdList
@@ -94,3 +94,9 @@ targetCreatureOrPlayer = target permanentOrPlayer <?> ok
     ok t = case t of
       Left i  -> hasTypes creatureType <$> asks (object (Battlefield, i))
       Right _ -> return True
+
+targetPlayer :: TargetList () PlayerRef
+targetPlayer = target cast
+  where
+    cast (TargetPlayer p) = Just p
+    cast _ = Nothing
