@@ -22,7 +22,7 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Monad (forever, forM_, when, void, liftM)
 import Control.Monad.Trans (lift)
 import Control.Monad.Writer (tell, execWriterT)
-import Data.Label.Pure (get, set)
+import Data.Label.Pure (get, set, modify)
 import Data.Label.PureM (gets, (=:))
 import Data.List (nub, intersect, delete)
 import Data.Maybe (catMaybes)
@@ -225,6 +225,10 @@ executeStep (EndPhase EndOfTurnStep) = do
 executeStep (EndPhase CleanupStep) = do
   -- TODO [514.1]  discard excess cards
   -- TODO [514.2]  remove damage from permanents
+
+  -- [514.2] Remove effects that last until end of turn
+  battlefield ~:* modify temporaryEffects
+    (filter (\tle -> temporaryDuration tle /= UntilEndOfTurn))
   shouldOfferPriority <- executeSBAsAndProcessPrestacks
   when shouldOfferPriority offerPriority
 
