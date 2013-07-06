@@ -160,27 +160,24 @@ compileEffect e =
     Will simpleEffect ->
       let simply      = ([Did simpleEffect] <$)
           combine eff = (++ [Did simpleEffect]) <$> compileEffect eff
+          onlyIf b ac = if b then ac else return []
       in case simpleEffect of
 
-        GainLife p n
-          | n <= 0    -> return []
-          | otherwise -> simply $ player p .^ life ~: (+ n)
+        GainLife p n -> onlyIf (n <= 0) $
+          simply $ player p .^ life ~: (+ n)
 
-        LoseLife p n
-          | n <= 0    -> return []
-          | otherwise -> simply $ player p .^ life ~: (subtract n)
+        LoseLife p n -> onlyIf (n <= 0) $
+          simply $ player p .^ life ~: (subtract n)
 
         TapPermanent i -> do
           Just ts <- gets (object (Battlefield, i) .^ tapStatus)
-          case ts of
-            Untapped -> simply $ object (Battlefield, i) .^ tapStatus =: Just Tapped
-            Tapped   -> return []
+          onlyIf (ts == Untapped) $
+            simply $ object (Battlefield, i) .^ tapStatus =: Just Tapped
 
         UntapPermanent i -> do
           Just ts <- gets (object (Battlefield, i) .^ tapStatus)
-          case ts of
-            Untapped -> return []
-            Tapped   -> simply $ object (Battlefield, i) .^ tapStatus =: Just Untapped
+          onlyIf (ts == Tapped) $
+            simply $ object (Battlefield, i) .^ tapStatus =: Just Untapped
 
         DrawCard rp -> do
           lib <- gets (players .^ listEl rp .^ library)
@@ -215,11 +212,13 @@ compileEffect e =
 
         DamageObject _source i amount _isCombatDamage _isPreventable ->
           -- TODO check for protection, infect, wither, lifelink
-          simply $ object (Battlefield, i) .^ damage ~: (+ amount)
+          onlyIf (amount > 0) $
+            simply $ object (Battlefield, i) .^ damage ~: (+ amount)
 
         DamagePlayer _source p amount _isCombatDamage _isPreventable ->
           -- TODO check for protection, infect, wither, lifelink
-          simply $ player p .^ life ~: subtract amount
+          onlyIf (amount > 0) $
+            simply $ player p .^ life ~: subtract amount
 
         LoseGame p -> do
           -- TODO Remove all objects that belong to the player
