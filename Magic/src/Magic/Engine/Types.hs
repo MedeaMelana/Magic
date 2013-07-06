@@ -96,7 +96,7 @@ compileModifyObject world m =
     AddStaticKeywordAbility ab -> modify staticKeywordAbilities (++ [ab])
     RemoveStaticKeywordAbility ab -> modify staticKeywordAbilities (delete ab)
     AddActivatedAbility ab -> modify activatedAbilities (++ [ab])
-    AddTriggeredAbilities abs -> modify triggeredAbilities (<> abs)
+    AddTriggeredAbilities as -> modify triggeredAbilities (<> as)
     RemoveAllAbilities -> set activatedAbilities []
                         . set triggeredAbilities mempty
                         . set staticKeywordAbilities []
