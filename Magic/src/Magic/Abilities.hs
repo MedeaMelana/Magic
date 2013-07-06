@@ -14,7 +14,7 @@ module Magic.Abilities (
     playPermanent, playAura, stackTargetlessEffect,
 
     -- * Constructing triggers
-    mkTriggerObject, onSelfETB,
+    mkTriggerObject, mkTargetlessTriggerObject, onSelfETB,
   ) where
 
 import Magic.Core
@@ -123,11 +123,21 @@ stackTargetlessEffect rSelf item = do
 
 
 -- | Creates a trigger on the stack under the control of the specified player.
-mkTriggerObject :: PlayerRef -> StackItem -> Magic ()
-mkTriggerObject p item = do
+-- The function is applied to the return value of the specified 'TargetList'
+-- and put on the stack as a 'StackItem'.
+mkTriggerObject :: PlayerRef -> TargetList Target a ->
+  (a -> ObjectRef -> Magic()) -> Magic ()
+mkTriggerObject p ts f = do
   t <- tick
   void $ executeEffect $ WillMoveObject Nothing Stack $
-    (emptyObject t p) { _stackItem = Just item }
+    (emptyObject t p) { _stackItem = Just (f <$> ts) }
+
+
+-- | Creates a trigger on the stack under the control of the specified player.
+-- The specified program is wrapped in an empty 'TargetList' and passed to
+-- 'mkTriggerObject'.
+mkTargetlessTriggerObject :: PlayerRef -> (ObjectRef -> Magic()) -> Magic ()
+mkTargetlessTriggerObject p f = mkTriggerObject p (pure ()) (const f)
 
 
 -- | Trigger whenever the source object enters the battlefield, executing the

@@ -18,11 +18,11 @@ import qualified Data.Set as Set
 
 
 exalted :: TriggeredAbilities
-exalted events (Battlefield, _) p = return [ mkTriggerObject p (boostPT r)
+exalted events (Battlefield, _) p = return [ mkTargetlessTriggerObject p (boostPT r)
     | DidDeclareAttackers p' [r] <- events, p == p' ]
   where
-    boostPT :: ObjectRef -> StackItem
-    boostPT r = pure $ \_self -> do
+    boostPT :: ObjectRef -> ObjectRef -> Magic ()
+    boostPT r _rSelf = do
       t <- tick
       void $ executeEffect $ Will $ InstallLayeredEffect r $
         TemporaryLayeredEffect
@@ -83,9 +83,8 @@ angelicBenediction = mkCard $ do
     mkTapTriggerObject p = do
         let ok i = hasTypes creatureType <$> asks (object (Battlefield, i))
         ts <- askMagicTargets p (target permanent <?> ok)
-        let f :: Id -> ObjectRef -> Magic ()
-            f i _source = void $ executeEffect $ Will (TapPermanent i)
-        mkTriggerObject p (f <$> ts)
+        mkTriggerObject p ts $
+          \i _source -> void $ executeEffect $ Will (TapPermanent i)
 
 attendedKnight :: Card
 attendedKnight = mkCard $ do
@@ -97,10 +96,7 @@ attendedKnight = mkCard $ do
     triggeredAbilities     =: trigger
   where
     trigger :: TriggeredAbilities
-    trigger = onSelfETB $ \_ p -> mkTriggerObject p (mkSoldier p)
-
-    mkSoldier :: PlayerRef -> StackItem
-    mkSoldier p = pure $ \_self -> do
+    trigger = onSelfETB $ \_ p -> mkTargetlessTriggerObject p $ \_self -> do
       t <- tick
       void $ executeEffect $ mkSoldierEffect t p
 
@@ -136,21 +132,19 @@ battleflightEagle = mkCard $ do
     createBoostTrigger _ p = do
       let ok i = hasTypes creatureType <$> asks (object (Battlefield, i))
       ts <- askMagicTargets p (target permanent <?> ok)
-      let f :: Id -> ObjectRef -> Magic ()
-          f i _source = do
-            t <- tick
-            void $ executeEffect $ Will $
-              InstallLayeredEffect (Battlefield, i) TemporaryLayeredEffect
-                { temporaryTimestamp = t
-                , temporaryDuration  = UntilEndOfTurn
-                , temporaryEffect    = LayeredEffect
-                  { affectedObjects  = affectSelf
-                  , modifications    = [ ModifyPT (return (2, 2))
-                                       , AddStaticKeywordAbility Flying
-                                       ]
-                  }
-                }
-      mkTriggerObject p (f <$> ts)
+      mkTriggerObject p ts $ \i _source -> do
+        t <- tick
+        void $ executeEffect $ Will $
+          InstallLayeredEffect (Battlefield, i) TemporaryLayeredEffect
+            { temporaryTimestamp = t
+            , temporaryDuration  = UntilEndOfTurn
+            , temporaryEffect    = LayeredEffect
+              { affectedObjects  = affectSelf
+              , modifications    = [ ModifyPT (return (2, 2))
+                                   , AddStaticKeywordAbility Flying
+                                   ]
+              }
+            }
 
 captainOfTheWatch :: Card
 captainOfTheWatch = mkCard $ do
@@ -160,7 +154,7 @@ captainOfTheWatch = mkCard $ do
     play      =: Just (playPermanent [Nothing, Nothing, Nothing, Nothing, Just White, Just White])
     staticKeywordAbilities =: [Vigilance]
     layeredEffects         =: [boostSoldiers]
-    triggeredAbilities     =: (onSelfETB $ \_ p -> mkTriggerObject p (mkSoldiers p))
+    triggeredAbilities     =: trigger
   where
     boostSoldiers = LayeredEffect
       { affectedObjects = affectRestOfBattlefield $ \you ->
@@ -169,8 +163,7 @@ captainOfTheWatch = mkCard $ do
                         , ModifyPT (return (1, 1))]
       }
 
-    mkSoldiers :: PlayerRef -> StackItem
-    mkSoldiers p = pure $ \_self -> do
+    trigger = onSelfETB $ \_ p -> mkTargetlessTriggerObject p $ \_self -> do
       t <- tick
       void $ executeEffects $ replicate 3 $ mkSoldierEffect t p
 
@@ -194,11 +187,11 @@ divineFavor = mkCard $ do
     name =: Just "Divine Favor"
     types =: auraType
     staticKeywordAbilities =: [EnchantPermanent creatureType]
-    triggeredAbilities =: (onSelfETB $ \_ you -> mkTriggerObject you (gainLifeTrigger you))
+    triggeredAbilities =: (onSelfETB $ \_ you -> mkTargetlessTriggerObject you (gainLifeTrigger you))
     layeredEffects =: [boostEnchanted]
     play =: Just (playAura [Nothing, Just White])
   where
-    gainLifeTrigger you = pure $ \_ -> void $
+    gainLifeTrigger you _source = void $
       executeEffect (Will (GainLife you 3))
     boostEnchanted = LayeredEffect
       { affectedObjects = affectAttached

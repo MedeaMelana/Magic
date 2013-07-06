@@ -3,7 +3,6 @@
 module Magic.AvacynRestored where
 
 import Magic
-import Control.Applicative ((<$>))
 import Control.Monad (void)
 import Data.Label.PureM ((=:))
 
@@ -22,6 +21,5 @@ bloodArtist = mkCard $ do
     createTriggerObject :: PlayerRef -> Magic ()
     createTriggerObject you = do
       ts <- askMagicTargets you targetPlayer
-      let f :: PlayerRef -> ObjectRef -> Magic ()
-          f p _source = void $ executeEffects [Will (LoseLife p 1), Will (GainLife you 1)]
-      mkTriggerObject you (f <$> ts)
+      mkTriggerObject you ts $ \p _source ->
+        void $ executeEffects [Will (LoseLife p 1), Will (GainLife you 1)]
