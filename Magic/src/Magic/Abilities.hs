@@ -15,6 +15,7 @@ module Magic.Abilities (
 
     -- * Constructing triggers
     mkTriggerObject, mkTargetlessTriggerObject, onSelfETB,
+    ifSelfWasOrIsOnBattlefield,
   ) where
 
 import Magic.Core
@@ -31,6 +32,7 @@ import Control.Monad (void)
 import Data.Boolean ((&&*))
 import Data.Label.Pure (get)
 import Data.Label.PureM (asks)
+import Data.Monoid (mempty)
 
 
 
@@ -145,3 +147,13 @@ mkTargetlessTriggerObject p f = mkTriggerObject p (pure ()) (const f)
 onSelfETB :: Contextual (Magic ()) -> TriggeredAbilities
 onSelfETB mkProgram events rSelf p = return [ mkProgram rSelf p
   | DidMoveObject _ rOther@(Battlefield, _) <- events, rSelf == rOther ]
+
+-- | Modify a trigger to only fire when the source of the trigger is on the
+-- battlefield now, or was before the events took place (i.e. one of the
+-- events is the move of the source from the battlefield to another zone).
+ifSelfWasOrIsOnBattlefield :: TriggeredAbilities -> TriggeredAbilities
+ifSelfWasOrIsOnBattlefield f events rSelf you =
+    if ok then f events rSelf you else mempty
+  where
+    ok = fst rSelf == Battlefield
+      || not (null [ () | DidMoveObject (Just (Battlefield, _)) newRef <- events, newRef == rSelf ])

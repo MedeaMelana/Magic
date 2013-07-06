@@ -12,10 +12,10 @@ bloodArtist = mkCard $ do
     types =: creatureTypes [Vampire]
     pt =: Just (0, 1)
     play =: Just (playPermanent [Nothing, Just Black])
-    triggeredAbilities =: trigger
+    triggeredAbilities =: ifSelfWasOrIsOnBattlefield trigger
   where
     trigger :: TriggeredAbilities
-    trigger events rSelf you = return [ createTriggerObject you
+    trigger events _rSelf you = return [ createTriggerObject you
       | DidMoveObject (Just (Battlefield, _)) (Graveyard _, _) <- events ]
 
     createTriggerObject :: PlayerRef -> Magic ()
