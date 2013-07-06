@@ -510,6 +510,7 @@ data SimpleOneShotEffect
 data Target
   = TargetPlayer PlayerRef
   | TargetObject ObjectRef
+  deriving Eq
 
 data TargetList t a where
   Nil  :: a -> TargetList t a
