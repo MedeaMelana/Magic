@@ -11,7 +11,7 @@ import Magic.Description (Description(..), describeWorld, describeZone, describe
 
 import Control.Monad (forM_)
 import Control.Monad.Operational (ProgramT, ProgramViewT(..), viewT)
-import Control.Monad.Random
+import Control.Monad.Random (RandT, StdGen, evalRandT, newStdGen)
 import Control.Monad.Reader (runReader)
 import Control.Monad.State (evalStateT)
 import Data.Monoid ((<>))
