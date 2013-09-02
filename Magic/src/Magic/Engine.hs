@@ -2,6 +2,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DoAndIfThenElse #-}
+{-# LANGUAGE GADTs #-}
 
 module Magic.Engine (newWorld, fullGame, Engine(..)) where
 
@@ -17,6 +18,7 @@ import Magic.Types
 import Magic.Utils
 import Magic.Engine.Types
 import Magic.Engine.Events
+import Magic.Some
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad (forever, forM_, when, void, liftM)
@@ -80,7 +82,8 @@ newPlayer i deck = Player
   { _life = 20
   , _manaPool = []
   , _prestack = []
-  , _library = IdList.fromList (map (\card -> instantiateCard card i) deck)
+  , _library = IdList.fromList [ CardObject (instantiateCard card i)
+                               | card <- deck ]
   , _hand = IdList.empty
   , _graveyard = IdList.empty
   , _maximumHandSize = Just 7
@@ -95,7 +98,7 @@ drawOpeningHands playerIds 0 =
 drawOpeningHands playerIds handSize = do
   mulliganingPlayers <- do
     forM_ playerIds $ \playerId -> do
-      _ <- moveAllObjects TurnBasedActions (Hand playerId) (Library playerId)
+      _ <- undrawHand TurnBasedActions playerId
       _ <- executeEffect TurnBasedActions (Will (ShuffleLibrary playerId))
       executeEffects TurnBasedActions (replicate handSize (Will (DrawCard playerId)))
     for playerIds $ \playerId -> do
@@ -104,6 +107,11 @@ drawOpeningHands playerIds handSize = do
         then return Nothing
         else return (Just playerId)
   drawOpeningHands (catMaybes mulliganingPlayers) (handSize - 1)
+
+undrawHand :: EventSource -> PlayerRef -> Engine [Event]
+undrawHand source p = do
+  idxs <- IdList.toList <$> gets (player p .^ hand)
+  executeEffects source [ WillMoveObject (Just (Some (Hand p), i)) (Library p) x | (i, x) <- idxs ]
 
 fullGame :: Engine ()
 fullGame = do
@@ -137,7 +145,7 @@ executeStep (BeginningPhase UntapStep) = do
 
   -- [502.2] untap permanents
   rp <- gets activePlayer
-  ios <- IdList.filter (isControlledBy rp) <$> gets battlefield
+  ios <- (IdList.filter (\(Permanent perm) -> isControlledBy rp perm)) <$> gets battlefield
   _ <- executeEffects TurnBasedActions (map (\(i, _) -> Will (UntapPermanent i)) ios)
   return ()
 
@@ -227,7 +235,7 @@ executeStep (EndPhase CleanupStep) = do
   -- TODO [514.2]  remove damage from permanents
 
   -- [514.2] Remove effects that last until end of turn
-  battlefield ~:* modify temporaryEffects
+  battlefield ~:* modify (objectPart .^ temporaryEffects)
     (filter (\tle -> temporaryDuration tle /= UntilEndOfTurn))
   shouldOfferPriority <- executeSBAsAndProcessPrestacks
   when shouldOfferPriority offerPriority
@@ -320,7 +328,7 @@ collectSBAs = execWriterT $ do
 
     checkBattlefield = do
       ios <- IdList.toList <$> lift (gets battlefield)
-      forM_ ios $ \(i,o) -> do
+      forM_ ios $ \(i,Permanent o) -> do
 
         -- Check creatures
         when (hasTypes creatureType o) $ do
@@ -353,7 +361,7 @@ collectSBAs = execWriterT $ do
 
 resolve :: Id -> Engine ()
 resolve i = do
-  o <- gets (stack .^ listEl i)
+  StackItem o <- gets (stack .^ listEl i)
   let Just item = get stackItem o
   let (_, Just mkEffects) = evaluateTargetList item
   let eventSource = ResolutionOf i
@@ -363,11 +371,11 @@ resolve i = do
   let o' = set stackItem Nothing o
   if (hasTypes instantType o || hasTypes sorceryType o)
   then void $ executeEffect eventSource $
-    WillMoveObject (Just (Stack, i)) (Graveyard (get controller o)) o'
+    WillMoveObject (Just (Some Stack, i)) (Graveyard (get controller o)) (CardObject o')
   else if hasPermanentType o
   then void $ executeEffect eventSource $
-    WillMoveObject (Just (Stack, i)) Battlefield (set tapStatus (Just Untapped) o')
-  else void $ executeEffect eventSource $ Will $ CeaseToExist (Stack, i)
+    WillMoveObject (Just (Some Stack, i)) Battlefield (Permanent (set tapStatus (Just Untapped) o'))
+  else void $ executeEffect eventSource $ Will $ CeaseToExist (Some Stack, i)
 
 collectPriorityActions :: PlayerRef -> Engine [PriorityAction]
 collectPriorityActions p = do
@@ -384,7 +392,7 @@ collectAvailableActivatedAbilities predicate p = do
         ok <- lift (shouldOfferAbility ability r p)
         when (predicate ability && ok) (tell [(r, i)])
 
-collectPlayableCards :: PlayerRef -> Engine [ObjectRef]
+collectPlayableCards :: PlayerRef -> Engine [SomeObjectRef]
 collectPlayableCards p = do
   objects <- view allObjects
   execWriterT $ do
@@ -403,7 +411,7 @@ shouldOfferAbility ability rSource rActivator = do
 
 activateAbility :: EventSource -> ActivatedAbility -> Contextual (Engine ())
 activateAbility source ability rSource rActivator  = do
-  offerManaAbilitiesToPay source rActivator (manaCost ability)
+  --offerManaAbilitiesToPay source rActivator (manaCost ability)
   payTapCost source (tapCost ability) rSource rActivator
   executeMagic source (effect ability rSource rActivator)
 
@@ -411,10 +419,10 @@ executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
 executePriorityAction p a = do
   case a of
     PlayCard r -> do
-      Just ability <- gets (object r .^ play)
+      Just ability <- gets (objectBase r .^ play)
       activateAbility (PriorityActionExecution a) ability r p
     ActivateAbility (r, i) -> do
-      abilities <- gets (object r .^ activatedAbilities)
+      abilities <- gets (objectBase r .^ activatedAbilities)
       activateAbility (PriorityActionExecution a) (abilities !! i) r p
 
 offerManaAbilitiesToPay :: EventSource -> PlayerRef -> ManaPool -> Engine ()
@@ -435,19 +443,19 @@ offerManaAbilitiesToPay source p cost = do
         then offerManaAbilitiesToPay source p (delete mc cost)
         else offerManaAbilitiesToPay source p (delete Nothing cost)
     ActivateManaAbility (r, i) -> do
-      abilities <- gets (object r .^ activatedAbilities)
+      abilities <- gets (objectBase r .^ activatedAbilities)
       activateAbility source (abilities !! i) r p
       offerManaAbilitiesToPay source p cost
 
 canPayTapCost :: TapCost -> Contextual (Engine Bool)
 canPayTapCost NoTapCost _ _ = return True
-canPayTapCost TapCost rSource@(Battlefield, _) _ =
-  (== Just Untapped) <$> gets (object rSource .^ tapStatus)
+canPayTapCost TapCost rSource@(Some Battlefield, _) _ =
+  (== Just Untapped) <$> gets (objectBase rSource .^ tapStatus)
 canPayTapCost TapCost _ _ = return False
 
 payTapCost :: EventSource -> TapCost -> Contextual (Engine ())
 payTapCost _ NoTapCost _ _ = return ()
-payTapCost source TapCost (Battlefield, i) _ =
+payTapCost source TapCost (Some Battlefield, i) _ =
   void (executeEffect source (Will (TapPermanent i)))
 payTapCost _ _ _ _ = return ()
 

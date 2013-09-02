@@ -9,6 +9,7 @@ module Magic (
     module Magic.Object,
     module Magic.ObjectTypes,
     module Magic.Predicates,
+    module Magic.Some,
     module Magic.Target,
     module Magic.Utils,
     module Magic.World
@@ -24,6 +25,7 @@ import Magic.Monads
 import Magic.Object
 import Magic.ObjectTypes
 import Magic.Predicates
+import Magic.Some
 import Magic.Target
 import Magic.Utils
 import Magic.World

@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+
 module Magic.Layers (
     -- * Layered effects
     -- | Layered effects are a type of continuous effects that modify
@@ -13,9 +15,9 @@ module Magic.Layers (
     affectAttached
   ) where
 
+import Magic.Some (Some(..))
 import Magic.Core (object)
 import qualified Magic.IdList as IdList
-import Magic.Labels
 import Magic.Types
 
 import Control.Applicative ((<$>))
@@ -43,27 +45,30 @@ layer m = case m of
 
 
 -- | Affect only the object that carries the layered effect itself.
-affectSelf :: Contextual (View [ObjectRef])
+affectSelf :: Contextual (View [SomeObjectRef])
 affectSelf r _you = return [r]
 
 -- | Affect objects on the battlefield, from a layered effect of an object
 -- on the battlefield.
 affectBattlefield ::
-  (PlayerRef -> Object -> Bool) -> Contextual (View [ObjectRef])
-affectBattlefield ok (Battlefield, _) you =
-  mapMaybe (\(i,o) -> if ok you o then Just (Battlefield, i) else Nothing) .
+  (PlayerRef -> Object -> Bool) -> Contextual (View [SomeObjectRef])
+affectBattlefield ok (Some Battlefield, _) you =
+  mapMaybe (\(i, Permanent p) -> if ok you p then Just (Some Battlefield, i) else Nothing) .
     IdList.toList <$> asks battlefield
 affectBattlefield _ _ _ = return []
 
 -- | Affect all other objects on the battlefield, from a layered effect of an
 -- object on the battlefield.
 affectRestOfBattlefield ::
-  (PlayerRef -> Object -> Bool) -> Contextual (View [ObjectRef])
-affectRestOfBattlefield ok (Battlefield, iSelf) you =
-  mapMaybe (\(i,o) -> if iSelf /= i && ok you o then Just (Battlefield, i) else Nothing) .
+  (PlayerRef -> Object -> Bool) -> Contextual (View [SomeObjectRef])
+affectRestOfBattlefield ok (Some Battlefield, iSelf) you =
+  mapMaybe (\(i, Permanent o) -> if iSelf /= i && ok you o then Just (Some Battlefield, i) else Nothing) .
     IdList.toList <$> asks battlefield
 affectRestOfBattlefield _ _ _ = return []
 
 -- | Affect whatever object this object is attached to.
-affectAttached :: Contextual (View [ObjectRef])
-affectAttached rAura _you = maybeToList <$> asks (object rAura .^ attachedTo)
+affectAttached :: Contextual (View [SomeObjectRef])
+affectAttached (Some Battlefield, i) _you = do
+  Permanent p <- asks (object (Battlefield, i))
+  return (maybeToList (_attachedTo p))
+affectAttached _ _ = return []

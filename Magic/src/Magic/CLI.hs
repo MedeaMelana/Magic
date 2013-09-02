@@ -8,6 +8,7 @@ import Magic.Engine.Types (runEngine, GameOver(..))
 import Magic.Types hiding (view)
 import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction,
   describeEvent, describeTarget, describeManaPool, describePayManaAction, describeObjectName)
+import Magic.Some (Some(..))
 
 import Control.Monad (forM_)
 import Control.Monad.Operational (ProgramT, ProgramViewT(..), viewT)
@@ -50,7 +51,7 @@ askQuestions = eval . viewT
         forM_ es $ \e -> Text.putStrLn (desc world (">>> " <> describeEvent e))
         askQuestions (k ())
       AskQuestion p world AskKeepHand :>>= k -> do
-        Text.putStrLn (desc world (describeZone (Hand p)))
+        Text.putStrLn (desc world (describeZone (Some (Hand p))))
         chosen <- offerOptions p "Would you like to keep your hand?" [("Keep hand", True), ("Take mulligan", False)]
         askQuestions (k chosen)
       AskQuestion p world (AskPriorityAction actions) :>>= k -> do

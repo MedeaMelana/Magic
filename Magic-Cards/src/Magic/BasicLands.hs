@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GADTs #-}
 
 module Magic.BasicLands where
 
@@ -29,7 +30,7 @@ playLand :: ActivatedAbility
 playLand = ActivatedAbility
   { available = \rSource rActivator ->
       case rSource of
-        (Hand _, _) -> do
+        (Some (Hand _), _) -> do
           control <- checkObject rSource (isControlledBy rActivator)
           stackEmpty <- isStackEmpty
           ap <- asks activePlayer
@@ -55,13 +56,14 @@ tapToAddMana :: Maybe Color -> ActivatedAbility
 tapToAddMana mc = ActivatedAbility
   { available = \rSource rActivator ->
       case rSource of
-        (Battlefield, _) -> checkObject rSource (isControlledBy rActivator)
-        _                -> return False
+        (Some Battlefield, _) ->
+          checkObject rSource (isControlledBy rActivator)
+        _ -> return False
   , manaCost = mempty
   , tapCost = TapCost
   , effect = \_rSource rActivator -> void (executeEffect (Will (AddToManaPool rActivator [mc])))
   , isManaAbility = True
   }
 
-checkObject :: ObjectRef -> (Object -> Bool) -> View Bool
-checkObject (rZone, i) ok = ok <$> asks (compileZoneRef rZone .^ listEl i)
+checkObject :: SomeObjectRef -> (Object -> Bool) -> View Bool
+checkObject r ok = ok <$> asks (objectBase r)

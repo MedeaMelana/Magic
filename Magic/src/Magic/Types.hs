@@ -8,14 +8,16 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Magic.Types (
     -- * Data structures
     Bag,
 
     -- * Reference types
-    PlayerRef, ObjectRef, ActivatedAbilityRef, ZoneRef(..),
-    LastKnownObjectInfo,
+    PlayerRef, ObjectRef, SomeObjectRef, ActivatedAbilityRef, ZoneRef(..),
+    ObjectType(..), LastKnownObjectInfo,
 
     -- * World
     World(..), players, activePlayer, activeStep, time, turnStructure, exile, battlefield, stack, command, turnHistory,
@@ -35,6 +37,7 @@ module Magic.Types (
       pt, damage, deathtouched,
       play, staticKeywordAbilities, layeredEffects, activatedAbilities, triggeredAbilities, replacementEffects,
       temporaryEffects, attachedTo,
+    ObjectOfType(..),
 
     -- * Object properties
     Timestamp, Color(..), TapStatus(..), CounterType(..), PT,
@@ -64,7 +67,7 @@ module Magic.Types (
     Target(..), TargetList(..),
 
     -- * Monads @ViewT@ and @View@
-    ViewT(..), View, MonadView(..),
+    ViewT(..), View, runView, MonadView(..),
 
     -- * Monadic interaction with players
     Interact(..), EventSource(..), Question(..), Pick, MonadInteract(..),
@@ -76,6 +79,7 @@ module Magic.Types (
     Magic(..)
   ) where
 
+import Magic.Some
 import Magic.IdList (Id, IdList)
 
 import Control.Applicative
@@ -84,9 +88,10 @@ import Control.Monad.Reader
 import Control.Monad.Operational (Program, ProgramT)
 import Data.Boolean
 import Data.Label (mkLabels)
-import Data.Monoid
+import Data.Monoid (Monoid(..))
 import Data.Set (Set)
 import Data.Text (Text, unpack)
+import Data.Type.Equality (EqT(..), (:=:)(..))
 import Prelude hiding (interact)
 
 
@@ -102,13 +107,35 @@ type Bag = []
 
 
 type PlayerRef = Id
-type ObjectRef = (ZoneRef, Id)
-type ActivatedAbilityRef = (ObjectRef, Int)
+type ObjectRef ty = (ZoneRef ty, Id)
+type SomeObjectRef = (Some ZoneRef, Id)
+type ActivatedAbilityRef = (SomeObjectRef, Int)
 
-data ZoneRef = Library PlayerRef | Hand PlayerRef | Battlefield | Graveyard PlayerRef | Stack | Exile | Command
-  deriving (Eq, Ord, Show)
+data ZoneRef :: ObjectType -> * where
+  Library     :: PlayerRef -> ZoneRef TyCard
+  Hand        :: PlayerRef -> ZoneRef TyCard
+  Battlefield ::              ZoneRef TyPermanent
+  Graveyard   :: PlayerRef -> ZoneRef TyCard
+  Stack       ::              ZoneRef TyStackItem
+  Exile       ::              ZoneRef TyCard
+  Command     ::              ZoneRef TyCard
 
-type LastKnownObjectInfo = (ObjectRef, Object)
+deriving instance Show (ZoneRef ty)
+instance Show1 ZoneRef where show1 = show
+
+instance EqT ZoneRef where
+  eqT (Library p1)   (Library p2)   | p1 == p2 = Just Refl
+  eqT (Hand p1)      (Hand p2)      | p1 == p2 = Just Refl
+  eqT Battlefield Battlefield                  = Just Refl
+  eqT (Graveyard p1) (Graveyard p2) | p1 == p2 = Just Refl
+  eqT Stack Stack                              = Just Refl
+  eqT Exile Exile                              = Just Refl
+  eqT Command Command                          = Just Refl
+  eqT _ _ = Nothing
+
+data ObjectType = TyCard | TyPermanent | TyStackItem
+
+type LastKnownObjectInfo = (SomeObjectRef, Object)
 
 
 
@@ -122,10 +149,10 @@ data World = World
   , _activeStep    :: Step
   , _time          :: Timestamp
   , _turnStructure :: [(PlayerRef, [Step])]
-  , _exile         :: IdList Object
-  , _battlefield   :: IdList Object
-  , _stack         :: IdList Object
-  , _command       :: IdList Object
+  , _exile         :: IdList (ObjectOfType TyCard)
+  , _battlefield   :: IdList (ObjectOfType TyPermanent)
+  , _stack         :: IdList (ObjectOfType TyStackItem)
+  , _command       :: IdList (ObjectOfType TyCard)
   , _turnHistory   :: [Event]
   }
 
@@ -169,9 +196,9 @@ data Player = Player
   { _life            :: Int
   , _manaPool        :: ManaPool
   , _prestack        :: [(LastKnownObjectInfo, Magic ())]  -- triggered abilities about to be put on the stack, together with their source
-  , _library         :: IdList Object
-  , _hand            :: IdList Object
-  , _graveyard       :: IdList Object
+  , _library         :: IdList (ObjectOfType TyCard)
+  , _hand            :: IdList (ObjectOfType TyCard)
+  , _graveyard       :: IdList (ObjectOfType TyCard)
   , _maximumHandSize :: Maybe Int
   , _failedCardDraw  :: Bool  -- [704.5b]
   }
@@ -183,7 +210,7 @@ data Player = Player
 
 data Card = Card
   -- timestamp, owner (and controller)
-  { instantiateCard :: PlayerRef-> Object
+  { instantiateCard :: PlayerRef -> Object
   }
 
 type Deck = [Card]
@@ -223,7 +250,7 @@ data Object = Object
   -- these fields are reset whenever this object changes zones
   , _counters               :: Bag CounterType
   , _temporaryEffects       :: [TemporaryLayeredEffect]
-  , _attachedTo             :: Maybe ObjectRef
+  , _attachedTo             :: Maybe SomeObjectRef
   }
 
 instance Show Object where
@@ -231,6 +258,13 @@ instance Show Object where
     case _name o of
       Nothing -> "(anonymous)"
       Just n  -> unpack n
+
+data ObjectOfType :: ObjectType -> * where
+  CardObject :: Object -> ObjectOfType TyCard
+  Permanent  :: Object -> ObjectOfType TyPermanent
+  StackItem  :: Object -> ObjectOfType TyStackItem
+
+deriving instance Show (ObjectOfType ty)
 
 
 
@@ -315,7 +349,7 @@ data CreatureSubtype
   | Survivor | Tetravite | Thalakos | Thopter | Thrull | Treefolk
   | Triskelavite | Troll | Turtle | Unicorn | Vampire | Vedalken | Viashino
   | Volver | Wall | Warrior | Weird | Werewolf | Whale | Wizard | Wolf
-  | Wolverine | Wombat | Worm | Wraith | Wurm | Yeti | Zombie | Zuber
+  | Wolverine | Wombat | Worm | Wraith | Wurm | Yeti | Zombie | Zubera
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 data EnchantmentSubtype = Aura | Curse
@@ -337,7 +371,7 @@ data PlaneswalkerSubtype = Chandra | Elspeth | Garruk | Gideon | Jace
 
 
 -- | Many abilities are run in the context of a source object (carrying the ability) and a player (activating or otherwise controlling it). By making this context explicit, abilities can be run in different contexts, for example by creatures \'stealing\' other creatures\' abilities.
-type Contextual a = ObjectRef -> PlayerRef -> a
+type Contextual a = SomeObjectRef -> PlayerRef -> a
 
 data ActivatedAbility = ActivatedAbility
   { available       :: Contextual (View Bool)  -- check for cost is implied
@@ -349,7 +383,7 @@ data ActivatedAbility = ActivatedAbility
 
 data TapCost = NoTapCost | TapCost  -- add later: UntapCost
 
-type StackItem = TargetList Target (ObjectRef -> Magic ())
+type StackItem = TargetList Target (ObjectRef TyStackItem -> Magic ())
 
 type ManaPool = Bag (Maybe Color)
 
@@ -380,7 +414,7 @@ data StaticKeywordAbility
 -- managed by layers [613]. By separating the affected objects from the
 -- modifications, we can detect dependencies [613.7].
 data LayeredEffect = LayeredEffect
-  { affectedObjects :: Contextual (View [ObjectRef])
+  { affectedObjects :: Contextual (View [SomeObjectRef])
   , modifications   :: [ModifyObject]
   }
 
@@ -442,7 +476,7 @@ type ReplacementEffect = OneShotEffect -> Maybe (Magic [OneShotEffect])
 type TriggeredAbilities = [Event] -> Contextual (View [Magic ()])
 
 data PriorityAction
-  = PlayCard ObjectRef
+  = PlayCard SomeObjectRef
   | ActivateAbility ActivatedAbilityRef
   deriving Show
 
@@ -459,14 +493,13 @@ data PayManaAction
 -- | Events are caused by various actions in the game. They describe something that has just happened, such as executing a 'OneShotEffect', progressing to the next step or phases, casting spells, et cetera. Events form the input for triggered abilities.
 data Event
   = Did SimpleOneShotEffect
-  | DidMoveObject (Maybe ObjectRef) ObjectRef  -- old ref, new ref
-  | DidDeclareAttackers PlayerRef [ObjectRef]
+  | DidMoveObject (Maybe SomeObjectRef) SomeObjectRef  -- old ref, new ref
+  | DidDeclareAttackers PlayerRef [ObjectRef TyPermanent]
 
   -- Keyword actions [701]
-  | DidActivateAbility ObjectRef Int  -- index of ability
-  | DidCastSpell PlayerRef ObjectRef  -- controller, spell
-  | DidCounter ObjectRef ObjectRef  -- source (spell or ability), target
-  | DidRevealCard ObjectRef
+  | DidActivateAbility SomeObjectRef Int  -- index of ability
+  | DidCounter (ObjectRef TyStackItem) (ObjectRef TyStackItem)  -- source (spell or ability), target
+  | DidRevealCard (ObjectRef TyCard)
   | DidBeginStep Step
   | WillEndStep Step
   deriving Show
@@ -474,8 +507,9 @@ data Event
 -- | A one-shot effect causes a mutation in the game's state. A value of @OneShotEffect@ describes something that is about to happen. When one-shot effects are executed, they may be replaced or prevented by replacement effects, and cause an 'Event' to be raised, triggering abilities.
 data OneShotEffect
   = Will SimpleOneShotEffect
-  | WillMoveObject (Maybe ObjectRef) ZoneRef Object  -- optional current zone/id, new zone, suggested form
-  deriving Show
+  | forall ty. WillMoveObject (Maybe SomeObjectRef) (ZoneRef ty) (ObjectOfType ty)  -- optional current zone/id, new zone, suggested form
+
+deriving instance Show OneShotEffect
 
 -- | A one-shot effect is simple if its fields contain enough information to serve as an 'Event' unchanged, using the 'Did' constructor.
 data SimpleOneShotEffect
@@ -489,17 +523,17 @@ data SimpleOneShotEffect
   | DestroyPermanent Id Bool  -- object on battlefield, regenerate allowed?
   | TapPermanent Id  -- object on battlefield
   | UntapPermanent Id  -- object on battlefield
-  | AddCounter ObjectRef CounterType
-  | RemoveCounter ObjectRef CounterType
+  | AddCounter SomeObjectRef CounterType
+  | RemoveCounter SomeObjectRef CounterType
   | AddToManaPool PlayerRef ManaPool
   | SpendFromManaPool PlayerRef ManaPool
-  | AttachPermanent ObjectRef (Maybe ObjectRef) (Maybe ObjectRef)  -- aura/equipment, old target, new target
+  | AttachPermanent (ObjectRef TyPermanent) (Maybe SomeObjectRef) (Maybe SomeObjectRef)  -- aura/equipment, old target, new target
   | RemoveFromCombat Id
-  | PlayLand PlayerRef ObjectRef
+  | PlayLand PlayerRef SomeObjectRef
   | LoseGame PlayerRef
   | WinGame PlayerRef
-  | InstallLayeredEffect ObjectRef TemporaryLayeredEffect
-  | CeaseToExist ObjectRef
+  | InstallLayeredEffect SomeObjectRef TemporaryLayeredEffect
+  | CeaseToExist SomeObjectRef
   deriving Show
 
 
@@ -509,7 +543,7 @@ data SimpleOneShotEffect
 
 data Target
   = TargetPlayer PlayerRef
-  | TargetObject ObjectRef
+  | TargetObject SomeObjectRef
   deriving Eq
 
 data TargetList t a where
@@ -552,6 +586,9 @@ instance (Monad m, Boolean a) => Boolean (ViewT m a) where
   (||*) = liftM2 (||*)
 
 type View = ViewT Identity
+
+runView :: View a -> World -> a
+runView v w = runIdentity (runReaderT (runViewT v) w)
 
 class MonadView m where
   view :: View a -> m a

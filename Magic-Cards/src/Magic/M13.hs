@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE DataKinds #-}
 
 module Magic.M13 where
 
@@ -18,13 +20,13 @@ import qualified Data.Set as Set
 
 
 exalted :: TriggeredAbilities
-exalted events (Battlefield, _) p = return [ mkTargetlessTriggerObject p (boostPT r)
+exalted events (Some Battlefield, _) p = return [ mkTargetlessTriggerObject p (boostPT r)
     | DidDeclareAttackers p' [r] <- events, p == p' ]
   where
-    boostPT :: ObjectRef -> ObjectRef -> Magic ()
-    boostPT r _rSelf = do
+    boostPT :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
+    boostPT (Battlefield, i) _rSelf = do
       t <- tick
-      void $ executeEffect $ Will $ InstallLayeredEffect r $
+      void $ executeEffect $ Will $ InstallLayeredEffect (Some Battlefield, i) $
         TemporaryLayeredEffect
           { temporaryTimestamp = t
           , temporaryDuration  = UntilEndOfTurn
@@ -69,10 +71,10 @@ angelicBenediction = mkCard $ do
     triggeredAbilities =: exalted <> tapTrigger
   where
     tapTrigger :: TriggeredAbilities
-    tapTrigger events (Battlefield, _) p =
+    tapTrigger events (Some Battlefield, _) p =
       mconcat [
           do
-            p' <- asks (object rAttacker .^ controller)
+            p' <- asks (object rAttacker .^ objectPart .^ controller)
             if p == p'
               then return [mkTapTriggerObject p]
               else return []
@@ -81,7 +83,7 @@ angelicBenediction = mkCard $ do
 
     mkTapTriggerObject :: PlayerRef -> Magic ()
     mkTapTriggerObject p = do
-        let ok i = hasTypes creatureType <$> asks (object (Battlefield, i))
+        let ok i = hasTypes creatureType <$> asks (object (Battlefield, i) .^ objectPart)
         ts <- askMagicTargets p (target permanent <?> ok)
         mkTriggerObject p ts $
           \i _source -> void $ executeEffect $ Will (TapPermanent i)
@@ -102,7 +104,7 @@ attendedKnight = mkCard $ do
 
 mkSoldierEffect :: Timestamp -> PlayerRef -> OneShotEffect
 mkSoldierEffect t p = WillMoveObject Nothing Battlefield $
-  (emptyObject t p)
+  Permanent (emptyObject t p)
     { _name      = Just "Soldier"
     , _colors    = Set.singleton White
     , _types     = creatureTypes [Soldier]
@@ -130,12 +132,12 @@ battleflightEagle = mkCard $ do
   where
     createBoostTrigger :: Contextual (Magic ())
     createBoostTrigger _ p = do
-      let ok i = hasTypes creatureType <$> asks (object (Battlefield, i))
+      let ok i = hasTypes creatureType <$> asks (object (Battlefield, i) .^ objectPart)
       ts <- askMagicTargets p (target permanent <?> ok)
       mkTriggerObject p ts $ \i _source -> do
         t <- tick
         void $ executeEffect $ Will $
-          InstallLayeredEffect (Battlefield, i) TemporaryLayeredEffect
+          InstallLayeredEffect (Some Battlefield, i) TemporaryLayeredEffect
             { temporaryTimestamp = t
             , temporaryDuration  = UntilEndOfTurn
             , temporaryEffect    = LayeredEffect
@@ -231,9 +233,9 @@ searingSpear = mkCard $ do
     searingSpearEffect :: Contextual (Magic ())
     searingSpearEffect rSelf rActivator = do
       ts <- askMagicTargets rActivator targetCreatureOrPlayer
-      let f :: Either Id PlayerRef -> ObjectRef -> Magic ()
+      let f :: Either Id PlayerRef -> ObjectRef TyStackItem -> Magic ()
           f t rStackSelf = do
-            self <- view (asks (object rStackSelf))
+            self <- view (asks (object rStackSelf .^ objectPart))
             void $ executeEffect $ case t of
               Left i  -> Will (DamageObject self i 3 False True)
               Right p -> Will (DamagePlayer self p 3 False True)

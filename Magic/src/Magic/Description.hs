@@ -1,11 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE GADTs #-}
 
 module Magic.Description where
 
 import Magic.Core
 import Magic.Types
 import Magic.IdList (Id, toList, ids)
+import Magic.Some
 
 import Prelude hiding (unlines, (.))
 
@@ -89,18 +91,18 @@ describeWorld = withWorld $ \world -> unlines
   , "Player " <> sh (get activePlayer world) <> "'s turn"
   , sh (get activeStep world)
   , ""
-  ] <> describePlayers <> describeZone Stack <> describeZone Battlefield <> describeManaPools
+  ] <> describePlayers <> describeZone (Some Stack) <> describeZone (Some Battlefield) <> describeManaPools
 
-describeZone :: ZoneRef -> Description
-describeZone zr = withWorld $ \world -> header (describeZoneRef zr <> ":") $
-  unlines (map describeObject (toList (get (compileZoneRef zr) world)))
+describeZone :: Some ZoneRef -> Description
+describeZone (Some zr) = withWorld $ \world -> header (describeZoneRef (Some zr) <> ":") $
+  unlines (map (describeObject . second (get objectPart)) (toList (get (compileZoneRef zr) world)))
 
 --describeHand :: PlayerRef -> Description
 --describeHand p = withWorld $ \world -> unlines $
 --  map describeObject (toList (get (player p .^ hand) world))
 
-describeObjectByRef :: ObjectRef -> Description
-describeObjectByRef ro@(_, i) = withWorld $ \world -> describeObject (i, get (object ro) world)
+describeObjectByRef :: SomeObjectRef -> Description
+describeObjectByRef ro@(_, i) = withWorld $ \world -> describeObject (i, get (objectBase ro) world)
 
 describeObject :: (Id, Object) -> Description
 describeObject (i, o) = intercalate ", " components
@@ -124,8 +126,8 @@ describeObject (i, o) = intercalate ", " components
         Just ts' -> [sh ts']
         Nothing -> []
 
-describeObjectNameByRef :: ObjectRef -> Description
-describeObjectNameByRef ro = withWorld $ \world -> describeObjectName (get (object ro) world)
+describeObjectNameByRef :: SomeObjectRef -> Description
+describeObjectNameByRef ro = withWorld $ \world -> describeObjectName (get (objectBase ro) world)
 
 describeObjectName :: Object -> Description
 describeObjectName o =
@@ -202,7 +204,7 @@ describeEvent e =
       Did (DestroyPermanent i _) -> "Permanent #" <> sh i <> " is destroyed"
       Did (ShuffleLibrary p) -> "Player " <> sh p <> " shuffles their library"
       Did (DamageObject source i amount _ _) ->
-        describeObjectName source <> " deals " <> sh amount <> " damage to " <> describeObjectNameByRef (Battlefield, i)
+        describeObjectName source <> " deals " <> sh amount <> " damage to " <> describeObjectNameByRef (Some Battlefield, i)
       Did (DamagePlayer source p amount _ _) ->
         describeObjectName source <> " deals " <> sh amount <> " damage to player " <> sh p
       Did (AddToManaPool p pool) ->
@@ -214,17 +216,17 @@ describeEvent e =
       Did (WinGame p) -> "Player " <> sh p <> " wins the game"
       Did (CeaseToExist r) -> sh r <> " ceases to exist"
       DidMoveObject (Just (rFromZone, _)) r@(rToZone, _) ->
-        describeObjectName (get (object r) world) <> " moves from " <>
+        describeObjectName (get (objectBase r) world) <> " moves from " <>
         describeZoneRef rFromZone <> " to " <> describeZoneRef rToZone
       DidMoveObject Nothing r@(rToZone, _) ->
-        describeObjectName (get (object r) world) <> " enters " <>
+        describeObjectName (get (objectBase r) world) <> " enters " <>
         describeZoneRef rToZone
       WillEndStep s -> "End of " <> sh s
       DidBeginStep s -> "Beginning of " <> sh s
       _ -> sh e
 
-describeZoneRef :: ZoneRef -> Description
-describeZoneRef z =
+describeZoneRef :: Some ZoneRef -> Description
+describeZoneRef (Some z) =
   case z of
     Library p -> "player " <> sh p <> "'s library"
     Hand p -> "player " <> sh p <> "'s hand"

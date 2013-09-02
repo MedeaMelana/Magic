@@ -8,6 +8,7 @@ module Magic.Object (
       pt, damage, deathtouched,
       play, staticKeywordAbilities, layeredEffects, activatedAbilities, triggeredAbilities, replacementEffects,
       temporaryEffects, attachedTo,
+    ObjectOfType(..),
 
     -- * Object properties
     Timestamp, Color(..), TapStatus(..), CounterType(..), PT

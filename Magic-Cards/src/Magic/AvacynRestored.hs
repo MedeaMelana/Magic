@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GADTs #-}
 
 module Magic.AvacynRestored where
 
@@ -16,7 +17,7 @@ bloodArtist = mkCard $ do
   where
     trigger :: TriggeredAbilities
     trigger events _rSelf you = return [ createTriggerObject you
-      | DidMoveObject (Just (Battlefield, _)) (Graveyard _, _) <- events ]
+      | DidMoveObject (Just (Some Battlefield, _)) (Some (Graveyard _), _) <- events ]
 
     createTriggerObject :: PlayerRef -> Magic ()
     createTriggerObject you = do

@@ -1,5 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE GADTs #-}
 
 module Magic.Target (
     -- * Types
@@ -19,6 +20,8 @@ import Magic.Core
 import Magic.Types
 import Magic.Predicates
 import Magic.ObjectTypes
+import Magic.Some
+import Magic.Labels ((.^))
 
 import Control.Applicative
 import Control.Monad (forM, filterM)
@@ -67,11 +70,11 @@ askMagicTargets p ts = do
 allTargets :: Magic [Target]
 allTargets = do
   ps <- IdList.ids <$> view (asks players)
-  let zrs = [Exile, Battlefield, Stack, Command] ++
-            [ z p | z <- [Library, Hand, Graveyard], p <- ps ]
-  oss <- forM zrs $ \zr -> do
+  let szrs = [Some Exile, Some Battlefield, Some Stack, Some Command] ++
+            concat [ [Some (Library p), Some (Hand p), Some (Graveyard p)] | p <- ps ]
+  oss <- forM szrs $ \(Some zr) -> do
     os <- IdList.ids <$> view (asks (compileZoneRef zr))
-    return (map (\o -> (zr, o)) os)
+    return (map (\o -> (Some zr, o)) os)
   return (map TargetPlayer ps ++ map TargetObject (concat oss))
 
 
@@ -81,18 +84,18 @@ allTargets = do
 
 permanentOrPlayer :: Target -> Maybe (Either Id PlayerRef)
 permanentOrPlayer (TargetPlayer p) = Just (Right p)
-permanentOrPlayer (TargetObject (Battlefield, i)) = Just (Left i)
+permanentOrPlayer (TargetObject (Some Battlefield, i)) = Just (Left i)
 permanentOrPlayer _ = Nothing
 
 permanent :: Target -> Maybe Id
-permanent (TargetObject (Battlefield, i)) = Just i
+permanent (TargetObject (Some Battlefield, i)) = Just i
 permanent _ = Nothing
 
 targetCreatureOrPlayer :: TargetList () (Either Id PlayerRef)
 targetCreatureOrPlayer = target permanentOrPlayer <?> ok
   where
     ok t = case t of
-      Left i  -> hasTypes creatureType <$> asks (object (Battlefield, i))
+      Left i  -> hasTypes creatureType <$> asks (object (Battlefield, i) .^ objectPart)
       Right _ -> return True
 
 targetPlayer :: TargetList () PlayerRef

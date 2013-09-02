@@ -3,12 +3,13 @@ module Magic.Events (
     OneShotEffect(..), SimpleOneShotEffect(..), Event(..),
 
     -- * Constructing specific one-shot effects
-    willMoveToGraveyard, willMoveToBattlefield, willMoveToStack,
+    willMoveToGraveyard, willMoveToStack, -- willMoveToBattlefield,
 
     executeEffects, executeEffect,
     tick
   ) where
 
+import Magic.Some (Some(..))
 import Magic.Core
 import Magic.IdList (Id)
 import Magic.Types
@@ -26,18 +27,18 @@ import Prelude hiding (interact)
 
 -- | Effect that moves the specified object on the battlefield to its owner's graveyard.
 willMoveToGraveyard :: Id -> Object -> OneShotEffect
-willMoveToGraveyard i o = WillMoveObject (Just (Battlefield, i)) (Graveyard (get owner o)) o
+willMoveToGraveyard i o = WillMoveObject (Just (Some Battlefield, i)) (Graveyard (get owner o)) (CardObject o)
 
-willMoveToBattlefield :: ObjectRef -> View OneShotEffect
-willMoveToBattlefield r = do
-  o <- asks (object r)
-  let o' = o { _tapStatus = Just Untapped }
-  return (WillMoveObject (Just r) Battlefield o')
+--willMoveToBattlefield :: SomeObjectRef -> View OneShotEffect
+--willMoveToBattlefield r = do
+--  o <- asks (object r)
+--  let o' = o { _tapStatus = Just Untapped }
+--  return (WillMoveObject (Just r) Battlefield o')
 
-willMoveToStack :: ObjectRef -> StackItem -> View OneShotEffect
+willMoveToStack :: SomeObjectRef -> StackItem -> View OneShotEffect
 willMoveToStack r si = do
-  o <- asks (object r)
-  return (WillMoveObject (Just r) Stack (set stackItem (Just si) o))
+  o <- asks (objectBase r)
+  return (WillMoveObject (Just r) Stack (StackItem (set stackItem (Just si) o)))
 
 
 

@@ -4,10 +4,9 @@
 
 module Magic.Engine.Types (Engine(..), GameOver(..)) where
 
-import qualified Magic.IdList as IdList
 import Magic.Layers
 import Magic.Types
-import Magic.Core (compileZoneRef, object)
+import Magic.Core (allObjects, objectBase)
 import Magic.Utils
 
 import Control.Applicative
@@ -19,7 +18,6 @@ import Control.Monad.Reader
 import Control.Monad.State (StateT, MonadState(..))
 import Control.Monad.Operational (ProgramT, liftProgram)
 import Data.Label.Pure (set, modify)
-import Data.Label.PureM (gets)
 import Data.List (delete)
 import Data.Monoid ((<>), mempty)
 import Data.Text (Text, pack)
@@ -35,7 +33,6 @@ instance Monad Engine where
   fail           = throwError . strMsg
 
 instance MonadView Engine where
-  -- TODO Apply continuous effects
   view (ViewT f) = runReader f <$> applyLayeredEffects
 
 instance MonadInteract Engine where
@@ -59,8 +56,8 @@ applyLayeredEffects :: Engine World
 applyLayeredEffects = do
     -- TODO Losing all abilities might cause layered effects to disappear, so don't collect them all beforehand.
     -- TODO Detect and handle dependencies.
-    ros <- allObjects
     world <- get
+    let ros = runView allObjects world
     return (applyAll (sortedEffects ros) world)
   where
     allEffects os =
@@ -77,15 +74,15 @@ applyLayeredEffects = do
 
     sortedEffects os = sortOn (\(t, _, m) -> (layer m, t)) (allEffects os)
 
-    applyAll :: [(Timestamp, View [ObjectRef], ModifyObject)] -> World -> World
+    applyAll :: [(Timestamp, View [SomeObjectRef], ModifyObject)] -> World -> World
     applyAll [] world = world
     applyAll ((_, vas, m) : ts) world =
         applyAll ts (applyOne affected m world)
       where
         affected = runReader (runViewT vas) world
 
-    applyOne :: [ObjectRef] -> ModifyObject -> World -> World
-    applyOne rs m world = foldr (.) id (map (\r -> modify (object r) (compileModifyObject world m)) rs) world
+    applyOne :: [SomeObjectRef] -> ModifyObject -> World -> World
+    applyOne rs m world = foldr (.) id (map (\r -> modify (objectBase r) (compileModifyObject world m)) rs) world
 
 compileModifyObject :: World -> ModifyObject -> Object -> Object
 compileModifyObject world m =
@@ -106,12 +103,3 @@ compileModifyObject world m =
     ModifyPT vpt -> let (p, t) = runReader (runViewT vpt) world
                     in modify pt (fmap ((+ p) *** (+ t)))
     SwitchPT -> modify pt (fmap (\(p,t) -> (t,p)))
-
-allObjects :: Engine [(ObjectRef, Object)]
-allObjects = do
-  ps <- IdList.ids <$> gets players
-  let zrs = [Exile, Battlefield, Stack, Command] ++
-            [ z p | z <- [Library, Hand, Graveyard], p <- ps ]
-  fmap concat $ forM zrs $ \zr -> do
-    ios <- IdList.toList <$> gets (compileZoneRef zr)
-    return (map (\(i,o) -> ((zr,i),o)) ios)

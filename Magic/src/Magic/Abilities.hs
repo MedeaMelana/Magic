@@ -1,3 +1,6 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
+
 module Magic.Abilities (
     -- * Ability types
     Contextual,
@@ -21,7 +24,9 @@ module Magic.Abilities (
 import Magic.Core
 import Magic.Events
 import Magic.IdList (Id)
+import Magic.Labels
 import Magic.Predicates
+import Magic.Some
 import Magic.Target
 import Magic.Types
 import Magic.Utils (gand, emptyObject)
@@ -42,8 +47,8 @@ import Data.Monoid (mempty)
 instantSpeed :: Contextual (View Bool)
 instantSpeed rSelf rActivator =
   case rSelf of
-    (Hand rp, _) -> return (rp == rActivator)
-    _            -> return False
+    (Some (Hand rp), _) -> return (rp == rActivator)
+    _                   -> return False
 
 sorcerySpeed :: Contextual (View Bool)
 sorcerySpeed rSelf rp = instantSpeed rSelf rp &&* myMainPhase &&* isStackEmpty
@@ -63,7 +68,7 @@ playPermanent :: ManaPool -> ActivatedAbility
 playPermanent mc =
   ActivatedAbility
     { available     = \rSelf rActivator -> do
-        self <- asks (object rSelf)
+        self <- asks (objectBase rSelf)
         if Flash `elem` get staticKeywordAbilities self
           then instantSpeed rSelf rActivator
           else sorcerySpeed rSelf rActivator
@@ -83,7 +88,7 @@ playAura :: ManaPool -> ActivatedAbility
 playAura mc =
   ActivatedAbility
     { available     = \rSelf rActivator -> do
-        self <- asks (object rSelf)
+        self <- asks (objectBase rSelf)
         if Flash `elem` get staticKeywordAbilities self
           then instantSpeed rSelf rActivator
           else sorcerySpeed rSelf rActivator
@@ -95,16 +100,16 @@ playAura mc =
   where
     playAuraEffect :: Contextual (Magic ())
     playAuraEffect rSelf p = do
-      aura <- view (asks (object rSelf))  -- TODO Reevaluate rSelf on the stack?
+      aura <- view (asks (objectBase rSelf))  -- TODO Reevaluate rSelf on the stack?
       let ok i = collectEnchantPredicate aura <$>
-                  asks (object (Battlefield, i))
+                  asks (object (Battlefield, i) .^ objectPart)
       ts <- askMagicTargets p (target permanent <?> ok)
-      let f :: Id -> ObjectRef -> Magic ()
-          f i rStackSelf = do
-            self <- view (asks (object rStackSelf))
-            let self' = self { _attachedTo = Just (Battlefield, i)
+      let f :: Id -> ObjectRef TyStackItem -> Magic ()
+          f i rStackSelf@(Stack, iSelf) = do
+            self <- view (asks (object rStackSelf .^ objectPart))
+            let self' = self { _attachedTo = Just (Some Battlefield, i)
                              , _stackItem = Nothing }
-            void $ executeEffect (WillMoveObject (Just rStackSelf) Battlefield self')
+            void $ executeEffect (WillMoveObject (Just (Some Stack, iSelf)) Battlefield (Permanent self'))
 
       void $ view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect
 
@@ -113,7 +118,7 @@ collectEnchantPredicate aura enchanted = gand
   [ hasTypes tys enchanted
   | EnchantPermanent tys <- get staticKeywordAbilities aura ]
 
-stackTargetlessEffect :: ObjectRef -> (ObjectRef -> Magic ()) -> Magic ()
+stackTargetlessEffect :: SomeObjectRef -> (ObjectRef TyStackItem -> Magic ()) -> Magic ()
 stackTargetlessEffect rSelf item = do
   eff <- view (willMoveToStack rSelf (pure item))
   void $ executeEffect eff
@@ -128,17 +133,17 @@ stackTargetlessEffect rSelf item = do
 -- The function is applied to the return value of the specified 'TargetList'
 -- and put on the stack as a 'StackItem'.
 mkTriggerObject :: PlayerRef -> TargetList Target a ->
-  (a -> ObjectRef -> Magic()) -> Magic ()
+  (a -> ObjectRef TyStackItem -> Magic()) -> Magic ()
 mkTriggerObject p ts f = do
   t <- tick
   void $ executeEffect $ WillMoveObject Nothing Stack $
-    (emptyObject t p) { _stackItem = Just (f <$> ts) }
+    StackItem (emptyObject t p) { _stackItem = Just (f <$> ts) }
 
 
 -- | Creates a trigger on the stack under the control of the specified player.
 -- The specified program is wrapped in an empty 'TargetList' and passed to
 -- 'mkTriggerObject'.
-mkTargetlessTriggerObject :: PlayerRef -> (ObjectRef -> Magic()) -> Magic ()
+mkTargetlessTriggerObject :: PlayerRef -> (ObjectRef TyStackItem -> Magic()) -> Magic ()
 mkTargetlessTriggerObject p f = mkTriggerObject p (pure ()) (const f)
 
 
@@ -146,7 +151,7 @@ mkTargetlessTriggerObject p f = mkTriggerObject p (pure ()) (const f)
 -- argument program.
 onSelfETB :: Contextual (Magic ()) -> TriggeredAbilities
 onSelfETB mkProgram events rSelf p = return [ mkProgram rSelf p
-  | DidMoveObject _ rOther@(Battlefield, _) <- events, rSelf == rOther ]
+  | DidMoveObject _ rOther@(Some Battlefield, _) <- events, rSelf == rOther ]
 
 -- | Modify a trigger to only fire when the source of the trigger is on the
 -- battlefield now, or was before the events took place (i.e. one of the
@@ -155,5 +160,5 @@ ifSelfWasOrIsOnBattlefield :: TriggeredAbilities -> TriggeredAbilities
 ifSelfWasOrIsOnBattlefield f events rSelf you =
     if ok then f events rSelf you else mempty
   where
-    ok = fst rSelf == Battlefield
-      || not (null [ () | DidMoveObject (Just (Battlefield, _)) newRef <- events, newRef == rSelf ])
+    ok = fst rSelf == Some Battlefield
+      || not (null [ undefined | DidMoveObject (Just (Some Battlefield, _)) newRef <- events, newRef == rSelf ])

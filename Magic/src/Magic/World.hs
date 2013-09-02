@@ -3,8 +3,8 @@ module Magic.World (
     Bag,
 
     -- * Reference types
-    PlayerRef, ObjectRef, ActivatedAbilityRef, ZoneRef(..),
-    LastKnownObjectInfo,
+    PlayerRef, ObjectRef, SomeObjectRef, ActivatedAbilityRef, ZoneRef(..),
+    ObjectType(..), LastKnownObjectInfo,
 
     -- * World
     World(..), players, activePlayer, activeStep, time, turnStructure, exile, battlefield, stack, command, turnHistory,
