@@ -161,4 +161,4 @@ ifSelfWasOrIsOnBattlefield f events rSelf you =
     if ok then f events rSelf you else mempty
   where
     ok = fst rSelf == Some Battlefield
-      || not (null [ undefined | DidMoveObject (Just (Some Battlefield, _)) newRef <- events, newRef == rSelf ])
+      || not (null ([ () | DidMoveObject (Just (Some Battlefield, _)) newRef <- events, newRef == rSelf ] :: [()]))
