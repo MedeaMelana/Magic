@@ -170,10 +170,10 @@ compileEffect e =
           onlyIf b ac = if b then ac else return []
       in case simpleEffect of
 
-        GainLife p n -> onlyIf (n <= 0) $
+        GainLife p n -> onlyIf (n >= 0) $
           simply $ player p .^ life ~: (+ n)
 
-        LoseLife p n -> onlyIf (n <= 0) $
+        LoseLife p n -> onlyIf (n >= 0) $
           simply $ player p .^ life ~: (subtract n)
 
         TapPermanent i -> do
