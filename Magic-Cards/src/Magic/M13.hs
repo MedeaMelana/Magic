@@ -104,13 +104,14 @@ attendedKnight = mkCard $ do
 
 mkSoldierEffect :: Timestamp -> PlayerRef -> OneShotEffect
 mkSoldierEffect t p = WillMoveObject Nothing Battlefield $
-  Permanent (emptyObject t p)
-    { _name      = Just "Soldier"
-    , _colors    = Set.singleton White
-    , _types     = creatureTypes [Soldier]
-    , _tapStatus = Just Untapped
-    , _pt        = Just (1, 1)
-    }
+    Permanent o Untapped 0 False Nothing
+  where
+    o = (emptyObject t p)
+        { _name      = Just "Soldier"
+        , _colors    = Set.singleton White
+        , _types     = creatureTypes [Soldier]
+        , _pt        = Just (1, 1)
+        }
 
 avenSquire :: Card
 avenSquire = mkCard $ do

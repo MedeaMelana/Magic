@@ -16,7 +16,7 @@ import Magic.Types
 
 import Control.Monad.Operational (singleton)
 import Control.Monad.Trans (lift)
-import Data.Label.Pure (get, set)
+import Data.Label.Pure (get)
 import Data.Label.PureM (asks)
 import Prelude hiding (interact)
 
@@ -38,7 +38,7 @@ willMoveToGraveyard i o = WillMoveObject (Just (Some Battlefield, i)) (Graveyard
 willMoveToStack :: SomeObjectRef -> StackItem -> View OneShotEffect
 willMoveToStack r si = do
   o <- asks (objectBase r)
-  return (WillMoveObject (Just r) Stack (StackItem (set stackItem (Just si) o)))
+  return (WillMoveObject (Just r) Stack (StackItem o si))
 
 
 

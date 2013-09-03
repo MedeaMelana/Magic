@@ -145,7 +145,7 @@ executeStep (BeginningPhase UntapStep) = do
 
   -- [502.2] untap permanents
   rp <- gets activePlayer
-  ios <- (IdList.filter (\(Permanent perm) -> isControlledBy rp perm)) <$> gets battlefield
+  ios <- (IdList.filter (\(Permanent perm _ _ _ _) -> isControlledBy rp perm)) <$> gets battlefield
   _ <- executeEffects TurnBasedActions (map (\(i, _) -> Will (UntapPermanent i)) ios)
   return ()
 
@@ -328,7 +328,7 @@ collectSBAs = execWriterT $ do
 
     checkBattlefield = do
       ios <- IdList.toList <$> lift (gets battlefield)
-      forM_ ios $ \(i,Permanent o) -> do
+      forM_ ios $ \(i, Permanent o _ dam deatht _) -> do
 
         -- Check creatures
         when (hasTypes creatureType o) $ do
@@ -340,10 +340,10 @@ collectSBAs = execWriterT $ do
           -- [704.5g]
           -- [704.5h]
           let hasLethalDamage =
-                case (get pt o, get damage o) of
-                  (Just (_, t), d) -> t > 0 && d >= t
-                  _                -> False
-          when (hasLethalDamage || get deathtouched o) $
+                case get pt o of
+                  Just (_, t) -> t > 0 && dam >= t
+                  _           -> False
+          when (hasLethalDamage || deatht) $
             tell [Will (DestroyPermanent i True)]
 
         -- [704.5i]
@@ -361,20 +361,18 @@ collectSBAs = execWriterT $ do
 
 resolve :: Id -> Engine ()
 resolve i = do
-  StackItem o <- gets (stack .^ listEl i)
-  let Just item = get stackItem o
+  StackItem o item <- gets (stack .^ listEl i)
   let (_, Just mkEffects) = evaluateTargetList item
   let eventSource = ResolutionOf i
   executeMagic eventSource (mkEffects (Stack, i))
 
   -- if the object is now still on the stack, move it to the appropriate zone
-  let o' = set stackItem Nothing o
   if (hasTypes instantType o || hasTypes sorceryType o)
   then void $ executeEffect eventSource $
-    WillMoveObject (Just (Some Stack, i)) (Graveyard (get controller o)) (CardObject o')
+    WillMoveObject (Just (Some Stack, i)) (Graveyard (get controller o)) (CardObject o)
   else if hasPermanentType o
   then void $ executeEffect eventSource $
-    WillMoveObject (Just (Some Stack, i)) Battlefield (Permanent (set tapStatus (Just Untapped) o'))
+    WillMoveObject (Just (Some Stack, i)) Battlefield (Permanent o Untapped 0 False Nothing)
   else void $ executeEffect eventSource $ Will $ CeaseToExist (Some Stack, i)
 
 collectPriorityActions :: PlayerRef -> Engine [PriorityAction]
@@ -449,8 +447,8 @@ offerManaAbilitiesToPay source p cost = do
 
 canPayTapCost :: TapCost -> Contextual (Engine Bool)
 canPayTapCost NoTapCost _ _ = return True
-canPayTapCost TapCost rSource@(Some Battlefield, _) _ =
-  (== Just Untapped) <$> gets (objectBase rSource .^ tapStatus)
+canPayTapCost TapCost (Some Battlefield, i) _ =
+  (== Untapped) <$> gets (object (Battlefield, i) .^ tapStatus)
 canPayTapCost TapCost _ _ = return False
 
 payTapCost :: EventSource -> TapCost -> Contextual (Engine ())

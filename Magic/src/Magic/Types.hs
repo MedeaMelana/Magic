@@ -32,12 +32,13 @@ module Magic.Types (
     Card(..), Deck,
     Object(..),
       name, colors, types, owner, controller, timestamp, counters,
-      tapStatus,
-      stackItem,
-      pt, damage, deathtouched,
+      pt,
       play, staticKeywordAbilities, layeredEffects, activatedAbilities, triggeredAbilities, replacementEffects,
       temporaryEffects, attachedTo,
     ObjectOfType(..),
+      cardObject,
+      permanentObject, tapStatus, damage, deathtouched,
+      stackItemObject, stackItem,
 
     -- * Object properties
     Timestamp, Color(..), TapStatus(..), CounterType(..), PT,
@@ -87,7 +88,8 @@ import Control.Monad.Identity
 import Control.Monad.Reader
 import Control.Monad.Operational (Program, ProgramT)
 import Data.Boolean
-import Data.Label (mkLabels)
+import Data.Label (mkLabels, lens)
+import Data.Label.Pure ((:->))
 import Data.Monoid (Monoid(..))
 import Data.Set (Set)
 import Data.Text (Text, unpack)
@@ -223,18 +225,9 @@ data Object = Object
   , _controller :: PlayerRef
   , _timestamp  :: Timestamp
 
-  -- for permanents on the battlefield
-  , _tapStatus :: Maybe TapStatus
-
-  -- for spells on the stack
-  , _stackItem :: Maybe StackItem
-
   -- for creatures
   , _pt         :: Maybe PT
 
-  -- for creatures on the battlefield
-  , _damage        :: Int
-  , _deathtouched  :: Bool
   --, _mustBeBlocked :: Maybe Bool
   --, _mustAttack    :: Maybe Bool
 
@@ -250,7 +243,6 @@ data Object = Object
   -- these fields are reset whenever this object changes zones
   , _counters               :: Bag CounterType
   , _temporaryEffects       :: [TemporaryLayeredEffect]
-  , _attachedTo             :: Maybe SomeObjectRef
   }
 
 instance Show Object where
@@ -260,11 +252,46 @@ instance Show Object where
       Just n  -> unpack n
 
 data ObjectOfType :: ObjectType -> * where
-  CardObject :: Object -> ObjectOfType TyCard
-  Permanent  :: Object -> ObjectOfType TyPermanent
-  StackItem  :: Object -> ObjectOfType TyStackItem
+  CardObject :: { _cardObject :: Object
+                } -> ObjectOfType TyCard
+  Permanent  :: { _permanentObject :: Object
+                , _tapStatus       :: TapStatus
+                , _damage          :: Int
+                , _deathtouched    :: Bool
+                , _attachedTo      :: Maybe SomeObjectRef
+                } -> ObjectOfType TyPermanent
+  StackItem  :: { _stackItemObject :: Object
+                , _stackItem       :: StackItem
+                } -> ObjectOfType TyStackItem
 
 deriving instance Show (ObjectOfType ty)
+
+
+-- Some hand-written lenses because fclabels doesn't support GADTs
+
+cardObject :: ObjectOfType TyCard :-> Object
+cardObject = lens _cardObject (\val rec -> rec { _cardObject = val })
+
+permanentObject :: ObjectOfType TyPermanent :-> Object
+permanentObject = lens _permanentObject (\val rec -> rec { _permanentObject = val })
+
+tapStatus :: ObjectOfType TyPermanent :-> TapStatus
+tapStatus = lens _tapStatus (\val rec -> rec { _tapStatus = val })
+
+damage :: ObjectOfType TyPermanent :-> Int
+damage = lens _damage (\val rec -> rec { _damage = val })
+
+deathtouched :: ObjectOfType TyPermanent :-> Bool
+deathtouched = lens _deathtouched (\val rec -> rec { _deathtouched = val })
+
+attachedTo :: ObjectOfType TyPermanent :-> Maybe SomeObjectRef
+attachedTo = lens _attachedTo (\val rec -> rec { _attachedTo = val })
+
+stackItemObject :: ObjectOfType TyStackItem :-> Object
+stackItemObject = lens _stackItemObject (\val rec -> rec { _stackItemObject = val })
+
+stackItem :: ObjectOfType TyStackItem :-> StackItem
+stackItem = lens _stackItem (\val rec -> rec { _stackItem = val })
 
 
 
@@ -565,6 +592,9 @@ instance Applicative (TargetList t) where
 instance Monoid a => Monoid (TargetList t a) where
   mempty  = pure mempty
   mappend = liftA2 mappend
+
+instance Show (TargetList t a) where
+  show ts = "<target list>"
 
 
 

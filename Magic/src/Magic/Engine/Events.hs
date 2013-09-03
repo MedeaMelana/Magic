@@ -177,14 +177,14 @@ compileEffect e =
           simply $ player p .^ life ~: (subtract n)
 
         TapPermanent i -> do
-          Just ts <- gets (object (Battlefield, i) .^ objectPart .^ tapStatus)
+          ts <- gets (object (Battlefield, i) .^ tapStatus)
           onlyIf (ts == Untapped) $
-            simply $ object (Battlefield, i) .^ objectPart .^ tapStatus =: Just Tapped
+            simply $ object (Battlefield, i) .^ tapStatus =: Tapped
 
         UntapPermanent i -> do
-          Just ts <- gets (object (Battlefield, i) .^ objectPart .^ tapStatus)
+          ts <- gets (object (Battlefield, i) .^ tapStatus)
           onlyIf (ts == Tapped) $
-            simply $ object (Battlefield, i) .^ objectPart .^ tapStatus =: Just Untapped
+            simply $ object (Battlefield, i) .^ tapStatus =: Untapped
 
         DrawCard rp -> do
           lib <- gets (players .^ listEl rp .^ library)
@@ -209,7 +209,7 @@ compileEffect e =
           o <- gets (objectBase ro)
           -- TODO apply replacement effects on the move effect
           -- TODO store more sensible data in the PlayLand event
-          combine $ WillMoveObject (Just ro) Battlefield (Permanent o { _tapStatus = Just Untapped, _controller = p })
+          combine $ WillMoveObject (Just ro) Battlefield (Permanent o Untapped 0 False Nothing)
 
         AddToManaPool p pool ->
           simply $ player p .^ manaPool ~: (pool <>)
@@ -220,7 +220,7 @@ compileEffect e =
         DamageObject _source i amount _isCombatDamage _isPreventable ->
           -- TODO check for protection, infect, wither, lifelink
           onlyIf (amount > 0) $
-            simply $ object (Battlefield, i) .^ objectPart .^ damage ~: (+ amount)
+            simply $ object (Battlefield, i) .^ damage ~: (+ amount)
 
         DamagePlayer _source p amount _isCombatDamage _isPreventable ->
           -- TODO check for protection, infect, wither, lifelink

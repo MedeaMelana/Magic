@@ -26,12 +26,7 @@ emptyObject t rOwner = Object
   , _timestamp = t
   , _counters = mempty
 
-  , _tapStatus = Nothing
-  , _stackItem = Nothing
-
   , _pt = Nothing
-  , _damage = 0
-  , _deathtouched = False
 
   , _play = Nothing
   , _staticKeywordAbilities = []
@@ -41,7 +36,6 @@ emptyObject t rOwner = Object
   , _replacementEffects = []
 
   , _temporaryEffects = []
-  , _attachedTo = Nothing
   }
 
 

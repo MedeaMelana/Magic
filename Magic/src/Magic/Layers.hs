@@ -53,7 +53,7 @@ affectSelf r _you = return [r]
 affectBattlefield ::
   (PlayerRef -> Object -> Bool) -> Contextual (View [SomeObjectRef])
 affectBattlefield ok (Some Battlefield, _) you =
-  mapMaybe (\(i, Permanent p) -> if ok you p then Just (Some Battlefield, i) else Nothing) .
+  mapMaybe (\(i, Permanent p _ _ _ _) -> if ok you p then Just (Some Battlefield, i) else Nothing) .
     IdList.toList <$> asks battlefield
 affectBattlefield _ _ _ = return []
 
@@ -62,13 +62,13 @@ affectBattlefield _ _ _ = return []
 affectRestOfBattlefield ::
   (PlayerRef -> Object -> Bool) -> Contextual (View [SomeObjectRef])
 affectRestOfBattlefield ok (Some Battlefield, iSelf) you =
-  mapMaybe (\(i, Permanent o) -> if iSelf /= i && ok you o then Just (Some Battlefield, i) else Nothing) .
+  mapMaybe (\(i, Permanent o _ _ _ _) -> if iSelf /= i && ok you o then Just (Some Battlefield, i) else Nothing) .
     IdList.toList <$> asks battlefield
 affectRestOfBattlefield _ _ _ = return []
 
 -- | Affect whatever object this object is attached to.
 affectAttached :: Contextual (View [SomeObjectRef])
 affectAttached (Some Battlefield, i) _you = do
-  Permanent p <- asks (object (Battlefield, i))
-  return (maybeToList (_attachedTo p))
+  Permanent _ _ _ _ att <- asks (object (Battlefield, i))
+  return (maybeToList att)
 affectAttached _ _ = return []

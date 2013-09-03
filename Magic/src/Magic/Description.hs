@@ -95,20 +95,23 @@ describeWorld = withWorld $ \world -> unlines
 
 describeZone :: Some ZoneRef -> Description
 describeZone (Some zr) = withWorld $ \world -> header (describeZoneRef (Some zr) <> ":") $
-  unlines (map (describeObject . second (get objectPart)) (toList (get (compileZoneRef zr) world)))
+  unlines [ describeObject i (Some o) | (i, o) <- toList (get (compileZoneRef zr) world) ]
 
 --describeHand :: PlayerRef -> Description
 --describeHand p = withWorld $ \world -> unlines $
 --  map describeObject (toList (get (player p .^ hand) world))
 
 describeObjectByRef :: SomeObjectRef -> Description
-describeObjectByRef ro@(_, i) = withWorld $ \world -> describeObject (i, get (objectBase ro) world)
+describeObjectByRef (Some z, i) = withWorld $ \world -> describeObject i (Some (get (object (z, i)) world))
 
-describeObject :: (Id, Object) -> Description
-describeObject (i, o) = intercalate ", " components
+describeObject :: Id -> Some ObjectOfType -> Description
+describeObject i (Some typedObj) = intercalate ", " components
   where
     components = mconcat [ nm, ptd, [describeTypes (get types o)]] ++
                     map sh (get staticKeywordAbilities o) ++ ts
+
+    o :: Object
+    o = get objectPart typedObj
 
     nm :: [Description]
     nm = (: []) $
@@ -121,10 +124,12 @@ describeObject (i, o) = intercalate ", " components
       case get pt o of
         Just (p, t) -> [sh p <> "/" <> sh t]
         Nothing -> []
+
+    ts :: [Description]
     ts =
-      case get tapStatus o of
-        Just ts' -> [sh ts']
-        Nothing -> []
+      case typedObj of
+        Permanent _ ts' _ _ _ -> [sh ts']
+        _ -> []
 
 describeObjectNameByRef :: SomeObjectRef -> Description
 describeObjectNameByRef ro = withWorld $ \world -> describeObjectName (get (objectBase ro) world)

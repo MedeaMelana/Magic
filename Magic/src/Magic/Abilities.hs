@@ -107,9 +107,7 @@ playAura mc =
       let f :: Id -> ObjectRef TyStackItem -> Magic ()
           f i rStackSelf@(Stack, iSelf) = do
             self <- view (asks (object rStackSelf .^ objectPart))
-            let self' = self { _attachedTo = Just (Some Battlefield, i)
-                             , _stackItem = Nothing }
-            void $ executeEffect (WillMoveObject (Just (Some Stack, iSelf)) Battlefield (Permanent self'))
+            void $ executeEffect (WillMoveObject (Just (Some Stack, iSelf)) Battlefield (Permanent self Untapped 0 False (Just (Some Battlefield, i))))
 
       void $ view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect
 
@@ -137,7 +135,7 @@ mkTriggerObject :: PlayerRef -> TargetList Target a ->
 mkTriggerObject p ts f = do
   t <- tick
   void $ executeEffect $ WillMoveObject Nothing Stack $
-    StackItem (emptyObject t p) { _stackItem = Just (f <$> ts) }
+    StackItem (emptyObject t p) (f <$> ts)
 
 
 -- | Creates a trigger on the stack under the control of the specified player.

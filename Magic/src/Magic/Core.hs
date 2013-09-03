@@ -42,9 +42,9 @@ allObjects = do
     sharedObjects <> (concat <$> for ips objectsForPlayer)
   where
     sharedObjects =
-        (map (\(i, Permanent p) -> ((Some Battlefield, i), p)) . IdList.toList <$> asks battlefield)
+        (map (\(i, Permanent p _ _ _ _) -> ((Some Battlefield, i), p)) . IdList.toList <$> asks battlefield)
       <>
-        (map (\(i, StackItem s) -> ((Some Stack, i), s)) . IdList.toList <$> asks stack)
+        (map (\(i, StackItem s _) -> ((Some Stack, i), s)) . IdList.toList <$> asks stack)
       <>
         (map (\(i, CardObject c) -> ((Some Exile, i), c)) . IdList.toList <$> asks exile)
       <>
@@ -75,13 +75,13 @@ objectPart = lens getObjectPart setObjectPart
   where
     getObjectPart :: ObjectOfType ty -> Object
     getObjectPart (CardObject o) = o
-    getObjectPart (Permanent o) = o
-    getObjectPart (StackItem o) = o
+    getObjectPart (Permanent o _ _ _ _) = o
+    getObjectPart (StackItem o _) = o
 
     setObjectPart :: Object -> ObjectOfType ty -> ObjectOfType ty
     setObjectPart o (CardObject _) = CardObject o
-    setObjectPart o (Permanent _)  = Permanent o
-    setObjectPart o (StackItem _)  = StackItem o
+    setObjectPart o (Permanent _ w x y z)  = Permanent o w x y z
+    setObjectPart o (StackItem _ x)  = StackItem o x
 
 anyObject :: SomeObjectRef -> World -> Some ObjectOfType
 anyObject = undefined
