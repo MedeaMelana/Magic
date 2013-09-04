@@ -91,8 +91,8 @@ planeswalkerType :: ObjectTypes
 planeswalkerType = mempty { planeswalkerSubtypes = Just mempty }
 
 -- | Card type @Planeswalker@ with the specified planeswalker type.
-planeswalkerWithType :: [PlaneswalkerSubtype] -> ObjectTypes
-planeswalkerWithType tys = mempty { planeswalkerSubtypes = Just (Set.fromList tys) }
+planeswalkerWithType :: PlaneswalkerSubtype -> ObjectTypes
+planeswalkerWithType tys = mempty { planeswalkerSubtypes = Just (Set.singleton tys) }
 
 -- | Card type @Sorcery@.
 sorceryType :: ObjectTypes

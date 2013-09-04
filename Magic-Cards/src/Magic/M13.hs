@@ -6,6 +6,7 @@ module Magic.M13 where
 
 import Magic
 import Magic.IdList (Id)
+import Magic.Utils
 
 import Control.Applicative
 import Control.Monad (void)
@@ -13,6 +14,7 @@ import Data.Boolean ((&&*))
 import Data.Label.PureM ((=:), asks)
 import Data.Monoid ((<>), mconcat)
 import qualified Data.Set as Set
+import qualified Data.Text as Text
 
 
 
@@ -241,3 +243,38 @@ searingSpear = mkCard $ do
               Left i  -> Will (DamageObject self i 3 False True)
               Right p -> Will (DamagePlayer self p 3 False True)
       void (view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect)
+
+
+
+-- GREEN CARDS
+
+garrukPrimalHunter :: Card
+garrukPrimalHunter = mkCard $ do
+  name =: Just "Garruk, Primal Hunter"
+  types =: planeswalkerWithType Garruk
+  play =: Just (playPermanent [Nothing, Nothing, Just Green, Just Green, Just Green])
+  activatedAbilities =: [plusOne, minusThree, minusSix]
+  where
+    plusOne = ActivatedAbility
+      { available = sorcerySpeed
+      , manaCost = []
+      , tapCost = NoTapCost
+      , isManaAbility = False
+      , effect = \rSelf you -> do
+          mkTargetlessTriggerObject you $ \rStackSelf -> do
+            t <- tick
+            let token = simpleCreatureToken t you [Beast] [Green] (3,3)
+            void $ executeEffect $ WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing)
+      }
+    minusThree = undefined
+    minusSix = undefined
+
+simpleCreatureToken ::
+  Timestamp -> PlayerRef -> [CreatureSubtype] -> [Color] -> PT -> Object
+simpleCreatureToken t you tys cs pt =
+  (emptyObject t you)
+  { _name = Just (Text.intercalate (Text.pack " ") (map textShow tys))
+  , _colors = Set.fromList cs
+  , _types = creatureTypes tys
+  , _pt = Just pt
+  }
