@@ -6,11 +6,12 @@ module Magic.M13 where
 
 import Magic
 import Magic.IdList (Id)
-import Magic.Utils
+import qualified Magic.IdList as IdList
 
 import Control.Applicative
 import Control.Monad (void)
 import Data.Boolean ((&&*))
+import Data.Label (get)
 import Data.Label.PureM ((=:), asks)
 import Data.Monoid ((<>), mconcat)
 import qualified Data.Set as Set
@@ -250,31 +251,49 @@ searingSpear = mkCard $ do
 
 garrukPrimalHunter :: Card
 garrukPrimalHunter = mkCard $ do
-  name =: Just "Garruk, Primal Hunter"
-  types =: planeswalkerWithType Garruk
-  play =: Just (playPermanent [Nothing, Nothing, Just Green, Just Green, Just Green])
-  activatedAbilities =: [plusOne, minusThree, minusSix]
+    name =: Just "Garruk, Primal Hunter"
+    types =: planeswalkerWithType Garruk
+    play =: Just (playPermanent [Nothing, Nothing, Just Green, Just Green, Just Green])
+    activatedAbilities =: [plusOne, minusThree, minusSix]
   where
-    plusOne = ActivatedAbility
-      { available = sorcerySpeed
-      , manaCost = []
-      , tapCost = NoTapCost
-      , isManaAbility = False
-      , effect = \rSelf you -> do
-          mkTargetlessTriggerObject you $ \rStackSelf -> do
-            t <- tick
-            let token = simpleCreatureToken t you [Beast] [Green] (3,3)
-            void $ executeEffect $ WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing)
-      }
-    minusThree = undefined
-    minusSix = undefined
+    plusOne = loyaltyAbility 1 $ \_ you -> do
+      mkTargetlessTriggerObject you $ \_ -> do
+        t <- tick
+        let token = simpleCreatureToken t you [Beast] [Green] (3,3)
+        void $ executeEffect $ WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing)
+    minusThree = loyaltyAbility (-3) $ \_ you -> do
+      mkTargetlessTriggerObject you $ \_ -> do
+        objs <- IdList.elems <$> view (asks battlefield)
+        let n = foldr max 0 [ power
+                            | o <- objs
+                            , get (objectPart .^ controller) o == you
+                            , let Just (power, _) = get (objectPart .^ pt) o ]
+        void $ executeEffects (replicate n (Will (DrawCard you)))
+    minusSix = loyaltyAbility (-6) $ \_ you -> do
+      mkTargetlessTriggerObject you $ \_ -> do
+        perms <- IdList.elems <$> view (asks battlefield)
+        let n = count perms $ \(Permanent o _ _ _ _) ->
+                  get controller o == you && hasTypes landType o
+        t <- tick
+        let token = simpleCreatureToken t you [Wurm] [Green] (6,6)
+        void $ executeEffects $ replicate n $
+          WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing)
 
 simpleCreatureToken ::
   Timestamp -> PlayerRef -> [CreatureSubtype] -> [Color] -> PT -> Object
-simpleCreatureToken t you tys cs pt =
+simpleCreatureToken t you tys cs pt' =
   (emptyObject t you)
   { _name = Just (Text.intercalate (Text.pack " ") (map textShow tys))
   , _colors = Set.fromList cs
   , _types = creatureTypes tys
-  , _pt = Just pt
+  , _pt = Just pt'
+  }
+
+loyaltyAbility :: Int -> Contextual (Magic ()) -> ActivatedAbility
+loyaltyAbility cost eff = ActivatedAbility
+  { available = sorcerySpeed
+  , manaCost = []
+  , tapCost = NoTapCost
+  , isManaAbility = False
+  , effect = eff
   }

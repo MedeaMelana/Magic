@@ -9,7 +9,7 @@ module Magic.IdList (
     empty, fromList, fromListWithId,
 
     -- * Querying
-    length, null, head, get, toList, ids,
+    length, null, head, get, toList, ids, elems,
 
     -- * Modifying
     set, remove, cons, cons', snoc, snoc', filter, shuffle,
@@ -83,6 +83,9 @@ toList (IdList ixs _) = ixs
 
 ids :: IdList a -> [Id]
 ids = map fst . toList
+
+elems :: IdList a -> [a]
+elems = map snd . toList
 
 
 

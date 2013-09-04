@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Magic.Utils (mkCard, emptyObject, countCountersOfType, sortOn, textShow, deleteAtIndex, gor, gand) where
+module Magic.Utils (mkCard, emptyObject, countCountersOfType, sortOn, textShow, deleteAtIndex, gor, gand, count) where
 
 import Magic.Types
 
@@ -58,3 +58,6 @@ gor = foldr (||*) false
 
 gand :: Boolean b => [b] -> b
 gand = foldr (&&*) true
+
+count :: [a] -> (a -> Bool) -> Int
+count xs ok = length (filter ok xs)
