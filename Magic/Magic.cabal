@@ -43,4 +43,5 @@ library
                     random-shuffle ==0.0.*,
                     text ==0.11.*,
                     safe ==0.3.*,
-                    Boolean ==0.1.*
+                    Boolean ==0.1.*,
+                    type-equality ==0.1.*
