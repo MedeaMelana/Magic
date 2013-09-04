@@ -5,7 +5,7 @@ module Magic.Object (
       name, colors, types, owner, controller, timestamp, counters,
       tapStatus,
       stackItem,
-      pt, damage, deathtouched,
+      pt, loyalty, damage, deathtouched,
       play, staticKeywordAbilities, layeredEffects, activatedAbilities, triggeredAbilities, replacementEffects,
       temporaryEffects, attachedTo,
     ObjectOfType(..),

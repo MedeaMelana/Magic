@@ -255,6 +255,8 @@ garrukPrimalHunter = mkCard $ do
     types =: planeswalkerWithType Garruk
     play =: Just (playPermanent [Nothing, Nothing, Just Green, Just Green, Just Green])
     activatedAbilities =: [plusOne, minusThree, minusSix]
+    loyalty =: Just 3
+    replacementEffects =: [etbWithLoyaltyCounters]
   where
     plusOne = loyaltyAbility 1 $ \_ you -> do
       mkTargetlessTriggerObject you $ \_ -> do

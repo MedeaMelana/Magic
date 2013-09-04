@@ -19,6 +19,9 @@ module Magic.Abilities (
     -- * Constructing triggers
     mkTriggerObject, mkTargetlessTriggerObject, onSelfETB,
     ifSelfWasOrIsOnBattlefield,
+
+    -- * Constructing replacement effects
+    etbWithLoyaltyCounters
   ) where
 
 import Magic.Core
@@ -35,7 +38,7 @@ import Control.Applicative ((<$>), pure)
 import Control.Monad (void)
 
 import Data.Boolean ((&&*))
-import Data.Label.Pure (get)
+import Data.Label.Pure (get, modify)
 import Data.Label.PureM (asks)
 import Data.Monoid (mempty)
 
@@ -160,3 +163,15 @@ ifSelfWasOrIsOnBattlefield f events rSelf you =
   where
     ok = fst rSelf == Some Battlefield
       || not (null ([ () | DidMoveObject (Just (Some Battlefield, _)) newRef <- events, newRef == rSelf ] :: [()]))
+
+
+
+-- CONSTRUCTING REPLACEMENT EFFECTS
+
+etbWithLoyaltyCounters :: ReplacementEffect
+etbWithLoyaltyCounters (WillMoveObject (Just fromRef) Battlefield perm) rSelf you
+  | fromRef == rSelf =
+      case get (objectPart .^ loyalty) perm of
+        Just n -> Just $ return [WillMoveObject (Just fromRef) Battlefield (modify (objectPart .^ counters) (++ replicate n Loyalty) perm)]
+        Nothing -> Nothing
+etbWithLoyaltyCounters _ _ _ = Nothing

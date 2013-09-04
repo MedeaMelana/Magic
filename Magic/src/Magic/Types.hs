@@ -32,7 +32,7 @@ module Magic.Types (
     Card(..), Deck,
     Object(..),
       name, colors, types, owner, controller, timestamp, counters,
-      pt,
+      pt, loyalty,
       play, staticKeywordAbilities, layeredEffects, activatedAbilities, triggeredAbilities, replacementEffects,
       temporaryEffects, attachedTo,
     ObjectOfType(..),
@@ -227,6 +227,9 @@ data Object = Object
 
   -- for creatures
   , _pt         :: Maybe PT
+
+  -- for planeswalkers
+  , _loyalty    :: Maybe Int
 
   --, _mustBeBlocked :: Maybe Bool
   --, _mustAttack    :: Maybe Bool
@@ -497,9 +500,9 @@ data Duration
   | UntilEndOfTurn
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-type ReplacementEffect = OneShotEffect -> Maybe (Magic [OneShotEffect])
+type ReplacementEffect =
+  OneShotEffect -> Contextual (Maybe (Magic [OneShotEffect]))
 
--- | Arguments: source, controller, event
 type TriggeredAbilities = [Event] -> Contextual (View [Magic ()])
 
 data PriorityAction

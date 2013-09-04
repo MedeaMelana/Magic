@@ -27,6 +27,7 @@ emptyObject t rOwner = Object
   , _counters = mempty
 
   , _pt = Nothing
+  , _loyalty = Nothing
 
   , _play = Nothing
   , _staticKeywordAbilities = []
