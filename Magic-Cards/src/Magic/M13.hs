@@ -293,9 +293,16 @@ simpleCreatureToken t you tys cs pt' =
 
 loyaltyAbility :: Int -> Contextual (Magic ()) -> ActivatedAbility
 loyaltyAbility cost eff = ActivatedAbility
-  { available = sorcerySpeed
+  { available = sorcerySpeed &&* hasAtLeastLoyalty cost
   , manaCost = []
   , tapCost = NoTapCost
   , isManaAbility = False
-  , effect = eff
+  , effect = \rSelf you -> do
+      void $ executeEffects (replicate cost (Will (RemoveCounter rSelf Loyalty)))
+      eff rSelf you
   }
+
+hasAtLeastLoyalty :: Int -> Contextual (View Bool)
+hasAtLeastLoyalty n rSelf _you = do
+  o <- asks (objectBase rSelf)
+  return (countCountersOfType Loyalty o >= n)
