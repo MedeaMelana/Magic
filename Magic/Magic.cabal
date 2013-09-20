@@ -30,6 +30,7 @@ library
                     Magic.Object,
                     Magic.ObjectTypes,
                     Magic.Predicates,
+                    Magic.Some,
                     Magic.Target,
                     Magic.Utils,
                     Magic.World
