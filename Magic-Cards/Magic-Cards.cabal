@@ -21,4 +21,5 @@ library
                     Magic ==0.1.*,
                     containers,
                     fclabels ==1.1.*,
-                    Boolean ==0.1.*
+                    Boolean ==0.1.*,
+                    text ==0.11.*
