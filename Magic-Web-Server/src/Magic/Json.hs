@@ -40,14 +40,17 @@ instance ToJSON a => ToJSON (IdList.IdList a) where
 
 
 
-objectRefToJSON :: ObjectRef -> Value
+someObjectRefToJSON :: SomeObjectRef -> Value
+someObjectRefToJSON (Some z, i) = obj [ "zone" .= z, "objectId" .= i ]
+
+objectRefToJSON :: ObjectRef ty -> Value
 objectRefToJSON (z, i) = obj [ "zone" .= z, "objectId" .= i ]
 
 activatedAbilityRefToJSON :: ActivatedAbilityRef -> Value
 activatedAbilityRefToJSON (r, i) =
-  obj [ "objectRef" .= objectRefToJSON r, "index" .= i ]
+  obj [ "objectRef" .= someObjectRefToJSON r, "index" .= i ]
 
-instance ToJSON ZoneRef where
+instance ToJSON (ZoneRef ty) where
   toJSON z = case z of
     Library p   -> obj [ "name" .= String "library", "playerId" .= p ]
     Hand p      -> obj [ "name" .= String "hand", "playerId" .= p ]
@@ -57,8 +60,11 @@ instance ToJSON ZoneRef where
     Exile       -> obj [ "name" .= String "exile" ]
     Command     -> obj [ "name" .= String "command" ]
 
+someZoneRefToJSON :: Some ZoneRef -> Value
+someZoneRefToJSON (Some z) = toJSON z
+
 lkiToJSON :: LastKnownObjectInfo -> Value
-lkiToJSON (r, o) = obj [ "objectRef" .= objectRefToJSON r, "object" .= o ]
+lkiToJSON (r, o) = obj [ "objectRef" .= someObjectRefToJSON r, "object" .= obj (toJSONPairs o) ]
 
 
 instance ToJSON World where
@@ -120,8 +126,16 @@ instance ToJSON Player where
 
 
 
-instance ToJSON Object where
-  toJSON o = obj
+instance ToJSON (ObjectOfType a) where
+  toJSON (CardObject o) = obj (toJSONPairs o)
+  toJSON p@(Permanent {}) =
+      obj (toJSONPairs (_permanentObject p) ++ permProps)
+    where
+      permProps = [ "tapStatus" .= _tapStatus p, "damage"    .= _damage p ]
+  toJSON (StackItem o _) = obj (toJSONPairs o)
+
+instance ToJSONPairs Object where
+  toJSONPairs o =
     [ "name" .= _name o
     , "colors" .= _colors o
     --, "types"
@@ -129,9 +143,7 @@ instance ToJSON Object where
     , "controllerId" .= _controller o
     , "timestamp" .= _timestamp o
     , "counters" .= _counters o
-    , "tapStatus" .= _tapStatus o
     , "pt" .= maybe Null (\(p,t) -> obj [ "power" .= p, "toughness" .= t ]) (_pt o)
-    , "damage" .= _damage o
     --, "staticKeywordAbilities" .= _staticKeywordAbilities
     ]
 
@@ -150,7 +162,7 @@ instance ToJSON CounterType where
 
 instance ToJSON PriorityAction where
   toJSON a = typedObject $ case a of
-    PlayCard r        -> ("playCard", [ "objectRef" .= objectRefToJSON r ])
+    PlayCard r        -> ("playCard", [ "objectRef" .= someObjectRefToJSON r ])
     ActivateAbility r -> ("activateAbility", [ "activatedAbillityRef" .= activatedAbilityRefToJSON r ])
 
 instance ToJSON PayManaAction where
@@ -158,7 +170,7 @@ instance ToJSON PayManaAction where
     PayManaFromManaPool mc ->
       ("payManaFromManaPool", [ "color" .= mc ])
     ActivateManaAbility r ->
-      ("activateManaAbility", [ "activatedAbillityRef" .= r])
+      ("activateManaAbility", [ "activatedAbillityRef" .= activatedAbilityRefToJSON r])
 
 
 
@@ -183,14 +195,14 @@ instance ToJSON Event where
     Did (SpendFromManaPool p m)  -> ("spendFromManaPool",
       [ "playerId" .= p, "mana" .= m ])
     Did (PlayLand p r)           -> ("playLand",
-      [ "playerId" .= p, "objectRef" .= objectRefToJSON r ])
+      [ "playerId" .= p, "objectRef" .= someObjectRefToJSON r ])
     Did (LoseGame p)             -> ("loseGame", [ "playerId" .= p ])
     Did (WinGame p)              -> ("winGame", [ "playerId" .= p ])
     Did (CeaseToExist r)         -> ("ceaseToExist",
-      [ "objectRef" .= objectRefToJSON r ])
+      [ "objectRef" .= someObjectRefToJSON r ])
     DidMoveObject mOldRef newRef -> ("moveObject",
-      [ "oldRef" .= maybe Null objectRefToJSON mOldRef
-      , "newRef" .= objectRefToJSON newRef ])
+      [ "oldRef" .= maybe Null someObjectRefToJSON mOldRef
+      , "newRef" .= someObjectRefToJSON newRef ])
     DidBeginStep step            -> ("beginStep", [ "step" .= step ])
     WillEndStep step             -> ("willEndStep", [ "step" .= step ])
 
@@ -199,7 +211,7 @@ instance ToJSON Event where
 instance ToJSON Target where
   toJSON t = typedObject $ case t of
     TargetPlayer p -> ("player", [ "playerId" .= p ])
-    TargetObject r -> ("object", [ "objectRef" .= r ])
+    TargetObject r -> ("object", [ "objectRef" .= someObjectRefToJSON r ])
 
 interactToJSON :: Monad m => m Text -> Interact a -> (Value, m a)
 interactToJSON receiveData op = (typedObject (instrType, props), receiveAnswer)
