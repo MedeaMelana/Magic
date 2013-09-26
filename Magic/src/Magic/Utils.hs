@@ -8,13 +8,22 @@ import Control.Monad.State (State, execState)
 import Data.Boolean (Boolean(..))
 import Data.Label.Pure
 import Data.List (sortBy)
+import Data.Maybe (catMaybes)
 import Data.Monoid (mempty)
 import Data.Ord (comparing)
+import qualified Data.Set as Set
 import Data.Text (Text, pack)
 
 
+-- | Creates a card by starting with an 'emptyObject', running the State
+-- action over it and finally setting its colors based on the resulting
+-- object's 'play' ability.
 mkCard :: State Object () -> Card
-mkCard f = Card (execState f . emptyObject 0)
+mkCard f = Card (setColors . execState f . emptyObject 0)
+  where
+    setColors o = case get play o of
+      Just ab -> set colors (Set.fromList (catMaybes (manaCost ab))) o
+      Nothing -> o
 
 emptyObject :: Timestamp -> PlayerRef -> Object
 emptyObject t rOwner = Object
