@@ -211,7 +211,7 @@ data Player = Player
 
 
 data Card = Card
-  -- timestamp, owner (and controller)
+  -- owner (and controller)
   { instantiateCard :: PlayerRef -> Object
   }
 
