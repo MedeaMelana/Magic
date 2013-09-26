@@ -4,7 +4,7 @@
 
 module Magic.Target (
     -- * Types
-    TargetList(..), Target(..),
+    TargetList(..), EntityRef(..),
 
     -- * Producing target lists
     target, (<?>),
@@ -28,24 +28,24 @@ import Control.Monad (forM, filterM)
 import Data.Label.PureM (asks)
 
 
-evaluateTargetList :: TargetList Target a -> ([Target], Maybe a)
+evaluateTargetList :: TargetList EntityRef a -> ([EntityRef], Maybe a)
 evaluateTargetList (Nil x) = ([], Just x)
 evaluateTargetList (Snoc xs cast t) = (ts ++ [t], mf <*> cast t)
   where (ts, mf) = evaluateTargetList xs
 evaluateTargetList (Test f _ xs) = (ts, f <$> mx)
   where (ts, mx) = evaluateTargetList xs
 
-target :: (Target -> Maybe a) -> TargetList () a
+target :: (EntityRef -> Maybe a) -> TargetList () a
 target f = Snoc (Nil id) f ()
 
 infixl 4 <?>
 (<?>) :: TargetList t a -> (a -> View Bool) -> TargetList t a
 xs <?> ok = Test id ok xs
 
-askTargets :: forall a. ([Target] -> Magic Target) -> [Target] -> TargetList () a -> Magic (TargetList Target a, a)
+askTargets :: forall a. ([EntityRef] -> Magic EntityRef) -> [EntityRef] -> TargetList () a -> Magic (TargetList EntityRef a, a)
 askTargets choose = askTargets' (const (return True))
   where
-    askTargets' :: forall b. (b -> View Bool) -> [Target] -> TargetList () b -> Magic (TargetList Target b, b)
+    askTargets' :: forall b. (b -> View Bool) -> [EntityRef] -> TargetList () b -> Magic (TargetList EntityRef b, b)
     askTargets' ok ts scheme =
       case scheme of
         Nil x -> return (Nil x, x)
@@ -62,12 +62,12 @@ askTargets choose = askTargets' (const (return True))
           (tsx', x) <- askTargets' (\x -> (&&) <$> ok (f x) <*> ok' x) ts tsx
           return (f <$> tsx', f x)
 
-askMagicTargets :: PlayerRef -> TargetList () a -> Magic (TargetList Target a)
+askMagicTargets :: PlayerRef -> TargetList () a -> Magic (TargetList EntityRef a)
 askMagicTargets p ts = do
   ats <- allTargets
   fst <$> askTargets (askQuestion p . AskTarget) ats ts
 
-allTargets :: Magic [Target]
+allTargets :: Magic [EntityRef]
 allTargets = do
   ps <- IdList.ids <$> view (asks players)
   let szrs = [Some Exile, Some Battlefield, Some Stack, Some Command] ++
@@ -75,20 +75,20 @@ allTargets = do
   oss <- forM szrs $ \(Some zr) -> do
     os <- IdList.ids <$> view (asks (compileZoneRef zr))
     return (map (\o -> (Some zr, o)) os)
-  return (map TargetPlayer ps ++ map TargetObject (concat oss))
+  return (map PlayerRef ps ++ map ObjectRef (concat oss))
 
 
 
 -- HELPER FUNCTIONS: TARGETING
 
 
-permanentOrPlayer :: Target -> Maybe (Either Id PlayerRef)
-permanentOrPlayer (TargetPlayer p) = Just (Right p)
-permanentOrPlayer (TargetObject (Some Battlefield, i)) = Just (Left i)
+permanentOrPlayer :: EntityRef -> Maybe (Either Id PlayerRef)
+permanentOrPlayer (PlayerRef p) = Just (Right p)
+permanentOrPlayer (ObjectRef (Some Battlefield, i)) = Just (Left i)
 permanentOrPlayer _ = Nothing
 
-permanent :: Target -> Maybe Id
-permanent (TargetObject (Some Battlefield, i)) = Just i
+permanent :: EntityRef -> Maybe Id
+permanent (ObjectRef (Some Battlefield, i)) = Just i
 permanent _ = Nothing
 
 targetCreatureOrPlayer :: TargetList () (Either Id PlayerRef)
@@ -101,5 +101,5 @@ targetCreatureOrPlayer = target permanentOrPlayer <?> ok
 targetPlayer :: TargetList () PlayerRef
 targetPlayer = target cast
   where
-    cast (TargetPlayer p) = Just p
+    cast (PlayerRef p) = Just p
     cast _ = Nothing

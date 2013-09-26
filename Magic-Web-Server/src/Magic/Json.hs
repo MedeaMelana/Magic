@@ -208,10 +208,10 @@ instance ToJSON Event where
 
 
 
-instance ToJSON Target where
+instance ToJSON EntityRef where
   toJSON t = typedObject $ case t of
-    TargetPlayer p -> ("player", [ "playerId" .= p ])
-    TargetObject r -> ("object", [ "objectRef" .= someObjectRefToJSON r ])
+    PlayerRef p -> ("player", [ "playerId" .= p ])
+    ObjectRef r -> ("object", [ "objectRef" .= someObjectRefToJSON r ])
 
 interactToJSON :: Monad m => m Text -> Interact a -> (Value, m a)
 interactToJSON receiveData op = (typedObject (instrType, props), receiveAnswer)

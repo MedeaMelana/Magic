@@ -7,7 +7,7 @@ import Magic.Engine (fullGame, newWorld)
 import Magic.Engine.Types (runEngine, GameOver(..))
 import Magic.Types hiding (view)
 import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction,
-  describeEvent, describeTarget, describeManaPool, describePayManaAction, describeObjectName)
+  describeEvent, describeEntityRef, describeManaPool, describePayManaAction, describeObjectName)
 import Magic.Some (Some(..))
 
 import Control.Monad (forM_)
@@ -61,7 +61,7 @@ askQuestions = eval . viewT
         chosen <- offerOptions p "What would you like to do?" (pass : nonPass)
         askQuestions (k chosen)
       AskQuestion p world (AskTarget ts) :>>= k -> do
-        t <- offerOptions p "Choose target:" [ (desc world (describeTarget t), t) | t <- ts ]
+        t <- offerOptions p "Choose target:" [ (desc world (describeEntityRef t), t) | t <- ts ]
         askQuestions (k t)
       AskQuestion p world (AskManaAbility cost actions) :>>= k -> do
         let costDesc = desc world (describeManaPool cost)

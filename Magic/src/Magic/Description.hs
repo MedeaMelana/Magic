@@ -241,9 +241,9 @@ describeZoneRef (Some z) =
     Exile -> "exile"
     Command -> "the command zone"
 
-describeTarget :: Target -> Description
-describeTarget (TargetPlayer p) = "Player " <> sh p
-describeTarget (TargetObject r) = describeObjectByRef r
+describeEntityRef :: EntityRef -> Description
+describeEntityRef (PlayerRef p) = "Player " <> sh p
+describeEntityRef (ObjectRef r) = describeObjectByRef r
 
 describePlayers :: Description
 describePlayers = withWorld $ \world ->

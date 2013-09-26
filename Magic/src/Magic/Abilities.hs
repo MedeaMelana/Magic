@@ -133,7 +133,7 @@ stackTargetlessEffect rSelf item = do
 -- | Creates a trigger on the stack under the control of the specified player.
 -- The function is applied to the return value of the specified 'TargetList'
 -- and put on the stack as a 'StackItem'.
-mkTriggerObject :: PlayerRef -> TargetList Target a ->
+mkTriggerObject :: PlayerRef -> TargetList EntityRef a ->
   (a -> ObjectRef TyStackItem -> Magic()) -> Magic ()
 mkTriggerObject p ts f = do
   t <- tick

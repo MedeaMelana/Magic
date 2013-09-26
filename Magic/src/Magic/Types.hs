@@ -65,7 +65,7 @@ module Magic.Types (
     Event(..), OneShotEffect(..), SimpleOneShotEffect(..),
 
     -- * Targets
-    Target(..), TargetList(..),
+    EntityRef(..), TargetList(..),
 
     -- * Monads @ViewT@ and @View@
     ViewT(..), View, runView, MonadView(..),
@@ -413,7 +413,7 @@ data ActivatedAbility = ActivatedAbility
 
 data TapCost = NoTapCost | TapCost  -- add later: UntapCost
 
-type StackItem = TargetList Target (ObjectRef TyStackItem -> Magic ())
+type StackItem = TargetList EntityRef (ObjectRef TyStackItem -> Magic ())
 
 type ManaPool = Bag (Maybe Color)
 
@@ -571,14 +571,14 @@ data SimpleOneShotEffect
 -- TARGETS
 
 
-data Target
-  = TargetPlayer PlayerRef
-  | TargetObject SomeObjectRef
+data EntityRef
+  = PlayerRef PlayerRef
+  | ObjectRef SomeObjectRef
   deriving Eq
 
 data TargetList t a where
   Nil  :: a -> TargetList t a
-  Snoc :: TargetList t (x -> a) -> (Target -> Maybe x) -> t -> TargetList t a
+  Snoc :: TargetList t (x -> a) -> (EntityRef -> Maybe x) -> t -> TargetList t a
   Test :: (x -> a) -> (x -> View Bool) -> TargetList t x -> TargetList t a
 
 instance Functor (TargetList t) where
@@ -656,7 +656,7 @@ data Question a where
   AskKeepHand              :: Question Bool
   AskPriorityAction        :: [PriorityAction] -> Question (Maybe PriorityAction)
   AskManaAbility           :: ManaPool -> [PayManaAction] -> Question PayManaAction
-  AskTarget                :: [Target] -> Question Target
+  AskTarget                :: [EntityRef] -> Question EntityRef
   AskPickReplacementEffect :: [(ReplacementEffect, Magic [OneShotEffect])] -> Question (Pick (ReplacementEffect, Magic [OneShotEffect]))
   AskPickTrigger           :: [LastKnownObjectInfo] -> Question Int
 
