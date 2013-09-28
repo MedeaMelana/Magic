@@ -574,7 +574,7 @@ data SimpleOneShotEffect
 data EntityRef
   = PlayerRef PlayerRef
   | ObjectRef SomeObjectRef
-  deriving Eq
+  deriving (Eq, Show)
 
 data TargetList t a where
   Nil  :: a -> TargetList t a
