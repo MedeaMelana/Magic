@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
@@ -15,7 +16,6 @@ module Magic.Target (
   ) where
 
 import qualified Magic.IdList as IdList
-import Magic.IdList (Id)
 import Magic.Core
 import Magic.Types
 import Magic.Predicates
@@ -82,20 +82,20 @@ allTargets = do
 -- HELPER FUNCTIONS: TARGETING
 
 
-permanentOrPlayer :: EntityRef -> Maybe (Either Id PlayerRef)
+permanentOrPlayer :: EntityRef -> Maybe (Either (ObjectRef TyPermanent) PlayerRef)
 permanentOrPlayer (PlayerRef p) = Just (Right p)
-permanentOrPlayer (ObjectRef (Some Battlefield, i)) = Just (Left i)
+permanentOrPlayer (ObjectRef (Some Battlefield, i)) = Just (Left (Battlefield, i))
 permanentOrPlayer _ = Nothing
 
-permanent :: EntityRef -> Maybe Id
-permanent (ObjectRef (Some Battlefield, i)) = Just i
+permanent :: EntityRef -> Maybe (ObjectRef TyPermanent)
+permanent (ObjectRef (Some Battlefield, i)) = Just (Battlefield, i)
 permanent _ = Nothing
 
-targetCreatureOrPlayer :: TargetList () (Either Id PlayerRef)
+targetCreatureOrPlayer :: TargetList () (Either (ObjectRef TyPermanent) PlayerRef)
 targetCreatureOrPlayer = target permanentOrPlayer <?> ok
   where
     ok t = case t of
-      Left i  -> hasTypes creatureType <$> asks (object (Battlefield, i) .^ objectPart)
+      Left r  -> hasTypes creatureType <$> asks (object r .^ objectPart)
       Right _ -> return True
 
 targetPlayer :: TargetList () PlayerRef

@@ -26,7 +26,6 @@ module Magic.Abilities (
 
 import Magic.Core
 import Magic.Events
-import Magic.IdList (Id)
 import Magic.Labels
 import Magic.Predicates
 import Magic.Some
@@ -104,11 +103,11 @@ playAura mc =
     playAuraEffect :: Contextual (Magic ())
     playAuraEffect rSelf p = do
       aura <- view (asks (objectBase rSelf))  -- TODO Reevaluate rSelf on the stack?
-      let ok i = collectEnchantPredicate aura <$>
-                  asks (object (Battlefield, i) .^ objectPart)
+      let ok r = collectEnchantPredicate aura <$>
+                  asks (object r .^ objectPart)
       ts <- askMagicTargets p (target permanent <?> ok)
-      let f :: Id -> ObjectRef TyStackItem -> Magic ()
-          f i rStackSelf@(Stack, iSelf) = do
+      let f :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
+          f (Battlefield, i) rStackSelf@(Stack, iSelf) = do
             self <- view (asks (object rStackSelf .^ objectPart))
             void $ executeEffect (WillMoveObject (Just (Some Stack, iSelf)) Battlefield (Permanent self Untapped 0 False (Just (Some Battlefield, i))))
 

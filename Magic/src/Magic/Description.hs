@@ -208,7 +208,7 @@ describeEvent e =
       Did (DrawCard p) -> "Player " <> sh p <> " draws a card"
       Did (DestroyPermanent i _) -> "Permanent #" <> sh i <> " is destroyed"
       Did (ShuffleLibrary p) -> "Player " <> sh p <> " shuffles their library"
-      Did (DamageObject source i amount _ _) ->
+      Did (DamageObject source (Battlefield, i) amount _ _) ->
         describeObjectName source <> " deals " <> sh amount <> " damage to " <> describeObjectNameByRef (Some Battlefield, i)
       Did (DamagePlayer source p amount _ _) ->
         describeObjectName source <> " deals " <> sh amount <> " damage to player " <> sh p

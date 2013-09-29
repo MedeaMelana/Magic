@@ -545,20 +545,20 @@ deriving instance Show OneShotEffect
 data SimpleOneShotEffect
   = GainLife PlayerRef Int
   | LoseLife PlayerRef Int
-  | DamageObject Object Id Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
+  | DamageObject Object (ObjectRef TyPermanent) Int Bool Bool  -- source, creature/planeswalker, amount, combat damage?, preventable?
   | DamagePlayer Object PlayerRef Int Bool Bool  -- source, player, amount, combat damage?, preventable?
   | ShuffleLibrary PlayerRef
   -- ReorderLibraryCards
   | DrawCard PlayerRef -- Drawing is special [120.5]
-  | DestroyPermanent Id Bool  -- object on battlefield, regenerate allowed?
-  | TapPermanent Id  -- object on battlefield
-  | UntapPermanent Id  -- object on battlefield
+  | DestroyPermanent (ObjectRef TyPermanent) Bool  -- object on battlefield, regenerate allowed?
+  | TapPermanent (ObjectRef TyPermanent)  -- object on battlefield
+  | UntapPermanent (ObjectRef TyPermanent)  -- object on battlefield
   | AddCounter SomeObjectRef CounterType
   | RemoveCounter SomeObjectRef CounterType
   | AddToManaPool PlayerRef ManaPool
   | SpendFromManaPool PlayerRef ManaPool
   | AttachPermanent (ObjectRef TyPermanent) (Maybe SomeObjectRef) (Maybe SomeObjectRef)  -- aura/equipment, old target, new target
-  | RemoveFromCombat Id
+  | RemoveFromCombat (ObjectRef TyPermanent)
   | PlayLand PlayerRef SomeObjectRef
   | LoseGame PlayerRef
   | WinGame PlayerRef
@@ -646,7 +646,7 @@ data EventSource
     -- ^ Events caused by state-based actions
   | StackTrigger LastKnownObjectInfo
     -- ^ Events caused by putting a trigger on the stack
-  | ResolutionOf Id
+  | ResolutionOf (ObjectRef TyStackItem)
     -- ^ Events caused by the resolution of a spell or ability
   | PriorityActionExecution PriorityAction
     -- ^ Events caused by casting a spell or activating an ability

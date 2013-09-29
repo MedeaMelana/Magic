@@ -3,12 +3,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE DataKinds #-}
 
 module Magic.Engine (newWorld, fullGame, Engine(..)) where
 
 import Magic.Core
 import Magic.Events hiding (executeEffect, executeEffects)
-import Magic.IdList (Id)
 import qualified Magic.IdList as IdList
 import Magic.Labels
 import Magic.ObjectTypes
@@ -146,7 +146,7 @@ executeStep (BeginningPhase UntapStep) = do
   -- [502.2] untap permanents
   rp <- gets activePlayer
   ios <- (IdList.filter (\(Permanent perm _ _ _ _) -> isControlledBy rp perm)) <$> gets battlefield
-  _ <- executeEffects TurnBasedActions (map (\(i, _) -> Will (UntapPermanent i)) ios)
+  _ <- executeEffects TurnBasedActions (map (\(i, _) -> Will (UntapPermanent (Battlefield, i))) ios)
   return ()
 
 executeStep (BeginningPhase UpkeepStep) = do
@@ -260,7 +260,7 @@ offerPriority = gets activePlayer >>= fullRoundStartingWith
           case IdList.head st of
             Nothing -> return ()
             Just (i, _) -> do
-              resolve i
+              resolve (Stack, i)
               offerPriority
 
     partialRound ((p, _):ps) = do
@@ -335,7 +335,7 @@ collectSBAs = execWriterT $ do
 
           -- [704.5f]
           let hasNonPositiveToughness = maybe False (<= 0) (fmap snd (get pt o))
-          when hasNonPositiveToughness $ tell [willMoveToGraveyard i o]
+          when hasNonPositiveToughness $ tell [willMoveToGraveyard (Battlefield, i) o]
 
           -- [704.5g]
           -- [704.5h]
@@ -344,11 +344,11 @@ collectSBAs = execWriterT $ do
                   Just (_, t) -> t > 0 && dam >= t
                   _           -> False
           when (hasLethalDamage || deatht) $
-            tell [Will (DestroyPermanent i True)]
+            tell [Will (DestroyPermanent (Battlefield, i) True)]
 
         -- [704.5i]
         when (hasTypes planeswalkerType o && countCountersOfType Loyalty o == 0) $
-          tell [willMoveToGraveyard i o]
+          tell [willMoveToGraveyard (Battlefield, i) o]
 
       -- TODO [704.5j]
       -- TODO [704.5k]
@@ -359,12 +359,12 @@ collectSBAs = execWriterT $ do
       -- TODO [704.5r]
       -- TODO [704.5s]
 
-resolve :: Id -> Engine ()
-resolve i = do
-  StackItem o item <- gets (stack .^ listEl i)
+resolve :: ObjectRef TyStackItem -> Engine ()
+resolve r@(Stack, i) = do
+  StackItem o item <- gets (object r)
   let (_, Just mkEffects) = evaluateTargetList item
-  let eventSource = ResolutionOf i
-  executeMagic eventSource (mkEffects (Stack, i))
+  let eventSource = ResolutionOf r
+  executeMagic eventSource (mkEffects r)
 
   -- if the object is now still on the stack, move it to the appropriate zone
   if (hasTypes instantType o || hasTypes sorceryType o)
@@ -454,7 +454,7 @@ canPayTapCost TapCost _ _ = return False
 payTapCost :: EventSource -> TapCost -> Contextual (Engine ())
 payTapCost _ NoTapCost _ _ = return ()
 payTapCost source TapCost (Some Battlefield, i) _ =
-  void (executeEffect source (Will (TapPermanent i)))
+  void (executeEffect source (Will (TapPermanent (Battlefield, i))))
 payTapCost _ _ _ _ = return ()
 
 -- | Returns player IDs in APNAP order (active player, non-active player).

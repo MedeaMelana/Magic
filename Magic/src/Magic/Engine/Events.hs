@@ -112,19 +112,19 @@ affectedPlayer e =
     WillMoveObject _ _ o            -> return (get (objectPart .^ controller) o)
     Will (GainLife p _)             -> return p
     Will (LoseLife p _)             -> return p
-    Will (DamageObject _ i _ _ _)   -> controllerOf (Battlefield, i)
+    Will (DamageObject _ r _ _ _)   -> controllerOf r
     Will (DamagePlayer _ p _ _ _)   -> return p
     Will (ShuffleLibrary p)         -> return p
     Will (DrawCard p)               -> return p
-    Will (DestroyPermanent i _)     -> controllerOf (Battlefield, i)
-    Will (TapPermanent i)           -> controllerOf (Battlefield, i)
-    Will (UntapPermanent i)         -> controllerOf (Battlefield, i)
+    Will (DestroyPermanent r _)     -> controllerOf r
+    Will (TapPermanent r)           -> controllerOf r
+    Will (UntapPermanent r)         -> controllerOf r
     Will (AddCounter o _)           -> controllerOfSome o
     Will (RemoveCounter o _)        -> controllerOfSome o
     Will (AddToManaPool p _)        -> return p
     Will (SpendFromManaPool p _)    -> return p
     Will (AttachPermanent o _ _)    -> controllerOf o  -- debatable
-    Will (RemoveFromCombat i)       -> controllerOf (Battlefield, i)
+    Will (RemoveFromCombat r)       -> controllerOf r
     Will (PlayLand p _)             -> return p
     Will (LoseGame p)               -> return p
     Will (WinGame p)                -> return p
@@ -176,15 +176,15 @@ compileEffect e =
         LoseLife p n -> onlyIf (n >= 0) $
           simply $ player p .^ life ~: (subtract n)
 
-        TapPermanent i -> do
-          ts <- gets (object (Battlefield, i) .^ tapStatus)
+        TapPermanent r -> do
+          ts <- gets (object r .^ tapStatus)
           onlyIf (ts == Untapped) $
-            simply $ object (Battlefield, i) .^ tapStatus =: Tapped
+            simply $ object r .^ tapStatus =: Tapped
 
-        UntapPermanent i -> do
-          ts <- gets (object (Battlefield, i) .^ tapStatus)
+        UntapPermanent r -> do
+          ts <- gets (object r .^ tapStatus)
           onlyIf (ts == Tapped) $
-            simply $ object (Battlefield, i) .^ tapStatus =: Untapped
+            simply $ object r .^ tapStatus =: Untapped
 
         DrawCard rp -> do
           lib <- gets (players .^ listEl rp .^ library)
@@ -195,9 +195,9 @@ compileEffect e =
             (ro, o) : _ ->
               combine $ WillMoveObject (Just (Some (Library rp), ro)) (Hand rp) o
 
-        DestroyPermanent i _ -> do
-          o <- gets (object (Battlefield, i) .^ objectPart)
-          combine $ willMoveToGraveyard i o
+        DestroyPermanent r _ -> do
+          o <- gets (object r .^ objectPart)
+          combine $ willMoveToGraveyard r o
 
         ShuffleLibrary rPlayer -> simply $ do
           let libraryLabel = players .^ listEl rPlayer .^ library
@@ -217,10 +217,10 @@ compileEffect e =
         SpendFromManaPool p pool ->
           simply $ player p .^ manaPool ~: (\\ pool)
 
-        DamageObject _source i amount _isCombatDamage _isPreventable ->
+        DamageObject _source r amount _isCombatDamage _isPreventable ->
           -- TODO check for protection, infect, wither, lifelink
           onlyIf (amount > 0) $
-            simply $ object (Battlefield, i) .^ damage ~: (+ amount)
+            simply $ object r .^ damage ~: (+ amount)
 
         DamagePlayer _source p amount _isCombatDamage _isPreventable ->
           -- TODO check for protection, infect, wither, lifelink

@@ -1,3 +1,6 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
+
 module Magic.Events (
     -- * Types
     OneShotEffect(..), SimpleOneShotEffect(..), Event(..),
@@ -11,7 +14,6 @@ module Magic.Events (
 
 import Magic.Some (Some(..))
 import Magic.Core
-import Magic.IdList (Id)
 import Magic.Types
 
 import Control.Monad.Operational (singleton)
@@ -26,8 +28,8 @@ import Prelude hiding (interact)
 
 
 -- | Effect that moves the specified object on the battlefield to its owner's graveyard.
-willMoveToGraveyard :: Id -> Object -> OneShotEffect
-willMoveToGraveyard i o = WillMoveObject (Just (Some Battlefield, i)) (Graveyard (get owner o)) (CardObject o)
+willMoveToGraveyard :: ObjectRef TyPermanent -> Object -> OneShotEffect
+willMoveToGraveyard (Battlefield, i) o = WillMoveObject (Just (Some Battlefield, i)) (Graveyard (get owner o)) (CardObject o)
 
 --willMoveToBattlefield :: SomeObjectRef -> View OneShotEffect
 --willMoveToBattlefield r = do

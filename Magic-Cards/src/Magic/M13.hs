@@ -5,7 +5,6 @@
 module Magic.M13 where
 
 import Magic
-import Magic.IdList (Id)
 import qualified Magic.IdList as IdList
 
 import Control.Applicative
@@ -86,10 +85,10 @@ angelicBenediction = mkCard $ do
 
     mkTapTriggerObject :: PlayerRef -> Magic ()
     mkTapTriggerObject p = do
-        let ok i = hasTypes creatureType <$> asks (object (Battlefield, i) .^ objectPart)
+        let ok r = hasTypes creatureType <$> asks (object r .^ objectPart)
         ts <- askMagicTargets p (target permanent <?> ok)
         mkTriggerObject p ts $
-          \i _source -> void $ executeEffect $ Will (TapPermanent i)
+          \r _source -> void $ executeEffect $ Will (TapPermanent r)
 
 attendedKnight :: Card
 attendedKnight = mkCard $ do
@@ -136,9 +135,9 @@ battleflightEagle = mkCard $ do
   where
     createBoostTrigger :: Contextual (Magic ())
     createBoostTrigger _ p = do
-      let ok i = hasTypes creatureType <$> asks (object (Battlefield, i) .^ objectPart)
+      let ok r = hasTypes creatureType <$> asks (object r .^ objectPart)
       ts <- askMagicTargets p (target permanent <?> ok)
-      mkTriggerObject p ts $ \i _source -> do
+      mkTriggerObject p ts $ \(Battlefield, i) _source -> do
         t <- tick
         void $ executeEffect $ Will $
           InstallLayeredEffect (Some Battlefield, i) TemporaryLayeredEffect
@@ -237,11 +236,11 @@ searingSpear = mkCard $ do
     searingSpearEffect :: Contextual (Magic ())
     searingSpearEffect rSelf rActivator = do
       ts <- askMagicTargets rActivator targetCreatureOrPlayer
-      let f :: Either Id PlayerRef -> ObjectRef TyStackItem -> Magic ()
+      let f :: Either (ObjectRef TyPermanent) PlayerRef -> ObjectRef TyStackItem -> Magic ()
           f t rStackSelf = do
             self <- view (asks (object rStackSelf .^ objectPart))
             void $ executeEffect $ case t of
-              Left i  -> Will (DamageObject self i 3 False True)
+              Left r  -> Will (DamageObject self r 3 False True)
               Right p -> Will (DamagePlayer self p 3 False True)
       void (view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect)
 
