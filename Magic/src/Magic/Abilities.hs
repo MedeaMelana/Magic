@@ -168,7 +168,7 @@ ifSelfWasOrIsOnBattlefield f events rSelf you =
 -- CONSTRUCTING REPLACEMENT EFFECTS
 
 etbWithLoyaltyCounters :: ReplacementEffect
-etbWithLoyaltyCounters (WillMoveObject (Just fromRef) Battlefield perm) rSelf you
+etbWithLoyaltyCounters (WillMoveObject (Just fromRef) Battlefield perm) rSelf _you
   | fromRef == rSelf =
       case get (objectPart .^ loyalty) perm of
         Just n -> Just $ return [WillMoveObject (Just fromRef) Battlefield (modify (objectPart .^ counters) (++ replicate n Loyalty) perm)]
