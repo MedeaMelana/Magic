@@ -658,7 +658,7 @@ data Question a where
   AskPriorityAction        :: [PriorityAction] -> Question (Maybe PriorityAction)
   AskManaAbility           :: ManaPool -> [PayManaAction] -> Question PayManaAction
   AskTarget                :: [EntityRef] -> Question EntityRef
-  AskPickReplacementEffect :: [(ReplacementEffect, Magic [OneShotEffect])] -> Question (Pick (ReplacementEffect, Magic [OneShotEffect]))
+  --AskPickReplacementEffect :: [(ReplacementEffect, Magic [OneShotEffect])] -> Question (Pick (ReplacementEffect, Magic [OneShotEffect]))
   AskPickTrigger           :: [LastKnownObjectInfo] -> Question Int
 
 type Pick a = (a, [a])
