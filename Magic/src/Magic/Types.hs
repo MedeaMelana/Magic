@@ -262,6 +262,7 @@ data ObjectOfType :: ObjectType -> * where
                 , _damage          :: Int
                 , _deathtouched    :: Bool
                 , _attachedTo      :: Maybe SomeObjectRef
+                , _attacking       :: Maybe EntityRef
                 } -> ObjectOfType TyPermanent
   StackItem  :: { _stackItemObject :: Object
                 , _stackItem       :: StackItem

@@ -109,7 +109,7 @@ playAura mc =
       let f :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
           f (Battlefield, i) rStackSelf@(Stack, iSelf) = do
             self <- view (asks (object rStackSelf .^ objectPart))
-            void $ executeEffect (WillMoveObject (Just (Some Stack, iSelf)) Battlefield (Permanent self Untapped 0 False (Just (Some Battlefield, i))))
+            void $ executeEffect (WillMoveObject (Just (Some Stack, iSelf)) Battlefield (Permanent self Untapped 0 False (Just (Some Battlefield, i)) Nothing))
 
       void $ view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect
 

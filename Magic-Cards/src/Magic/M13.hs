@@ -106,7 +106,7 @@ attendedKnight = mkCard $ do
 
 mkSoldierEffect :: Timestamp -> PlayerRef -> OneShotEffect
 mkSoldierEffect t p = WillMoveObject Nothing Battlefield $
-    Permanent o Untapped 0 False Nothing
+    Permanent o Untapped 0 False Nothing Nothing
   where
     o = (emptyObject t p)
         { _name      = Just "Soldier"
@@ -261,7 +261,7 @@ garrukPrimalHunter = mkCard $ do
       mkTargetlessTriggerObject you $ \_ -> do
         t <- tick
         let token = simpleCreatureToken t you [Beast] [Green] (3,3)
-        void $ executeEffect $ WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing)
+        void $ executeEffect $ WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
     minusThree = loyaltyAbility (-3) $ \_ you -> do
       mkTargetlessTriggerObject you $ \_ -> do
         objs <- IdList.elems <$> view (asks battlefield)
@@ -273,12 +273,13 @@ garrukPrimalHunter = mkCard $ do
     minusSix = loyaltyAbility (-6) $ \_ you -> do
       mkTargetlessTriggerObject you $ \_ -> do
         perms <- IdList.elems <$> view (asks battlefield)
-        let n = count perms $ \(Permanent o _ _ _ _) ->
-                  get controller o == you && hasTypes landType o
+        let n = count perms $ \perm ->
+                  let o = get objectPart perm
+                   in get controller o == you && hasTypes landType o
         t <- tick
         let token = simpleCreatureToken t you [Wurm] [Green] (6,6)
         void $ executeEffects $ replicate n $
-          WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing)
+          WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
 
 simpleCreatureToken ::
   Timestamp -> PlayerRef -> [CreatureSubtype] -> [Color] -> PT -> Object

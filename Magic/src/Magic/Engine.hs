@@ -145,7 +145,7 @@ executeStep (BeginningPhase UntapStep) = do
 
   -- [502.2] untap permanents
   rp <- gets activePlayer
-  ios <- (IdList.filter (\(Permanent perm _ _ _ _) -> isControlledBy rp perm)) <$> gets battlefield
+  ios <- (IdList.filter (\perm@Permanent {} -> isControlledBy rp (get objectPart perm))) <$> gets battlefield
   _ <- executeEffects TurnBasedActions (map (\(i, _) -> Will (UntapPermanent (Battlefield, i))) ios)
   return ()
 
@@ -328,7 +328,7 @@ collectSBAs = execWriterT $ do
 
     checkBattlefield = do
       ios <- IdList.toList <$> lift (gets battlefield)
-      forM_ ios $ \(i, Permanent o _ dam deatht _) -> do
+      forM_ ios $ \(i, Permanent o _ dam deatht _ _) -> do
 
         -- Check creatures
         when (hasTypes creatureType o) $ do
@@ -372,7 +372,7 @@ resolve r@(Stack, i) = do
     WillMoveObject (Just (Some Stack, i)) (Graveyard (get controller o)) (CardObject o)
   else if hasPermanentType o
   then void $ executeEffect eventSource $
-    WillMoveObject (Just (Some Stack, i)) Battlefield (Permanent o Untapped 0 False Nothing)
+    WillMoveObject (Just (Some Stack, i)) Battlefield (Permanent o Untapped 0 False Nothing Nothing)
   else void $ executeEffect eventSource $ Will $ CeaseToExist (Some Stack, i)
 
 collectPriorityActions :: PlayerRef -> Engine [PriorityAction]

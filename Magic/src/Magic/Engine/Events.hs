@@ -209,7 +209,7 @@ compileEffect e =
           o <- gets (objectBase ro)
           -- TODO apply replacement effects on the move effect
           -- TODO store more sensible data in the PlayLand event
-          combine $ WillMoveObject (Just ro) Battlefield (Permanent o Untapped 0 False Nothing)
+          combine $ WillMoveObject (Just ro) Battlefield (Permanent o Untapped 0 False Nothing Nothing)
 
         AddToManaPool p pool ->
           simply $ player p .^ manaPool ~: (pool <>)

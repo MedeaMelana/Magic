@@ -128,7 +128,7 @@ describeObject i (Some typedObj) = intercalate ", " components
     ts :: [Description]
     ts =
       case typedObj of
-        Permanent _ ts' _ _ _ -> [sh ts']
+        Permanent {} -> [sh (get tapStatus typedObj)]
         _ -> []
 
 describeObjectNameByRef :: SomeObjectRef -> Description
