@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
 
 module Magic.CLI where
 
@@ -7,7 +8,7 @@ import Magic.Engine (fullGame, newWorld)
 import Magic.Engine.Types (runEngine, GameOver(..))
 import Magic.Types hiding (view)
 import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction,
-  describeEvent, describeEntityRef, describeManaPool, describePayManaAction, describeObjectName)
+  describeEvent, describeEntityRef, describeManaPool, describePayManaAction, describeObjectName, describeObjectNameByRef)
 import Magic.Some (Some(..))
 
 import Control.Monad (forM_)
@@ -72,7 +73,22 @@ askQuestions = eval . viewT
         let options = [ (desc world (describeObjectName o), i) | (i, (_, o)) <- zip [0..] lkis ]
         chosen <- offerOptions p "Choose trigger to put on the stack:" options
         askQuestions (k chosen)
+      AskQuestion p world (AskAttackers ats defs) :>>= k -> do
+        Text.putStrLn "Declare attackers:"
+        chosen <- declareAttackers p world ats defs
+        askQuestions (k chosen)
 
+declareAttackers :: PlayerRef -> World -> [ObjectRef TyPermanent] -> [EntityRef] -> IO [(ObjectRef TyPermanent, EntityRef)]
+declareAttackers p world [] defs = return []
+declareAttackers p world ((Battlefield, i):ats) defs = do
+  let q = "Who should " <> desc world (describeObjectNameByRef (Some Battlefield, i)) <> " attack?"
+  let options = [ ("Attack " <> desc world (describeEntityRef def), Just def) | def <- defs ]
+  let noone = [("Don't attack", Nothing)]
+  mchosen <- offerOptions p q (options ++ noone)
+  rest <- declareAttackers p world ats defs
+  return $ case mchosen of
+    Just chosen -> ((Battlefield, i), chosen) : rest
+    Nothing     -> rest
 
 showText :: Show a => a -> Text
 showText = Text.pack . show

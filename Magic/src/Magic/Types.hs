@@ -34,10 +34,10 @@ module Magic.Types (
       name, colors, types, owner, controller, timestamp, counters,
       pt, loyalty,
       play, staticKeywordAbilities, layeredEffects, activatedAbilities, triggeredAbilities, replacementEffects,
-      temporaryEffects, attachedTo,
+      temporaryEffects,
     ObjectOfType(..),
       cardObject,
-      permanentObject, tapStatus, damage, deathtouched,
+      permanentObject, tapStatus, damage, deathtouched, attachedTo, attacking,
       stackItemObject, stackItem,
 
     -- * Object properties
@@ -291,6 +291,9 @@ deathtouched = lens _deathtouched (\val rec -> rec { _deathtouched = val })
 attachedTo :: ObjectOfType TyPermanent :-> Maybe SomeObjectRef
 attachedTo = lens _attachedTo (\val rec -> rec { _attachedTo = val })
 
+attacking :: ObjectOfType TyPermanent :-> Maybe EntityRef
+attacking = lens _attacking (\val rec -> rec { _attacking = val })
+
 stackItemObject :: ObjectOfType TyStackItem :-> Object
 stackItemObject = lens _stackItemObject (\val rec -> rec { _stackItemObject = val })
 
@@ -525,7 +528,7 @@ data PayManaAction
 data Event
   = Did SimpleOneShotEffect
   | DidMoveObject (Maybe SomeObjectRef) SomeObjectRef  -- old ref, new ref
-  | DidDeclareAttackers PlayerRef [ObjectRef TyPermanent]
+  | DidDeclareAttackers PlayerRef [(ObjectRef TyPermanent, EntityRef)]
 
   -- Keyword actions [701]
   | DidActivateAbility SomeObjectRef Int  -- index of ability
@@ -660,6 +663,7 @@ data Question a where
   AskTarget                :: [EntityRef] -> Question EntityRef
   --AskPickReplacementEffect :: [(ReplacementEffect, Magic [OneShotEffect])] -> Question (Pick (ReplacementEffect, Magic [OneShotEffect]))
   AskPickTrigger           :: [LastKnownObjectInfo] -> Question Int
+  AskAttackers             :: [ObjectRef TyPermanent] -> [EntityRef] -> Question [(ObjectRef TyPermanent, EntityRef)]
 
 type Pick a = (a, [a])
 

@@ -24,8 +24,9 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Monad (forever, forM_, when, void, liftM)
 import Control.Monad.Trans (lift)
 import Control.Monad.Writer (tell, execWriterT)
+import Data.Boolean ((&&*))
 import Data.Label.Pure (get, set, modify)
-import Data.Label.PureM (gets, (=:))
+import Data.Label.PureM (gets, (=:), asks)
 import Data.List (nub, intersect, delete)
 import Data.Maybe (catMaybes)
 import Data.Monoid ((<>))
@@ -57,9 +58,10 @@ newWorld decks = World
           _        -> cycle (map (, turnSteps) playerIds)
 
 removeFirst :: (a -> Bool) -> [a] -> [a]
-removeFirst notOk xs = as ++ bs
-  where
-    (as, _ : bs) = break notOk xs
+removeFirst notOk xs =
+  case break notOk xs of
+    (as, _ : bs) -> as ++ bs
+    _ -> xs
 
 turnSteps :: [Step]
 turnSteps =
@@ -67,12 +69,12 @@ turnSteps =
   , BeginningPhase UpkeepStep
   , BeginningPhase DrawStep
   , MainPhase
-  --, CombatPhase BeginningOfCombatStep
-  --, CombatPhase DeclareAttackersStep
-  --, CombatPhase DeclareBlockersStep
-  --, CombatPhase CombatDamageStep
-  --, CombatPhase EndOfCombatStep
-  --, MainPhase
+  , CombatPhase BeginningOfCombatStep
+  , CombatPhase DeclareAttackersStep
+  , CombatPhase DeclareBlockersStep
+  , CombatPhase CombatDamageStep
+  , CombatPhase EndOfCombatStep
+  , MainPhase
   , EndPhase EndOfTurnStep
   , EndPhase CleanupStep
   ]
@@ -177,6 +179,14 @@ executeStep (CombatPhase BeginningOfCombatStep) = do
 executeStep (CombatPhase DeclareAttackersStep) = do
   -- TODO [508.1a] declare attackers
   -- TODO [508.1b] declare which player or planeswalker each attacker attacks
+  ap <- gets activePlayer
+  possibleAttackerRefs <- map (\(i,_) -> (Battlefield, i)) . filter ((isControlledBy ap &&* hasTypes creatureType) . get objectPart . snd) . IdList.toList <$> view (asks battlefield)
+  attackablePlayerRefs <- (filter (/= ap) . IdList.ids) <$> gets players
+  pairs <- askQuestion ap (AskAttackers possibleAttackerRefs (map PlayerRef attackablePlayerRefs))
+  for pairs $ \(rAttacker, rAttacked) ->
+    object rAttacker .^ attacking =: Just rAttacked
+  raise TurnBasedActions [DidDeclareAttackers ap pairs]
+
   -- TODO [508.1c] check attacking restrictions
   -- TODO [508.1d] check attacking requirements
   -- TODO [508.1e] declare banding
