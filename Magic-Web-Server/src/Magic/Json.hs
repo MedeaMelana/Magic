@@ -138,7 +138,7 @@ instance ToJSONPairs Object where
   toJSONPairs o =
     [ "name" .= _name o
     , "colors" .= _colors o
-    --, "types"
+    , "types" .= _types o
     , "ownerId" .= _owner o
     , "controllerId" .= _controller o
     , "timestamp" .= _timestamp o
@@ -158,6 +158,26 @@ instance ToJSON TapStatus where
 instance ToJSON CounterType where
   toJSON = toJSON . map toLower . show
 
+
+
+instance ToJSON ObjectTypes where
+  toJSON tys = obj
+    [ "supertypes"        .= supertypes tys
+    , "artifactTypes"     .= artifactSubtypes tys
+    , "creatureTypes"     .= creatureSubtypes tys
+    , "enchantmentTypes"  .= enchantmentSubtypes tys
+    , "instantTypes"      .= instantSubtypes tys
+    , "landTypes"         .= landSubtypes tys
+    , "planeswalkerTypes" .= planeswalkerSubtypes tys
+    ]
+
+instance ToJSON Supertype           where toJSON = toJSON . show
+instance ToJSON ArtifactSubtype     where toJSON = toJSON . show
+instance ToJSON CreatureSubtype     where toJSON = toJSON . show
+instance ToJSON EnchantmentSubtype  where toJSON = toJSON . show
+instance ToJSON SpellSubtype        where toJSON = toJSON . show
+instance ToJSON LandSubtype         where toJSON = toJSON . show
+instance ToJSON PlaneswalkerSubtype where toJSON = toJSON . show
 
 
 instance ToJSON PriorityAction where
