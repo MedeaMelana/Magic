@@ -179,11 +179,14 @@ executeStep (CombatPhase BeginningOfCombatStep) = do
 executeStep (CombatPhase DeclareAttackersStep) = do
   -- TODO [508.1a] declare attackers
   -- TODO [508.1b] declare which player or planeswalker each attacker attacks
+  -- TODO Offer attacking planeswalkers
+  -- TODO Check summoning sickness
+  -- TODO Check tap status
   ap <- gets activePlayer
   possibleAttackerRefs <- map (\(i,_) -> (Battlefield, i)) . filter ((isControlledBy ap &&* hasTypes creatureType) . get objectPart . snd) . IdList.toList <$> view (asks battlefield)
   attackablePlayerRefs <- (filter (/= ap) . IdList.ids) <$> gets players
   pairs <- askQuestion ap (AskAttackers possibleAttackerRefs (map PlayerRef attackablePlayerRefs))
-  for pairs $ \(rAttacker, rAttacked) ->
+  forM_ pairs $ \(rAttacker, rAttacked) ->
     object rAttacker .^ attacking =: Just rAttacked
   raise TurnBasedActions [DidDeclareAttackers ap pairs]
 
@@ -221,6 +224,16 @@ executeStep (CombatPhase CombatDamageStep) = do
   -- TODO [510.1]  assign combat damage
   -- TODO [510.2]  deal damage
   -- TODO [510.3]  handle triggers
+  effectses <- view $ do
+    permanents <- IdList.toList <$> asks battlefield
+    for permanents $ \(r, permanent) -> do
+      let attackingObject = _permanentObject permanent
+      let Just (power, _) = _pt attackingObject
+      case _attacking permanent of
+        Nothing -> return []
+        Just (PlayerRef p) -> return [Will (DamagePlayer attackingObject p power True True)]
+        Just (ObjectRef (Some Battlefield, i)) -> return [Will (DamageObject attackingObject (Battlefield, i) power True True)]
+  executeEffects TurnBasedActions (concat effectses)
   offerPriority
   -- TODO [510.5]  possibly introduce extra combat damage step for first/double strike
   return ()
