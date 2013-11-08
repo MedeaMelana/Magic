@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Magic.Json (interactToJSON) where
 
@@ -144,7 +145,7 @@ instance ToJSONPairs Object where
     , "timestamp" .= _timestamp o
     , "counters" .= _counters o
     , "pt" .= maybe Null (\(p,t) -> obj [ "power" .= p, "toughness" .= t ]) (_pt o)
-    --, "staticKeywordAbilities" .= _staticKeywordAbilities
+    , "staticKeywordAbilities" .= _staticKeywordAbilities o
     ]
 
 
@@ -179,6 +180,13 @@ instance ToJSON SpellSubtype        where toJSON = toJSON . show
 instance ToJSON LandSubtype         where toJSON = toJSON . show
 instance ToJSON PlaneswalkerSubtype where toJSON = toJSON . show
 
+
+instance ToJSON StaticKeywordAbility where
+  toJSON = \case
+    FirstStrike -> "first strike"
+    ProtectionFromColor c ->
+      toJSON ("protection from " ++ map toLower (show c))
+    ab -> (toJSON . map toLower . show) ab
 
 instance ToJSON PriorityAction where
   toJSON a = typedObject $ case a of
