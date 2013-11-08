@@ -51,11 +51,7 @@ evalRandTIO p = evalRandT p `fmap` newStdGen
 askQuestions :: ProgramT Interact (Either GameOver) () -> WebSockets Hybi00 ()
 askQuestions = eval . viewT
   where
-    eval (Left gameOver) = case gameOver of
-      GameWin p -> sendText ("Player " <> showText p <> " wins!")
-      GameDraw  -> sendText "The game is a draw"
-      ErrorWithMessage message -> sendText ("Engine failed with error: " <> message)
-      UnknownError -> sendText "Unknown error"
+    eval (Left gameOver) = sendTextData (encode gameOver)
     eval (Right program) = case program of
       Return x -> return x
       instr :>>= k -> do

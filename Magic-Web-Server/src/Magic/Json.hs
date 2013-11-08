@@ -5,6 +5,7 @@
 module Magic.Json (interactToJSON) where
 
 import Magic
+import Magic.Engine.Types
 import qualified Magic.IdList as IdList
 
 import Control.Monad (liftM)
@@ -234,7 +235,12 @@ instance ToJSON Event where
     DidBeginStep step            -> ("beginStep", [ "step" .= step ])
     WillEndStep step             -> ("willEndStep", [ "step" .= step ])
 
-
+instance ToJSON GameOver where
+  toJSON t = typedObject $ case t of
+    GameWin p -> ("gameWin", [ "playerId" .= p ])
+    GameDraw -> ("gameDraw", [])
+    ErrorWithMessage msg -> ("error", [ "message" .= msg ])
+    UnknownError -> ("error", [])
 
 instance ToJSON EntityRef where
   toJSON t = typedObject $ case t of
