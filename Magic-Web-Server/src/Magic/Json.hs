@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
 
 module Magic.Json (interactToJSON) where
 
@@ -10,12 +11,16 @@ import qualified Magic.IdList as IdList
 
 import Control.Monad (liftM)
 
-import Data.Aeson (ToJSON(..), Value(..), (.=))
-import Data.Aeson.Types (Pair)
+import Data.Aeson (ToJSON(..), FromJSON(..), Value(..), (.=), decode)
+import Data.Aeson.Types (Pair, Parser, parseMaybe, (.:))
 import qualified Data.Aeson as Aeson
+import Data.Attoparsec.Number
+import Data.ByteString.Lazy (ByteString)
 import Data.Char (toLower)
 import Data.Text (Text)
 import qualified Data.Text as Text
+import Data.Traversable (for)
+import qualified Data.Vector as Vector
 
 import Safe (atMay, readMay)
 
@@ -45,6 +50,14 @@ instance ToJSON a => ToJSON (IdList.IdList a) where
 someObjectRefToJSON :: SomeObjectRef -> Value
 someObjectRefToJSON (Some z, i) = obj [ "zone" .= z, "objectId" .= i ]
 
+-- TODO use withObject
+someObjectRefFromJSON :: Aeson.Object -> Parser SomeObjectRef
+someObjectRefFromJSON v = do
+  z <- v .: "zone"
+  z' <- someZoneRefFromJSON z
+  o <- v .: "objectId"
+  return (z', IdList.Id o)
+
 objectRefToJSON :: ObjectRef ty -> Value
 objectRefToJSON (z, i) = obj [ "zone" .= z, "objectId" .= i ]
 
@@ -64,6 +77,19 @@ instance ToJSON (ZoneRef ty) where
 
 someZoneRefToJSON :: Some ZoneRef -> Value
 someZoneRefToJSON (Some z) = toJSON z
+
+-- TODO use withObject
+someZoneRefFromJSON :: Aeson.Object -> Parser (Some ZoneRef)
+someZoneRefFromJSON v = do
+  n <- v .: "name"
+  case n of
+    "library"     -> do 
+                     p <- v .: "playerId"
+                     return (Some (Library (IdList.Id p)))
+    "hand"        -> do
+                     p <- v .: "playerId" 
+                     return (Some (Hand (IdList.Id p)))
+    "battlefield" -> return (Some Battlefield)
 
 lkiToJSON :: LastKnownObjectInfo -> Value
 lkiToJSON (r, o) = obj [ "objectRef" .= someObjectRefToJSON r, "object" .= obj (toJSONPairs o) ]
@@ -247,7 +273,19 @@ instance ToJSON EntityRef where
     PlayerRef p -> ("player", [ "playerId" .= p ])
     ObjectRef r -> ("object", [ "objectRef" .= someObjectRefToJSON r ])
 
-interactToJSON :: Monad m => m Text -> Interact a -> (Value, m a)
+instance FromJSON EntityRef where
+  parseJSON v = undefined
+    -- p <- v .: "player"
+    --if isJust p
+    --then
+    --  id <- v .: playerId
+    --  return undefined
+    --else
+    --  o <- v .: "object"
+    --  r <- o .: "objectRef"
+    --  return someObjectRefFromJSON r
+
+interactToJSON :: Monad m => m ByteString -> Interact a -> (Value, m a)
 interactToJSON receiveData op = (typedObject (instrType, props), receiveAnswer)
   where
     (instrType, props, receiveAnswer) = case op of
@@ -257,8 +295,8 @@ interactToJSON receiveData op = (typedObject (instrType, props), receiveAnswer)
       AskQuestion p w q ->
         let (json, select) = questionToJSON q
             getAnswer = do
-              input <- Text.unpack `liftM` receiveData
-              case readMay input >>= select of
+              input <- decode `liftM` receiveData
+              case input >>= select of
                 Nothing -> do
                   --sendText ("Invalid option" :: Text)
                   getAnswer
@@ -266,22 +304,39 @@ interactToJSON receiveData op = (typedObject (instrType, props), receiveAnswer)
                   return x
           in ("askQuestion", [ "playerId" .= p, "world" .= w, "question" .= json], getAnswer)
 
-questionToJSON :: Question a -> (Value, Int -> Maybe a)
+questionToJSON :: Question a -> (Value, Value -> Maybe a)
 questionToJSON q = (typedObject (questionType, props), select)
   where
     (questionType, props, select) = case q of
       AskKeepHand ->
-        ("keepHand", [ "options" .= [True, False] ], atMay [True, False])
+        ("keepHand", [ "options" .= [True, False] ], \(Number (I i)) -> atMay [True, False] (fromIntegral i))
       AskPriorityAction opts ->
         ("priorityAction", [ "options" .= (passOption : map toJSON opts) ],
-          \i -> case i of 0 -> Just Nothing; _ -> fmap Just (atMay opts (i - 1)))
+          \(Number (I i)) -> case i of 0 -> Just Nothing; _ -> fmap Just (atMay opts ((fromIntegral i) - 1)))
       AskManaAbility m opts ->
-        ("manaAbility", [ "manaToPay" .= m, "options" .= opts ], atMay opts)
+        ("manaAbility", [ "manaToPay" .= m, "options" .= opts ], \(Number (I i)) -> atMay opts (fromIntegral i))
       AskTarget ts ->
-        ("target", ["options" .= ts], atMay ts)
+        ("target", ["options" .= ts], \(Number (I i)) -> atMay ts (fromIntegral i))
       AskPickTrigger lkis ->
         ("pickTrigger", ["options" .= map lkiToJSON lkis],
-          \i -> if i < length lkis then Just i else Nothing)
+          \(Number (I i)) -> if fromIntegral i < length lkis then Just (fromIntegral i) else Nothing)
+      AskAttackers as ts ->
+        ("attack", [ "attackers" .= as, "targets" .= ts ], parseMaybe parsePairs)
+
+    parsePairs :: Value -> Parser [(ObjectRef TyPermanent, EntityRef)]
+    parsePairs = parseArray $ Aeson.withObject "expected object" parsePair
+
+    parsePair :: Aeson.Object -> Parser (ObjectRef TyPermanent, EntityRef)
+    parsePair at = do
+      a <- at .: "attacker"
+      t <- at .: "attacked"
+      let a' :: ObjectRef TyPermanent
+          a' = case someObjectRefFromJSON a of (Some Battlefield, i) -> (Battlefield, i)
+      return (a', t)
+
+    parseArray :: (Value -> Parser a) -> Value -> Parser [a]
+    parseArray parseElement = Aeson.withArray "expected array" $ \vs ->
+      for (Vector.toList vs) parseElement
 
 passOption :: Value
 passOption = toJSON (typedObject ("pass", []))

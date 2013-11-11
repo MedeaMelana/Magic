@@ -3,7 +3,7 @@
 module Magic.IdList (
 
     -- * Types
-    Id, idToInt, IdList,
+    Id(..), idToInt, IdList,
 
     -- * Construction
     empty, fromList, fromListWithId,
