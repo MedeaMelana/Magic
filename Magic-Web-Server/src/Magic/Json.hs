@@ -192,7 +192,7 @@ instance ToJSON StaticKeywordAbility where
 instance ToJSON PriorityAction where
   toJSON a = typedObject $ case a of
     PlayCard r        -> ("playCard", [ "objectRef" .= someObjectRefToJSON r ])
-    ActivateAbility r -> ("activateAbility", [ "activatedAbillityRef" .= activatedAbilityRefToJSON r ])
+    ActivateAbility r -> ("activateAbility", [ "activatedAbilityRef" .= activatedAbilityRefToJSON r ])
 
 instance ToJSON PayManaAction where
   toJSON a = typedObject $ case a of
