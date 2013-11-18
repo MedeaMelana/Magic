@@ -210,15 +210,15 @@ instance ToJSON Event where
       ["playerId" .= p, "amount" .= n])
     Did (LoseLife p n)         -> ("loseLife",
       ["playerId" .= p, "amount" .= n])
-    Did (DamageObject _ i n c p) -> ("damageObject",
+    Did (DamageObject _ (Battlefield, i) n c p) -> ("damageObject",
       [ "objectId" .= i, "amount" .= n, "isCombatDamage" .= c ])
     Did (DamagePlayer _ r n c p) -> ("damagePlayer",
       [ "playerId" .= r, "amount" .= n, "isCombatDamage" .= c ])
     Did (ShuffleLibrary p)       -> ("shuffleLibrary", [ "playerId" .= p ])
     Did (DrawCard p)             -> ("drawCard", [ "playerId" .= p ])
-    Did (DestroyPermanent i _)   -> ("destroyPermanent", [ "objectId" .= i ])
-    Did (TapPermanent i)         -> ("tapPermenent", [ "objectId" .= i ])
-    Did (UntapPermanent i)       -> ("untapPermenent", [ "objectId" .= i ])
+    Did (DestroyPermanent (Battlefield, i) _)   -> ("destroyPermanent", [ "objectId" .= i ])
+    Did (TapPermanent (Battlefield, i)) -> ("tapPermanent", [ "objectId" .= i ])
+    Did (UntapPermanent (Battlefield, i)) -> ("untapPermanent", [ "objectId" .= i ])
     Did (AddToManaPool p m)      -> ("addToManaPool",
       [ "playerId" .= p, "mana" .= m ])
     Did (SpendFromManaPool p m)  -> ("spendFromManaPool",
