@@ -199,7 +199,7 @@ instance ToJSON PayManaAction where
     PayManaFromManaPool mc ->
       ("payManaFromManaPool", [ "color" .= mc ])
     ActivateManaAbility r ->
-      ("activateManaAbility", [ "activatedAbillityRef" .= activatedAbilityRefToJSON r])
+      ("activateManaAbility", [ "activatedAbilityRef" .= activatedAbilityRefToJSON r])
 
 
 
