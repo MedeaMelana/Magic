@@ -224,8 +224,7 @@ compileEffect e =
 
         DamagePlayer _source p amount _isCombatDamage _isPreventable ->
           -- TODO check for protection, infect, wither, lifelink
-          onlyIf (amount > 0) $
-            simply $ player p .^ life ~: subtract amount
+          onlyIf (amount > 0) $ combine (Will (LoseLife p amount))
 
         LoseGame p -> do
           -- TODO Remove all objects that belong to the player
