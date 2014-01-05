@@ -255,7 +255,8 @@ executeStep (EndPhase EndOfTurnStep) = do
 
 executeStep (EndPhase CleanupStep) = do
   -- TODO [514.1]  discard excess cards
-  -- TODO [514.2]  remove damage from permanents
+  -- [514.2] remove damage from permanents
+  battlefield ~:* set damage 0
 
   -- [514.2] Remove effects that last until end of turn
   battlefield ~:* modify (objectPart .^ temporaryEffects)
