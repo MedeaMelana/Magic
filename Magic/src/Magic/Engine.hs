@@ -244,8 +244,8 @@ executeStep (CombatPhase EndOfCombatStep) = do
   -- [511.2]
   offerPriority
 
-  -- TODO [511.3]  remove creatures from combat
-  return ()
+  -- [511.3]  remove creatures from combat
+  battlefield ~:* set attacking Nothing
 
 executeStep (EndPhase EndOfTurnStep) = do
   -- TODO [513.1]  handle triggers
