@@ -205,6 +205,8 @@ describeEvent :: Event -> Description
 describeEvent e =
   withWorld $ \world ->
     case e of
+      Did (GainLife p n) -> "Player " <> sh p <> " gains " <> sh n <> " life"
+      Did (LoseLife p n) -> "Player " <> sh p <> " loses " <> sh n <> " life"
       Did (DrawCard p) -> "Player " <> sh p <> " draws a card"
       Did (DestroyPermanent i _) -> "Permanent #" <> sh i <> " is destroyed"
       Did (ShuffleLibrary p) -> "Player " <> sh p <> " shuffles their library"
