@@ -9,18 +9,21 @@ import Magic
 import Magic.Engine.Types
 import qualified Magic.IdList as IdList
 
-import Control.Monad (liftM)
+import Control.Applicative ((<$>))
+import Control.Monad (liftM, mzero)
 
 import Data.Aeson (ToJSON(..), FromJSON(..), Value(..), (.=), decode)
 import Data.Aeson.Types (Pair, Parser, parseMaybe, (.:))
 import qualified Data.Aeson as Aeson
 import Data.Attoparsec.Number
 import Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.Char (toLower)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Traversable (for)
 import qualified Data.Vector as Vector
+import Debug.Trace (trace)
 
 import Safe (atMay, readMay)
 
@@ -39,6 +42,11 @@ class ToJSONPairs a where
 
 instance ToJSON IdList.Id where
   toJSON = toJSON . IdList.idToInt
+
+instance FromJSON IdList.Id where
+  parseJSON = Aeson.withNumber "Id" $ \case
+    I n -> return (IdList.Id (fromIntegral n))
+    _ -> mzero
 
 instance ToJSON a => ToJSON (IdList.IdList a) where
   toJSON list = obj ( "order" .= IdList.ids list
@@ -81,7 +89,7 @@ someZoneRefToJSON (Some z) = toJSON z
 -- TODO use withObject
 someZoneRefFromJSON :: Aeson.Object -> Parser (Some ZoneRef)
 someZoneRefFromJSON v = do
-  n <- v .: "name"
+  n <- v .: "name" :: Parser Text
   case n of
     "library"     -> do 
                      p <- v .: "playerId"
@@ -274,16 +282,12 @@ instance ToJSON EntityRef where
     ObjectRef r -> ("object", [ "objectRef" .= someObjectRefToJSON r ])
 
 instance FromJSON EntityRef where
-  parseJSON v = undefined
-    -- p <- v .: "player"
-    --if isJust p
-    --then
-    --  id <- v .: playerId
-    --  return undefined
-    --else
-    --  o <- v .: "object"
-    --  r <- o .: "objectRef"
-    --  return someObjectRefFromJSON r
+  parseJSON = Aeson.withObject "EntityRef" $ \o -> do
+    ty <- o .: "type" :: Parser Text
+    case ty of
+      "player" -> PlayerRef <$> o .: "playerId"
+      "object" -> do ObjectRef <$> (o .: "objectRef" >>= someObjectRefFromJSON)
+      _ -> mzero
 
 interactToJSON :: Monad m => m ByteString -> Interact a -> (Value, m a)
 interactToJSON receiveData op = (typedObject (instrType, props), receiveAnswer)
@@ -295,11 +299,12 @@ interactToJSON receiveData op = (typedObject (instrType, props), receiveAnswer)
       AskQuestion p w q ->
         let (json, select) = questionToJSON q
             getAnswer = do
-              input <- decode `liftM` receiveData
-              case input >>= select of
+              input <- receiveData
+              case decode input >>= select of
                 Nothing -> do
+                  trace ("Invalid input from client: " ++ BS.unpack input) $
                   --sendText ("Invalid option" :: Text)
-                  getAnswer
+                    getAnswer
                 Just x ->
                   return x
           in ("askQuestion", [ "playerId" .= p, "world" .= w, "question" .= json], getAnswer)
@@ -329,10 +334,9 @@ questionToJSON q = (typedObject (questionType, props), select)
     parsePair :: Aeson.Object -> Parser (ObjectRef TyPermanent, EntityRef)
     parsePair at = do
       a <- at .: "attacker"
-      t <- at .: "attacked"
-      let a' :: ObjectRef TyPermanent
-          a' = case someObjectRefFromJSON a of (Some Battlefield, i) -> (Battlefield, i)
-      return (a', t)
+      t <- at .: "attacked" :: Parser EntityRef
+      (Some Battlefield, i) <- someObjectRefFromJSON a
+      return ((Battlefield, i), t)
 
     parseArray :: (Value -> Parser a) -> Value -> Parser [a]
     parseArray parseElement = Aeson.withArray "expected array" $ \vs ->
