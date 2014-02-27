@@ -10,10 +10,10 @@ import Magic.Engine.Types
 import qualified Magic.IdList as IdList
 
 import Control.Applicative ((<$>))
-import Control.Monad (liftM, mzero)
+import Control.Monad (liftM, mzero, (>=>))
 
 import Data.Aeson (ToJSON(..), FromJSON(..), Value(..), (.=), decode)
-import Data.Aeson.Types (Pair, Parser, parseMaybe, (.:))
+import Data.Aeson.Types (Pair, Parser, parse, (.:))
 import qualified Data.Aeson as Aeson
 import Data.Attoparsec.Number
 import Data.ByteString.Lazy (ByteString)
@@ -300,36 +300,54 @@ interactToJSON receiveData op = (typedObject (instrType, props), receiveAnswer)
         let (json, select) = questionToJSON q
             getAnswer = do
               input <- receiveData
-              case decode input >>= select of
+              case fmap (parse (unwrapAnswer select)) (decode input) of
                 Nothing -> do
-                  trace ("Invalid input from client: " ++ BS.unpack input) $
+                  trace ("Invalid JSON input from client: " ++ BS.unpack input) $
                   --sendText ("Invalid option" :: Text)
                     getAnswer
-                Just x ->
+                Just (Aeson.Error e) ->
+                  trace ("Invalid input from client: " ++ BS.unpack input ++ ": " ++ e) $
+                  --sendText ("Invalid option" :: Text)
+                    getAnswer
+                Just (Aeson.Success x) ->
                   return x
+            unwrapAnswer :: (Value -> Parser a) -> Value -> Parser a
+            unwrapAnswer k =
+              Aeson.withObject "answer object" ((.: "answer") >=> k)
           in ("askQuestion", [ "playerId" .= p, "world" .= w, "question" .= json], getAnswer)
 
-questionToJSON :: Question a -> (Value, Value -> Maybe a)
+questionToJSON :: Question a -> (Value, Value -> Parser a)
 questionToJSON q = (typedObject (questionType, props), select)
   where
     (questionType, props, select) = case q of
       AskKeepHand ->
-        ("keepHand", [ "options" .= [True, False] ], \(Number (I i)) -> atMay [True, False] (fromIntegral i))
+        ("keepHand", [ ], Aeson.withBool "boolean" return)
       AskPriorityAction opts ->
         ("priorityAction", [ "options" .= (passOption : map toJSON opts) ],
-          \(Number (I i)) -> case i of 0 -> Just Nothing; _ -> fmap Just (atMay opts ((fromIntegral i) - 1)))
+          parseOptionIndex (Nothing : map Just opts))
       AskManaAbility m opts ->
-        ("manaAbility", [ "manaToPay" .= m, "options" .= opts ], \(Number (I i)) -> atMay opts (fromIntegral i))
+        ("manaAbility", [ "manaToPay" .= m, "options" .= opts ],
+          parseOptionIndex opts)
       AskTarget ts ->
-        ("target", ["options" .= ts], \(Number (I i)) -> atMay ts (fromIntegral i))
+        ("target", ["options" .= ts], parseOptionIndex ts)
       AskPickTrigger lkis ->
         ("pickTrigger", ["options" .= map lkiToJSON lkis],
-          \(Number (I i)) -> if fromIntegral i < length lkis then Just (fromIntegral i) else Nothing)
+          parseOptionIndex [0..length lkis - 1])
       AskAttackers as ts ->
-        ("attack", [ "attackers" .= as, "targets" .= ts ], parseMaybe parsePairs)
+        ("attack", [ "attackers" .= as, "targets" .= ts ],
+          parsePairs)
+
+    parseOptionIndex :: [a] -> Value -> Parser a
+    parseOptionIndex opts =
+      Aeson.withNumber "option index" $ \case
+        I i ->
+          case atMay opts (fromIntegral i) of
+            Just opt -> return opt
+            Nothing  -> fail ("invalid option index: " ++ show i)
+        D d -> fail ("invalid option index: " ++ show d)
 
     parsePairs :: Value -> Parser [(ObjectRef TyPermanent, EntityRef)]
-    parsePairs = parseArray $ Aeson.withObject "expected object" parsePair
+    parsePairs = parseArray $ Aeson.withObject "object" parsePair
 
     parsePair :: Aeson.Object -> Parser (ObjectRef TyPermanent, EntityRef)
     parsePair at = do
@@ -339,7 +357,7 @@ questionToJSON q = (typedObject (questionType, props), select)
       return ((Battlefield, i), t)
 
     parseArray :: (Value -> Parser a) -> Value -> Parser [a]
-    parseArray parseElement = Aeson.withArray "expected array" $ \vs ->
+    parseArray parseElement = Aeson.withArray "array" $ \vs ->
       for (Vector.toList vs) parseElement
 
 passOption :: Value
