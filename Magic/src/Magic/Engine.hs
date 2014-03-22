@@ -177,18 +177,18 @@ executeStep (CombatPhase BeginningOfCombatStep) = do
   offerPriority
 
 executeStep (CombatPhase DeclareAttackersStep) = do
-  -- TODO [508.1a] declare attackers
-  -- TODO [508.1b] declare which player or planeswalker each attacker attacks
+  -- [508.1a] declare attackers
+  -- [508.1b] declare which player or planeswalker each attacker attacks
   -- TODO Offer attacking planeswalkers
   -- TODO Check summoning sickness
-  -- TODO Check tap status
+
   ap <- gets activePlayer
-  possibleAttackerRefs <- map (\(i,_) -> (Battlefield, i)) . filter ((isControlledBy ap &&* hasTypes creatureType) . get objectPart . snd) . IdList.toList <$> view (asks battlefield)
+  let canAttack perm =
+        (isControlledBy ap &&* hasTypes creatureType) (get objectPart perm)
+        && get tapStatus perm == Untapped
+  possibleAttackerRefs <- map (\(i,_) -> (Battlefield, i)) . filter (canAttack . snd) . IdList.toList <$> view (asks battlefield)
   attackablePlayerRefs <- (filter (/= ap) . IdList.ids) <$> gets players
   attacks <- askQuestion ap (AskAttackers possibleAttackerRefs (map PlayerRef attackablePlayerRefs))
-  forM_ attacks $ \(Attack rAttacker rAttackee) ->
-    object rAttacker .^ attacking =: Just rAttackee
-  raise TurnBasedActions [DidDeclareAttackers ap attacks]
 
   -- TODO [508.1c] check attacking restrictions
   -- TODO [508.1d] check attacking requirements
@@ -197,8 +197,14 @@ executeStep (CombatPhase DeclareAttackersStep) = do
   -- TODO [508.1g] determine costs
   -- TODO [508.1h] allow mana abilities
   -- TODO [508.1i] pay costs
-  -- TODO [508.1j] mark creatures as attacking
-  -- TODO [508.2]  handle triggers
+
+  -- [508.1j] mark creatures as attacking
+  forM_ attacks $ \(Attack rAttacker rAttackee) ->
+    object rAttacker .^ attacking =: Just rAttackee
+
+  -- [508.2]  handle triggers
+  raise TurnBasedActions [DidDeclareAttackers ap attacks]
+
   offerPriority
   -- TODO [508.6]  potentially skip declare blockers and combat damage steps
   return ()
