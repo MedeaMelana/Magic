@@ -185,10 +185,10 @@ executeStep (CombatPhase DeclareAttackersStep) = do
   ap <- gets activePlayer
   possibleAttackerRefs <- map (\(i,_) -> (Battlefield, i)) . filter ((isControlledBy ap &&* hasTypes creatureType) . get objectPart . snd) . IdList.toList <$> view (asks battlefield)
   attackablePlayerRefs <- (filter (/= ap) . IdList.ids) <$> gets players
-  pairs <- askQuestion ap (AskAttackers possibleAttackerRefs (map PlayerRef attackablePlayerRefs))
-  forM_ pairs $ \(rAttacker, rAttacked) ->
-    object rAttacker .^ attacking =: Just rAttacked
-  raise TurnBasedActions [DidDeclareAttackers ap pairs]
+  attacks <- askQuestion ap (AskAttackers possibleAttackerRefs (map PlayerRef attackablePlayerRefs))
+  forM_ attacks $ \(Attack rAttacker rAttackee) ->
+    object rAttacker .^ attacking =: Just rAttackee
+  raise TurnBasedActions [DidDeclareAttackers ap attacks]
 
   -- TODO [508.1c] check attacking restrictions
   -- TODO [508.1d] check attacking requirements

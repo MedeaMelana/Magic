@@ -23,7 +23,7 @@ import qualified Data.Text as Text
 
 exalted :: TriggeredAbilities
 exalted events (Some Battlefield, _) p = return [ mkTargetlessTriggerObject p (boostPT r)
-    | DidDeclareAttackers p' [(r, _)] <- events, p == p' ]
+    | DidDeclareAttackers p' [Attack r _] <- events, p == p' ]
   where
     boostPT :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
     boostPT (Battlefield, i) _rSelf = do
@@ -80,7 +80,7 @@ angelicBenediction = mkCard $ do
             if p == p'
               then return [mkTapTriggerObject p]
               else return []
-        | DidDeclareAttackers _ [(rAttacker, _)] <- events ]
+        | DidDeclareAttackers _ [Attack rAttacker _] <- events ]
     tapTrigger _ _ _ = return []
 
     mkTapTriggerObject :: PlayerRef -> Magic ()

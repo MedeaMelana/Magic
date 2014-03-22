@@ -266,9 +266,14 @@ instance ToJSON Event where
     DidMoveObject mOldRef newRef -> ("moveObject",
       [ "oldRef" .= maybe Null someObjectRefToJSON mOldRef
       , "newRef" .= someObjectRefToJSON newRef ])
+    DidDeclareAttackers p ats      -> ("declareAttackers",
+      [ "playerId" .= p, "attacks" .= ats ])
     DidBeginStep step            -> ("beginStep", [ "step" .= step ])
     WillEndStep step             -> ("willEndStep", [ "step" .= step ])
     _ -> error ("unhandled event: " ++ show event)
+
+instance ToJSON Attack where
+  toJSON (Attack atr atee) = obj [ "attacker" .= atr, "attackee" .= atee ]
 
 instance ToJSON GameOver where
   toJSON t = typedObject $ case t of
@@ -336,7 +341,7 @@ questionToJSON q = (typedObject (questionType, props), select)
           parseOptionIndex [0..length lkis - 1])
       AskAttackers as ts ->
         ("attack", [ "attackers" .= as, "targets" .= ts ],
-          parsePairs)
+          parseAttacks)
 
     parseOptionIndex :: [a] -> Value -> Parser a
     parseOptionIndex opts =
@@ -347,15 +352,15 @@ questionToJSON q = (typedObject (questionType, props), select)
             Nothing  -> fail ("invalid option index: " ++ show i)
         D d -> fail ("invalid option index: " ++ show d)
 
-    parsePairs :: Value -> Parser [(ObjectRef TyPermanent, EntityRef)]
-    parsePairs = parseArray $ Aeson.withObject "object" parsePair
+    parseAttacks :: Value -> Parser [Attack]
+    parseAttacks = parseArray $ Aeson.withObject "object" parseAttack
 
-    parsePair :: Aeson.Object -> Parser (ObjectRef TyPermanent, EntityRef)
-    parsePair at = do
+    parseAttack :: Aeson.Object -> Parser Attack
+    parseAttack at = do
       a <- at .: "attacker"
-      t <- at .: "attacked" :: Parser EntityRef
+      t <- at .: "attackee" :: Parser EntityRef
       (Some Battlefield, i) <- someObjectRefFromJSON a
-      return ((Battlefield, i), t)
+      return (Attack (Battlefield, i) t)
 
     parseArray :: (Value -> Parser a) -> Value -> Parser [a]
     parseArray parseElement = Aeson.withArray "array" $ \vs ->

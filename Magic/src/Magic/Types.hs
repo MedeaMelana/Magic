@@ -62,7 +62,7 @@ module Magic.Types (
     TemporaryLayeredEffect(..), Duration(..),
 
     -- * Events
-    Event(..), OneShotEffect(..), SimpleOneShotEffect(..),
+    Event(..), OneShotEffect(..), SimpleOneShotEffect(..), Attack(..),
 
     -- * Targets
     EntityRef(..), TargetList(..),
@@ -528,7 +528,7 @@ data PayManaAction
 data Event
   = Did SimpleOneShotEffect
   | DidMoveObject (Maybe SomeObjectRef) SomeObjectRef  -- old ref, new ref
-  | DidDeclareAttackers PlayerRef [(ObjectRef TyPermanent, EntityRef)]
+  | DidDeclareAttackers PlayerRef [Attack]
 
   -- Keyword actions [701]
   | DidActivateAbility SomeObjectRef Int  -- index of ability
@@ -569,6 +569,11 @@ data SimpleOneShotEffect
   | InstallLayeredEffect SomeObjectRef TemporaryLayeredEffect
   | CeaseToExist SomeObjectRef
   deriving Show
+
+data Attack = Attack
+  { attacker :: ObjectRef TyPermanent
+  , attackee :: EntityRef
+  } deriving Show
 
 
 
@@ -663,7 +668,7 @@ data Question a where
   AskTarget                :: [EntityRef] -> Question EntityRef
   --AskPickReplacementEffect :: [(ReplacementEffect, Magic [OneShotEffect])] -> Question (Pick (ReplacementEffect, Magic [OneShotEffect]))
   AskPickTrigger           :: [LastKnownObjectInfo] -> Question Int
-  AskAttackers             :: [ObjectRef TyPermanent] -> [EntityRef] -> Question [(ObjectRef TyPermanent, EntityRef)]
+  AskAttackers             :: [ObjectRef TyPermanent] -> [EntityRef] -> Question [Attack]
 
 type Pick a = (a, [a])
 
