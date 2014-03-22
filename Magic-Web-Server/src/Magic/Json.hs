@@ -268,6 +268,7 @@ instance ToJSON Event where
       , "newRef" .= someObjectRefToJSON newRef ])
     DidBeginStep step            -> ("beginStep", [ "step" .= step ])
     WillEndStep step             -> ("willEndStep", [ "step" .= step ])
+    _ -> error ("unhandled event: " ++ show event)
 
 instance ToJSON GameOver where
   toJSON t = typedObject $ case t of
