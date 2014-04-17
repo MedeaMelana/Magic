@@ -62,7 +62,7 @@ angel'sMercy = mkCard $ do
     , tapCost         = NoTapCost
     , effect          = \rSelf rActivator -> stackTargetlessEffect rSelf $ \_ ->
       void $ executeEffect (Will (GainLife rActivator 7))
-    , isManaAbility = False
+    , abilityType     = ActivatedAb
     }
 
 angelicBenediction :: Card
@@ -184,7 +184,7 @@ captain'sCall = mkCard $ do
         t <- tick
         stackTargetlessEffect rSelf $
           \_ -> void $ executeEffects $ replicate 3 $ mkSoldierEffect t rActivator
-    , isManaAbility = False
+    , abilityType     = ActivatedAb
     }
 
 divineFavor :: Card
@@ -230,7 +230,7 @@ searingSpear = mkCard $ do
       , manaCost      = [Nothing, Just Red]
       , tapCost       = NoTapCost
       , effect        = searingSpearEffect
-      , isManaAbility = False
+      , abilityType   = ActivatedAb
       }
   where
     searingSpearEffect :: Contextual (Magic ())
@@ -296,7 +296,7 @@ loyaltyAbility cost eff = ActivatedAbility
   { available = sorcerySpeed &&* hasAtLeastLoyalty cost
   , manaCost = []
   , tapCost = NoTapCost
-  , isManaAbility = False
+  , abilityType = ActivatedAb
   , effect = \rSelf you -> do
       void $ executeEffects (replicate cost (Will (RemoveCounter rSelf Loyalty)))
       eff rSelf you

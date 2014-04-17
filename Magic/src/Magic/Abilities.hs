@@ -4,7 +4,7 @@
 module Magic.Abilities (
     -- * Ability types
     Contextual,
-    ActivatedAbility(..), TapCost(..),
+    ActivatedAbility(..), TapCost(..), AbilityType(..),
     StackItem, ManaPool,
     StaticKeywordAbility(..),
     ReplacementEffect, TriggeredAbilities,
@@ -77,7 +77,7 @@ playPermanent mc =
     , manaCost      = mc
     , tapCost       = NoTapCost
     , effect        = playPermanentEffect
-    , isManaAbility = False
+    , abilityType   = ActivatedAb
     }
   where
     playPermanentEffect :: Contextual (Magic ())
@@ -97,7 +97,7 @@ playAura mc =
     , manaCost      = mc
     , tapCost       = NoTapCost
     , effect        = playAuraEffect
-    , isManaAbility = False
+    , abilityType   = ActivatedAb
     }
   where
     playAuraEffect :: Contextual (Magic ())

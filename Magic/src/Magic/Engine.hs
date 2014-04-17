@@ -457,7 +457,7 @@ offerManaAbilitiesToPay :: EventSource -> PlayerRef -> ManaPool -> Engine ()
 offerManaAbilitiesToPay _ _ []   = return ()
 offerManaAbilitiesToPay source p cost = do
   amas <- map ActivateManaAbility <$>
-          collectAvailableActivatedAbilities isManaAbility p
+          collectAvailableActivatedAbilities ((== ManaAb) . abilityType) p
   pool <- gets (player p .^ manaPool)
   let pms =
         if Nothing `elem` cost

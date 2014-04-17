@@ -51,7 +51,7 @@ module Magic.Types (
 
     -- * Abilities
     Contextual,
-    ActivatedAbility(..), TapCost(..),
+    ActivatedAbility(..), TapCost(..), AbilityType(..),
     StackItem, ManaPool,
     StaticKeywordAbility(..),
     ReplacementEffect, TriggeredAbilities,
@@ -412,10 +412,13 @@ data ActivatedAbility = ActivatedAbility
   , manaCost        :: ManaPool
   , tapCost         :: TapCost
   , effect          :: Contextual (Magic ())
-  , isManaAbility   :: Bool
+  , abilityType     :: AbilityType
   }
 
 data TapCost = NoTapCost | TapCost  -- add later: UntapCost
+
+data AbilityType = ActivatedAb | ManaAb | LoyaltyAb
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 type StackItem = TargetList EntityRef (ObjectRef TyStackItem -> Magic ())
 

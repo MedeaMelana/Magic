@@ -42,7 +42,7 @@ playLand = ActivatedAbility
   , manaCost = mempty
   , tapCost = NoTapCost
   , effect = \rSource rActivator -> void (executeEffect (Will (PlayLand rActivator rSource)))
-  , isManaAbility = False
+  , abilityType = ActivatedAb
   }
 
 countLandsPlayedThisTurn :: (PlayerRef -> Bool) -> View Int
@@ -62,7 +62,7 @@ tapToAddMana mc = ActivatedAbility
   , manaCost = mempty
   , tapCost = TapCost
   , effect = \_rSource rActivator -> void (executeEffect (Will (AddToManaPool rActivator [mc])))
-  , isManaAbility = True
+  , abilityType = ManaAb
   }
 
 checkObject :: SomeObjectRef -> (Object -> Bool) -> View Bool
