@@ -78,7 +78,7 @@ askQuestions = eval . viewT
         chosen <- declareAttackers p world ats defs
         askQuestions (k chosen)
 
-declareAttackers :: PlayerRef -> World -> [ObjectRef TyPermanent] -> [EntityRef] -> IO [(ObjectRef TyPermanent, EntityRef)]
+declareAttackers :: PlayerRef -> World -> [ObjectRef TyPermanent] -> [EntityRef] -> IO [Attack]
 declareAttackers p world [] defs = return []
 declareAttackers p world ((Battlefield, i):ats) defs = do
   let q = "Who should " <> desc world (describeObjectNameByRef (Some Battlefield, i)) <> " attack?"
@@ -87,7 +87,7 @@ declareAttackers p world ((Battlefield, i):ats) defs = do
   mchosen <- offerOptions p q (options ++ noone)
   rest <- declareAttackers p world ats defs
   return $ case mchosen of
-    Just chosen -> ((Battlefield, i), chosen) : rest
+    Just chosen -> (Attack (Battlefield, i) chosen) : rest
     Nothing     -> rest
 
 showText :: Show a => a -> Text
