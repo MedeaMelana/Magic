@@ -39,6 +39,7 @@ emptyObject t rOwner = Object
   , _loyalty = Nothing
 
   , _play = Nothing
+  , _alternativePlays = []
   , _staticKeywordAbilities = []
   , _layeredEffects = []
   , _activatedAbilities = []

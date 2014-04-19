@@ -239,7 +239,7 @@ executeStep (CombatPhase CombatDamageStep) = do
         Nothing -> return []
         Just (PlayerRef p) -> return [Will (DamagePlayer attackingObject p power True True)]
         Just (ObjectRef (Some Battlefield, i)) -> return [Will (DamageObject attackingObject (Battlefield, i) power True True)]
-  executeEffects TurnBasedActions (concat effectses)
+  _ <- executeEffects TurnBasedActions (concat effectses)
   offerPriority
   -- TODO [510.5]  possibly introduce extra combat damage step for first/double strike
   return ()
@@ -417,8 +417,9 @@ collectAvailableActivatedAbilities predicate p = do
   execWriterT $ do
     for objects $ \(r,o) -> do
       for (zip [0..] (get activatedAbilities o)) $ \(i, ability) -> do
-        ok <- lift (shouldOfferAbility ability r p)
-        when (predicate ability && ok) (tell [(r, i)])
+        ok <- lift (shouldOfferActivation (abilityActivation ability) r p)
+        payCostsOk <- lift (canPayTapCost (tapCost ability) r p)
+        when (predicate ability && ok && payCostsOk) (tell [(r, i)])
 
 collectPlayableCards :: PlayerRef -> Engine [SomeObjectRef]
 collectPlayableCards p = do
@@ -427,31 +428,31 @@ collectPlayableCards p = do
     forM_ objects $ \(r,o) -> do
       case get play o of
         Just playAbility -> do
-          ok <- lift (shouldOfferAbility playAbility r p)
+          ok <- lift (shouldOfferActivation playAbility r p)
           when ok (tell [r])
         Nothing -> return ()
 
-shouldOfferAbility :: ActivatedAbility -> Contextual (Engine Bool)
-shouldOfferAbility ability rSource rActivator = do
-  abilityOk <- view (available ability rSource rActivator)
-  payCostsOk <- canPayTapCost (tapCost ability) rSource rActivator
-  return (abilityOk && payCostsOk)
+shouldOfferActivation :: Activation -> Contextual (Engine Bool)
+shouldOfferActivation activation rSource rActivator =
+  view (available activation rSource rActivator)
 
-activateAbility :: EventSource -> ActivatedAbility -> Contextual (Engine ())
-activateAbility source ability rSource rActivator  = do
+activate :: EventSource -> Activation -> Contextual (Engine ())
+activate source activation rSource rActivator  = do
   --offerManaAbilitiesToPay source rActivator (manaCost ability)
-  payTapCost source (tapCost ability) rSource rActivator
-  executeMagic source (effect ability rSource rActivator)
+  executeMagic source (effect activation rSource rActivator)
 
 executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
 executePriorityAction p a = do
   case a of
     PlayCard r -> do
       Just ability <- gets (objectBase r .^ play)
-      activateAbility (PriorityActionExecution a) ability r p
+      activate (PriorityActionExecution a) ability r p
     ActivateAbility (r, i) -> do
       abilities <- gets (objectBase r .^ activatedAbilities)
-      activateAbility (PriorityActionExecution a) (abilities !! i) r p
+      let ab = abilities !! i
+      let eventSource = PriorityActionExecution a
+      payTapCost eventSource (tapCost ab) r p
+      activate eventSource (abilityActivation ab) r p
 
 offerManaAbilitiesToPay :: EventSource -> PlayerRef -> ManaPool -> Engine ()
 offerManaAbilitiesToPay _ _ []   = return ()
@@ -472,7 +473,7 @@ offerManaAbilitiesToPay source p cost = do
         else offerManaAbilitiesToPay source p (delete Nothing cost)
     ActivateManaAbility (r, i) -> do
       abilities <- gets (objectBase r .^ activatedAbilities)
-      activateAbility source (abilities !! i) r p
+      activate source (abilityActivation (abilities !! i)) r p
       offerManaAbilitiesToPay source p cost
 
 canPayTapCost :: TapCost -> Contextual (Engine Bool)

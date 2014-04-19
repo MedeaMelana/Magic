@@ -33,7 +33,7 @@ module Magic.Types (
     Object(..),
       name, colors, types, owner, controller, timestamp, counters,
       pt, loyalty,
-      play, staticKeywordAbilities, layeredEffects, activatedAbilities, triggeredAbilities, replacementEffects,
+      play, alternativePlays, staticKeywordAbilities, layeredEffects, activatedAbilities, triggeredAbilities, replacementEffects,
       temporaryEffects,
     ObjectOfType(..),
       cardObject,
@@ -51,7 +51,7 @@ module Magic.Types (
 
     -- * Abilities
     Contextual,
-    ActivatedAbility(..), TapCost(..), AbilityType(..),
+    ActivatedAbility(..), Activation(..), TapCost(..), AbilityType(..),
     StackItem, ManaPool,
     StaticKeywordAbility(..),
     ReplacementEffect, TriggeredAbilities,
@@ -236,7 +236,8 @@ data Object = Object
 
   --, _indestructible    :: Bool
 
-  , _play                   :: Maybe ActivatedAbility
+  , _play                   :: Maybe Activation
+  , _alternativePlays       :: [Activation]
   , _staticKeywordAbilities :: Bag StaticKeywordAbility
   , _layeredEffects         :: [LayeredEffect]
   , _activatedAbilities     :: [ActivatedAbility]
@@ -408,11 +409,16 @@ data PlaneswalkerSubtype = Chandra | Elspeth | Garruk | Gideon | Jace
 type Contextual a = SomeObjectRef -> PlayerRef -> a
 
 data ActivatedAbility = ActivatedAbility
-  { available       :: Contextual (View Bool)  -- check for cost is implied
+  { abilityActivation :: Activation
+  , abilityType       :: AbilityType
+  , tapCost           :: TapCost
+  }
+
+data Activation = Activation
+  { available       :: Contextual (View Bool)
+      -- check timing, zone, controller
   , manaCost        :: ManaPool
-  , tapCost         :: TapCost
   , effect          :: Contextual (Magic ())
-  , abilityType     :: AbilityType
   }
 
 data TapCost = NoTapCost | TapCost  -- add later: UntapCost

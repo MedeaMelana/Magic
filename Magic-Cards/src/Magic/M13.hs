@@ -56,13 +56,11 @@ angel'sMercy :: Card
 angel'sMercy = mkCard $ do
   name =: Just "Angel's Mercy"
   types =: instantType
-  play =: Just ActivatedAbility
+  play =: Just Activation
     { available       = instantSpeed
     , manaCost        = [Nothing, Nothing, Just White, Just White]
-    , tapCost         = NoTapCost
     , effect          = \rSelf rActivator -> stackTargetlessEffect rSelf $ \_ ->
       void $ executeEffect (Will (GainLife rActivator 7))
-    , abilityType     = ActivatedAb
     }
 
 angelicBenediction :: Card
@@ -176,15 +174,13 @@ captain'sCall :: Card
 captain'sCall = mkCard $ do
   name  =: Just "Captain's Call"
   types =: sorceryType
-  play  =: Just ActivatedAbility
+  play  =: Just Activation
     { available       = sorcerySpeed
     , manaCost        = [Nothing, Nothing, Nothing, Just White]
-    , tapCost         = NoTapCost
     , effect          = \rSelf rActivator -> do
         t <- tick
         stackTargetlessEffect rSelf $
           \_ -> void $ executeEffects $ replicate 3 $ mkSoldierEffect t rActivator
-    , abilityType     = ActivatedAb
     }
 
 divineFavor :: Card
@@ -225,12 +221,10 @@ searingSpear :: Card
 searingSpear = mkCard $ do
     name  =: Just "Searing Spear"
     types =: instantType
-    play  =: Just ActivatedAbility
+    play  =: Just Activation
       { available     = instantSpeed
       , manaCost      = [Nothing, Just Red]
-      , tapCost       = NoTapCost
       , effect        = searingSpearEffect
-      , abilityType   = ActivatedAb
       }
   where
     searingSpearEffect :: Contextual (Magic ())
@@ -293,13 +287,15 @@ simpleCreatureToken t you tys cs pt' =
 
 loyaltyAbility :: Int -> Contextual (Magic ()) -> ActivatedAbility
 loyaltyAbility cost eff = ActivatedAbility
-  { available = sorcerySpeed &&* hasAtLeastLoyalty cost
-  , manaCost = []
+  { abilityActivation = Activation
+    { available = sorcerySpeed &&* hasAtLeastLoyalty cost
+    , manaCost = []
+    , effect = \rSelf you -> do
+        void $ executeEffects (replicate cost (Will (RemoveCounter rSelf Loyalty)))
+        eff rSelf you
+    }
   , tapCost = NoTapCost
-  , abilityType = ActivatedAb
-  , effect = \rSelf you -> do
-      void $ executeEffects (replicate cost (Will (RemoveCounter rSelf Loyalty)))
-      eff rSelf you
+  , abilityType = LoyaltyAb
   }
 
 hasAtLeastLoyalty :: Int -> Contextual (View Bool)

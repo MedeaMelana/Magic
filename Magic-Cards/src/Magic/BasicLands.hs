@@ -26,8 +26,8 @@ mkBasicLandCard ty color = mkCard $ do
   play               =: Just playLand
   activatedAbilities =: [tapToAddMana (Just color)]
 
-playLand :: ActivatedAbility
-playLand = ActivatedAbility
+playLand :: Activation
+playLand = Activation
   { available = \rSource rActivator ->
       case rSource of
         (Some (Hand _), _) -> do
@@ -40,9 +40,7 @@ playLand = ActivatedAbility
           return (control && ap == rActivator && step == MainPhase && stackEmpty && n < 1)
         _           -> return False
   , manaCost = mempty
-  , tapCost = NoTapCost
   , effect = \rSource rActivator -> void (executeEffect (Will (PlayLand rActivator rSource)))
-  , abilityType = ActivatedAb
   }
 
 countLandsPlayedThisTurn :: (PlayerRef -> Bool) -> View Int
@@ -54,15 +52,17 @@ countLandsPlayedThisTurn f = length . filter isPlayLand <$> asks turnHistory
 
 tapToAddMana :: Maybe Color -> ActivatedAbility
 tapToAddMana mc = ActivatedAbility
-  { available = \rSource rActivator ->
-      case rSource of
-        (Some Battlefield, _) ->
-          checkObject rSource (isControlledBy rActivator)
-        _ -> return False
-  , manaCost = mempty
-  , tapCost = TapCost
-  , effect = \_rSource rActivator -> void (executeEffect (Will (AddToManaPool rActivator [mc])))
+  { abilityActivation = Activation
+    { available = \rSource rActivator ->
+        case rSource of
+          (Some Battlefield, _) ->
+            checkObject rSource (isControlledBy rActivator)
+          _ -> return False
+    , manaCost = mempty
+    , effect = \_rSource rActivator -> void (executeEffect (Will (AddToManaPool rActivator [mc])))
+    }
   , abilityType = ManaAb
+  , tapCost = TapCost
   }
 
 checkObject :: SomeObjectRef -> (Object -> Bool) -> View Bool

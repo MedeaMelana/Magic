@@ -4,7 +4,7 @@
 module Magic.Abilities (
     -- * Ability types
     Contextual,
-    ActivatedAbility(..), TapCost(..), AbilityType(..),
+    ActivatedAbility(..), Activation(..), TapCost(..), AbilityType(..),
     StackItem, ManaPool,
     StaticKeywordAbility(..),
     ReplacementEffect, TriggeredAbilities,
@@ -66,18 +66,16 @@ sorcerySpeed rSelf rp = instantSpeed rSelf rp &&* myMainPhase &&* isStackEmpty
 
 
 -- | Play a nonland, non-aura permanent.
-playPermanent :: ManaPool -> ActivatedAbility
+playPermanent :: ManaPool -> Activation
 playPermanent mc =
-  ActivatedAbility
+  Activation
     { available     = \rSelf rActivator -> do
         self <- asks (objectBase rSelf)
         if Flash `elem` get staticKeywordAbilities self
           then instantSpeed rSelf rActivator
           else sorcerySpeed rSelf rActivator
     , manaCost      = mc
-    , tapCost       = NoTapCost
     , effect        = playPermanentEffect
-    , abilityType   = ActivatedAb
     }
   where
     playPermanentEffect :: Contextual (Magic ())
@@ -86,18 +84,16 @@ playPermanent mc =
 
     resolvePermanent _source = return ()
 
-playAura :: ManaPool -> ActivatedAbility
+playAura :: ManaPool -> Activation
 playAura mc =
-  ActivatedAbility
+  Activation
     { available     = \rSelf rActivator -> do
         self <- asks (objectBase rSelf)
         if Flash `elem` get staticKeywordAbilities self
           then instantSpeed rSelf rActivator
           else sorcerySpeed rSelf rActivator
     , manaCost      = mc
-    , tapCost       = NoTapCost
     , effect        = playAuraEffect
-    , abilityType   = ActivatedAb
     }
   where
     playAuraEffect :: Contextual (Magic ())
