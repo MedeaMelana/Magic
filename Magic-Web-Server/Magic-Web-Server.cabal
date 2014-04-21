@@ -26,6 +26,7 @@ executable magic-web-server
                     mtl ==2.1.*,
                     operational ==0.2.*,
                     safe ==0.3.*,
+                    scientific ==0.2.*,
                     text ==1.1.*,
                     vector ==0.10.*,
                     websockets ==0.8.*

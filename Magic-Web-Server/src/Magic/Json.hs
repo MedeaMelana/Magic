@@ -19,6 +19,7 @@ import Data.Attoparsec.Number
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.Char (toLower)
+import Data.Scientific (coefficient, base10Exponent)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Traversable (for)
@@ -32,6 +33,12 @@ import Safe (atMay, readMay)
 obj :: [Pair] -> Value
 obj = Aeson.object
 
+withIntegral :: Integral b => String -> (b -> Parser a) -> Value -> Parser a
+withIntegral s k = Aeson.withScientific s $ \number ->
+  case base10Exponent number of
+    0 -> k (fromInteger (coefficient number))
+    _ -> undefined
+
 typedObject :: (Text, [Pair]) -> Value
 typedObject (typeName, props) = obj ("type" .= String typeName : props)
 
@@ -44,9 +51,7 @@ instance ToJSON IdList.Id where
   toJSON = toJSON . IdList.idToInt
 
 instance FromJSON IdList.Id where
-  parseJSON = Aeson.withNumber "Id" $ \case
-    I n -> return (IdList.Id (fromIntegral n))
-    _ -> mzero
+  parseJSON = withIntegral "Id" $ return . IdList.Id
 
 instance ToJSON a => ToJSON (IdList.IdList a) where
   toJSON list = obj ( "order" .= IdList.ids list
@@ -345,12 +350,10 @@ questionToJSON q = (typedObject (questionType, props), select)
 
     parseOptionIndex :: [a] -> Value -> Parser a
     parseOptionIndex opts =
-      Aeson.withNumber "option index" $ \case
-        I i ->
-          case atMay opts (fromIntegral i) of
-            Just opt -> return opt
-            Nothing  -> fail ("invalid option index: " ++ show i)
-        D d -> fail ("invalid option index: " ++ show d)
+      withIntegral "option index" $ \i ->
+        case atMay opts i of
+          Just opt -> return opt
+          Nothing  -> fail ("invalid option index: " ++ show i)
 
     parseAttacks :: Value -> Parser [Attack]
     parseAttacks = parseArray $ Aeson.withObject "object" parseAttack
