@@ -34,7 +34,8 @@ library
                     Magic.Target,
                     Magic.Utils,
                     Magic.World
-  other-modules:    Magic.Types
+  other-modules:    Magic.Description,
+                    Magic.Types
   build-depends:    base < 5,
                     containers,
                     fclabels ==2.0.*,
