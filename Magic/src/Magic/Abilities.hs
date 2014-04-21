@@ -53,7 +53,7 @@ instantSpeed rSelf rActivator =
     _                   -> return False
 
 sorcerySpeed :: Contextual (View Bool)
-sorcerySpeed rSelf rp = instantSpeed rSelf rp &&* myMainPhase &&* isStackEmpty
+sorcerySpeed rSelf rp = myMainPhase &&* isStackEmpty
   where
     myMainPhase = do
       ap <- asks activePlayer

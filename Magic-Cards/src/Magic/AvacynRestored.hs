@@ -4,8 +4,41 @@
 module Magic.AvacynRestored where
 
 import Magic
+import Control.Applicative (pure)
 import Control.Monad (void)
-import Data.Label.PureM ((=:))
+import Data.Label.Pure (get, modify)
+import Data.Label.PureM (asks, (=:))
+
+misthollowGriffin :: Card
+misthollowGriffin = mkCard $ do
+    name =: Just "Misthollow Griffin"
+    types =: creatureTypes [Griffin]
+    pt =: Just (3, 3)
+    staticKeywordAbilities =: [Flying]
+    play =: Just Activation
+      { available     = \rSelf you -> do
+          case rSelf of
+            (Some (Hand you'), _) | you == you' -> checkTiming rSelf you
+            (Some Exile, _)                     -> checkTiming rSelf you
+            _ -> return False
+      , manaCost      = [Nothing, Nothing, Just Blue, Just Blue]
+      , effect        = playPermanentEffect
+      }
+  where
+    playPermanentEffect :: Contextual (Magic ())
+    playPermanentEffect rSelf _ = void $
+        view (willMoveToStack rSelf (pure resolvePermanent)) >>= executeEffect
+
+    checkTiming :: Contextual (View Bool)
+    checkTiming rSelf you = do
+      self <- asks (objectBase rSelf)
+      if Flash `elem` get staticKeywordAbilities self
+        then return True
+        else sorcerySpeed rSelf you
+
+    resolvePermanent _source = return ()
+
+
 
 bloodArtist :: Card
 bloodArtist = mkCard $ do
