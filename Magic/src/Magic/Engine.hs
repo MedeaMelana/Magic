@@ -433,8 +433,8 @@ collectPlayableCards p = do
         Nothing -> return ()
 
 shouldOfferActivation :: Activation -> Contextual (Engine Bool)
-shouldOfferActivation activation rSource rActivator =
-  view (available activation rSource rActivator)
+shouldOfferActivation activation rSource you =
+  view ((timing &&* available) activation rSource you)
 
 activate :: EventSource -> Activation -> Contextual (Engine ())
 activate source activation rSource rActivator  = do

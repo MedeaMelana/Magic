@@ -231,11 +231,6 @@ data Object = Object
   -- for planeswalkers
   , _loyalty    :: Maybe Int
 
-  --, _mustBeBlocked :: Maybe Bool
-  --, _mustAttack    :: Maybe Bool
-
-  --, _indestructible    :: Bool
-
   , _play                   :: Maybe Activation
   , _alternativePlays       :: [Activation]
   , _staticKeywordAbilities :: Bag StaticKeywordAbility
@@ -415,10 +410,10 @@ data ActivatedAbility = ActivatedAbility
   }
 
 data Activation = Activation
-  { available       :: Contextual (View Bool)
-      -- check timing, zone, controller
-  , manaCost        :: ManaPool
-  , effect          :: Contextual (Magic ())
+  { timing    :: Contextual (View Bool)  -- check timing restrictions
+  , available :: Contextual (View Bool)  -- check activator and current zone
+  , manaCost  :: ManaPool
+  , effect    :: Contextual (Magic ())
   }
 
 data TapCost = NoTapCost | TapCost  -- add later: UntapCost

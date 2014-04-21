@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE DoAndIfThenElse #-}
 
 module Magic.Abilities (
     -- * Ability types
@@ -10,11 +11,19 @@ module Magic.Abilities (
     ReplacementEffect, TriggeredAbilities,
     PriorityAction(..), PayManaAction(..),
 
-    -- * Cast speed
+    -- * Timing restrictions
+    -- | Timing restrictions that can be used for 'timing' fields in 'Activation's.
     instantSpeed, sorcerySpeed,
 
-    -- * Play Abilities
-    playPermanent, playAura, stackTargetlessEffect,
+    -- * Availability
+    -- | Checks that can be used for 'available' fields in 'Activation's.
+    availableFromHand, availableFromBattlefield,
+
+    -- * Playing objects
+    playObject, playTiming, playObjectEffect,
+
+    -- * Creating effects on the stack
+    stackTargetlessEffect,
 
     -- * Constructing triggers
     mkTriggerObject, mkTargetlessTriggerObject, onSelfETB,
@@ -27,6 +36,7 @@ module Magic.Abilities (
 import Magic.Core
 import Magic.Events
 import Magic.Labels
+import Magic.ObjectTypes (instantType, sorceryType, auraType, landType, isObjectTypesSubsetOf)
 import Magic.Predicates
 import Magic.Some
 import Magic.Target
@@ -36,24 +46,23 @@ import Magic.Utils (gand, emptyObject)
 import Control.Applicative ((<$>), pure)
 import Control.Monad (void)
 
-import Data.Boolean ((&&*))
+import Data.Boolean (true, false, (&&*))
 import Data.Label (get, modify)
 import Data.Label.Monadic (asks)
 import Data.Monoid (mempty)
 
 
 
--- CAST SPEED
+-- TIMING RESTRICTIONS
 
 
+-- | Timing restriction that checks whether an instant could be cast at this time.
 instantSpeed :: Contextual (View Bool)
-instantSpeed rSelf rActivator =
-  case rSelf of
-    (Some (Hand rp), _) -> return (rp == rActivator)
-    _                   -> return False
+instantSpeed = true  -- TODO Check for Split second
 
+-- | Timing restriction that checks whether a sorcery could be cast at this time.
 sorcerySpeed :: Contextual (View Bool)
-sorcerySpeed rSelf rp = myMainPhase &&* isStackEmpty
+sorcerySpeed _rSelf rp = myMainPhase &&* isStackEmpty
   where
     myMainPhase = do
       ap <- asks activePlayer
@@ -62,46 +71,99 @@ sorcerySpeed rSelf rp = myMainPhase &&* isStackEmpty
 
 
 
--- PLAY ABILITIES
+-- AVAILABILITY
 
 
--- | Play a nonland, non-aura permanent.
-playPermanent :: ManaPool -> Activation
-playPermanent mc =
+-- | Checks that an activation's source is in the hand of the player who's trying to activate it, and that it's owned by that player.
+availableFromHand :: Contextual (View Bool)
+availableFromHand rSelf you =
+  case rSelf of
+    (Some (Hand you'), _) | you' == you ->
+      (== you) <$> view (asks (objectBase rSelf .^ controller))
+    _ -> false
+
+-- | Checks whether an activation's source is on the battlefield and is controlled by the playing trying to activate it.
+availableFromBattlefield :: Contextual (View Bool)
+availableFromBattlefield rSelf you =
+  case rSelf of
+    (Some Battlefield, _) ->
+      (== you) <$> view (asks (objectBase rSelf .^ controller))
+    _ -> false
+
+
+
+-- PLAYING OBJECTS
+
+
+-- | Default implementation for the play activation of an object, with timing
+-- 'playTiming' and availability 'availableFromHand'. Most objects will want
+-- to override the `manaCost`. Instants and sorceries need to override the
+-- `effect` for it to do anything useful.
+playObject :: Activation
+playObject =
   Activation
-    { available     = \rSelf rActivator -> do
-        self <- asks (objectBase rSelf)
-        if Flash `elem` get staticKeywordAbilities self
-          then instantSpeed rSelf rActivator
-          else sorcerySpeed rSelf rActivator
-    , manaCost      = mc
-    , effect        = playPermanentEffect
+    { timing    = playTiming
+    , available = availableFromHand
+    , manaCost  = []
+    , effect    = playObjectEffect
     }
-  where
-    playPermanentEffect :: Contextual (Magic ())
-    playPermanentEffect rSelf _ = void $
-        view (willMoveToStack rSelf (pure resolvePermanent)) >>= executeEffect
 
-    resolvePermanent _source = return ()
-
-playAura :: ManaPool -> Activation
-playAura mc =
-  Activation
-    { available     = \rSelf rActivator -> do
-        self <- asks (objectBase rSelf)
-        if Flash `elem` get staticKeywordAbilities self
-          then instantSpeed rSelf rActivator
-          else sorcerySpeed rSelf rActivator
-    , manaCost      = mc
-    , effect        = playAuraEffect
-    }
+-- | Default timing restriction for playing objects. Defers to `instantSpeed` if the object has `Flash` or is an `instantType`; otherwise defers to `sorcerySpeed`. Also checks restrictions for playing lands.
+playTiming :: Contextual (View Bool)
+playTiming rSelf you = do
+    self <- asks (objectBase rSelf)
+    let tys = get types self
+    checkLandRestrictions tys &&* checkTimingRestrictions self
   where
-    playAuraEffect :: Contextual (Magic ())
-    playAuraEffect rSelf p = do
+    checkLandRestrictions :: ObjectTypes -> View Bool
+    checkLandRestrictions tys
+      | landType `isObjectTypesSubsetOf` tys = do
+          ap <- asks activePlayer             -- [305.2]
+          n  <- countLandsPlayedThisTurn you  -- [305.3]
+          return (ap == you && n < 1)
+      | otherwise = true
+
+    countLandsPlayedThisTurn :: PlayerRef -> View Int
+    countLandsPlayedThisTurn p =
+        length . filter isPlayLand <$> asks turnHistory
+      where
+        isPlayLand (Did (PlayLand p' _))  = p == p'
+        isPlayLand _                      = False
+
+    checkTimingRestrictions :: Object -> View Bool
+    checkTimingRestrictions self =
+      if Flash `elem` get staticKeywordAbilities self ||
+         instantType `isObjectTypesSubsetOf` (get types self)
+        then instantSpeed rSelf you
+        else sorcerySpeed rSelf you
+
+-- | Default implementation for the effect of playing an object. Effects differ for lands, instants/sorceries, auras and other permanents.
+playObjectEffect :: Contextual (Magic ())
+playObjectEffect rSelf you = do
+    tys <- view (asks (objectBase rSelf .^ types))
+    if landType `isObjectTypesSubsetOf` tys
+    then playLandEffect
+    else if instantType `isObjectTypesSubsetOf` tys ||
+            sorceryType `isObjectTypesSubsetOf` tys
+    then playEmptySpellEffect
+    else if auraType `isObjectTypesSubsetOf` tys
+    then playAuraEffect
+    else playPermanentEffect
+
+  where
+    playLandEffect :: Magic ()
+    playLandEffect = void $ executeEffect (Will (PlayLand you rSelf))
+
+    playEmptySpellEffect :: Magic ()
+    playEmptySpellEffect = void $
+      view (willMoveToStack rSelf (pure (\_ -> return ()))) >>= executeEffect
+
+    playAuraEffect :: Magic ()
+    playAuraEffect = do
       aura <- view (asks (objectBase rSelf))  -- TODO Reevaluate rSelf on the stack?
       let ok r = collectEnchantPredicate aura <$>
                   asks (object r .^ objectPart)
-      ts <- askMagicTargets p (target permanent <?> ok)
+      ts <- askMagicTargets you (target permanent <?> ok)
       let f :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
           f (Battlefield, i) rStackSelf@(Stack, iSelf) = do
             self <- view (asks (object rStackSelf .^ objectPart))
@@ -109,10 +171,21 @@ playAura mc =
 
       void $ view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect
 
-collectEnchantPredicate :: Object -> Object -> Bool
-collectEnchantPredicate aura enchanted = gand
-  [ hasTypes tys enchanted
-  | EnchantPermanent tys <- get staticKeywordAbilities aura ]
+    collectEnchantPredicate :: Object -> Object -> Bool
+    collectEnchantPredicate aura enchanted = gand
+      [ hasTypes tys enchanted
+      | EnchantPermanent tys <- get staticKeywordAbilities aura ]
+
+    playPermanentEffect :: Magic ()
+    playPermanentEffect = void $
+        view (willMoveToStack rSelf (pure resolvePermanent)) >>= executeEffect
+
+    resolvePermanent _source = return ()
+
+
+
+-- CREATING EFFECTS ON THE STACK
+
 
 stackTargetlessEffect :: SomeObjectRef -> (ObjectRef TyStackItem -> Magic ()) -> Magic ()
 stackTargetlessEffect rSelf item = do

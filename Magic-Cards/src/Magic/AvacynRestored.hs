@@ -4,8 +4,10 @@
 module Magic.AvacynRestored where
 
 import Magic
-import Control.Applicative (pure)
+import Magic.Labels ((.^))
+import Control.Applicative (pure, (<$>))
 import Control.Monad (void)
+import Data.Boolean ((||*), false)
 import Data.Label (get, modify)
 import Data.Label.Monadic (asks, (=:))
 
@@ -15,28 +17,16 @@ misthollowGriffin = mkCard $ do
     types =: creatureTypes [Griffin]
     pt =: Just (3, 3)
     staticKeywordAbilities =: [Flying]
-    play =: Just Activation
-      { available     = \rSelf you -> do
-          case rSelf of
-            (Some (Hand you'), _) | you == you' -> checkTiming rSelf you
-            (Some Exile, _)                     -> checkTiming rSelf you
-            _ -> return False
-      , manaCost      = [Nothing, Nothing, Just Blue, Just Blue]
-      , effect        = playPermanentEffect
+    play =: Just playObject
+      { available = availableFromHand ||* availableFromExile
+      , manaCost  = [Nothing, Nothing, Just Blue, Just Blue]
       }
   where
-    playPermanentEffect :: Contextual (Magic ())
-    playPermanentEffect rSelf _ = void $
-        view (willMoveToStack rSelf (pure resolvePermanent)) >>= executeEffect
-
-    checkTiming :: Contextual (View Bool)
-    checkTiming rSelf you = do
-      self <- asks (objectBase rSelf)
-      if Flash `elem` get staticKeywordAbilities self
-        then return True
-        else sorcerySpeed rSelf you
-
-    resolvePermanent _source = return ()
+    availableFromExile :: Contextual (View Bool)
+    availableFromExile rSelf you =
+      case rSelf of
+        (Some Exile, _) -> (== you) <$> view (asks (objectBase rSelf .^ owner))
+        _          -> false
 
 
 
@@ -45,7 +35,7 @@ bloodArtist = mkCard $ do
     name =: Just "Blood Artist"
     types =: creatureTypes [Vampire]
     pt =: Just (0, 1)
-    play =: Just (playPermanent [Nothing, Just Black])
+    play =: Just playObject { manaCost = [Nothing, Just Black] }
     triggeredAbilities =: ifSelfWasOrIsOnBattlefield trigger
   where
     trigger :: TriggeredAbilities
