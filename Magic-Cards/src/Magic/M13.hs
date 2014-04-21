@@ -11,7 +11,7 @@ import Control.Applicative
 import Control.Monad (void)
 import Data.Boolean ((&&*))
 import Data.Label (get)
-import Data.Label.PureM ((=:), asks)
+import Data.Label.Monadic ((=:), asks)
 import Data.Monoid ((<>), mconcat)
 import qualified Data.Set as Set
 import qualified Data.Text as Text

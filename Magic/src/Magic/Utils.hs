@@ -6,7 +6,7 @@ import Magic.Types
 
 import Control.Monad.State (State, execState)
 import Data.Boolean (Boolean(..))
-import Data.Label.Pure
+import Data.Label
 import Data.List (sortBy)
 import Data.Maybe (catMaybes)
 import Data.Monoid (mempty)

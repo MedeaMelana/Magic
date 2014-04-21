@@ -13,8 +13,8 @@ class Show1 f where
 instance Show1 f => Show (Some f) where
   show (Some x) = show1 x
 
-instance EqT f => Eq (Some f) where
+instance TestEquality f => Eq (Some f) where
   Some x == Some y =
-    case eqT x y of
+    case testEquality x y of
       Just Refl -> True
       Nothing   -> False

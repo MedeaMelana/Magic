@@ -17,7 +17,7 @@ import Control.Monad.Random (MonadRandom, RandT, StdGen)
 import Control.Monad.Reader
 import Control.Monad.State (StateT, MonadState(..))
 import Control.Monad.Operational (ProgramT, liftProgram)
-import Data.Label.Pure (set, modify)
+import Data.Label (set, modify)
 import Data.List (delete)
 import Data.Monoid ((<>), mempty)
 import Data.Text (Text, pack)

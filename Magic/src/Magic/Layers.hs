@@ -17,12 +17,12 @@ module Magic.Layers (
 
 import Magic.Some (Some(..))
 import Magic.Core (object, objectPart)
-import Data.Label.Pure (get)
 import qualified Magic.IdList as IdList
 import Magic.Types
 
 import Control.Applicative ((<$>))
-import Data.Label.PureM (asks)
+import Data.Label (get)
+import Data.Label.Monadic (asks)
 import Data.Maybe (mapMaybe, maybeToList)
 
 

@@ -89,11 +89,11 @@ import Control.Monad.Reader
 import Control.Monad.Operational (Program, ProgramT)
 import Data.Boolean
 import Data.Label (mkLabels, lens)
-import Data.Label.Pure ((:->))
+import Data.Label ((:->))
 import Data.Monoid (Monoid(..))
 import Data.Set (Set)
 import Data.Text (Text, unpack)
-import Data.Type.Equality (EqT(..), (:=:)(..))
+import Data.Type.Equality (TestEquality(..), (:~:)(..))
 import Prelude hiding (interact)
 
 
@@ -125,15 +125,15 @@ data ZoneRef :: ObjectType -> * where
 deriving instance Show (ZoneRef ty)
 instance Show1 ZoneRef where show1 = show
 
-instance EqT ZoneRef where
-  eqT (Library p1)   (Library p2)   | p1 == p2 = Just Refl
-  eqT (Hand p1)      (Hand p2)      | p1 == p2 = Just Refl
-  eqT Battlefield Battlefield                  = Just Refl
-  eqT (Graveyard p1) (Graveyard p2) | p1 == p2 = Just Refl
-  eqT Stack Stack                              = Just Refl
-  eqT Exile Exile                              = Just Refl
-  eqT Command Command                          = Just Refl
-  eqT _ _ = Nothing
+instance TestEquality ZoneRef where
+  testEquality (Library p1)   (Library p2)   | p1 == p2 = Just Refl
+  testEquality (Hand p1)      (Hand p2)      | p1 == p2 = Just Refl
+  testEquality Battlefield Battlefield                  = Just Refl
+  testEquality (Graveyard p1) (Graveyard p2) | p1 == p2 = Just Refl
+  testEquality Stack Stack                              = Just Refl
+  testEquality Exile Exile                              = Just Refl
+  testEquality Command Command                          = Just Refl
+  testEquality _ _ = Nothing
 
 data ObjectType = TyCard | TyPermanent | TyStackItem
 
@@ -275,31 +275,31 @@ deriving instance Show (ObjectOfType ty)
 -- Some hand-written lenses because fclabels doesn't support GADTs
 
 cardObject :: ObjectOfType TyCard :-> Object
-cardObject = lens _cardObject (\val rec -> rec { _cardObject = val })
+cardObject = lens _cardObject (\f rec -> rec { _cardObject = f (_cardObject rec) })
 
 permanentObject :: ObjectOfType TyPermanent :-> Object
-permanentObject = lens _permanentObject (\val rec -> rec { _permanentObject = val })
+permanentObject = lens _permanentObject (\f rec -> rec { _permanentObject = f (_permanentObject rec) })
 
 tapStatus :: ObjectOfType TyPermanent :-> TapStatus
-tapStatus = lens _tapStatus (\val rec -> rec { _tapStatus = val })
+tapStatus = lens _tapStatus (\f rec -> rec { _tapStatus = f (_tapStatus rec) })
 
 damage :: ObjectOfType TyPermanent :-> Int
-damage = lens _damage (\val rec -> rec { _damage = val })
+damage = lens _damage (\f rec -> rec { _damage = f (_damage rec) })
 
 deathtouched :: ObjectOfType TyPermanent :-> Bool
-deathtouched = lens _deathtouched (\val rec -> rec { _deathtouched = val })
+deathtouched = lens _deathtouched (\f rec -> rec { _deathtouched = f (_deathtouched rec) })
 
 attachedTo :: ObjectOfType TyPermanent :-> Maybe SomeObjectRef
-attachedTo = lens _attachedTo (\val rec -> rec { _attachedTo = val })
+attachedTo = lens _attachedTo (\f rec -> rec { _attachedTo = f (_attachedTo rec) })
 
 attacking :: ObjectOfType TyPermanent :-> Maybe EntityRef
-attacking = lens _attacking (\val rec -> rec { _attacking = val })
+attacking = lens _attacking (\f rec -> rec { _attacking = f (_attacking rec) })
 
 stackItemObject :: ObjectOfType TyStackItem :-> Object
-stackItemObject = lens _stackItemObject (\val rec -> rec { _stackItemObject = val })
+stackItemObject = lens _stackItemObject (\f rec -> rec { _stackItemObject = f (_stackItemObject rec) })
 
 stackItem :: ObjectOfType TyStackItem :-> StackItem
-stackItem = lens _stackItem (\val rec -> rec { _stackItem = val })
+stackItem = lens _stackItem (\f rec -> rec { _stackItem = f (_stackItem rec) })
 
 
 

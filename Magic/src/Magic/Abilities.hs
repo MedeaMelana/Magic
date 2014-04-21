@@ -37,8 +37,8 @@ import Control.Applicative ((<$>), pure)
 import Control.Monad (void)
 
 import Data.Boolean ((&&*))
-import Data.Label.Pure (get, modify)
-import Data.Label.PureM (asks)
+import Data.Label (get, modify)
+import Data.Label.Monadic (asks)
 import Data.Monoid (mempty)
 
 

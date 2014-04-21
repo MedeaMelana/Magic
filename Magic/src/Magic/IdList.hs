@@ -12,7 +12,7 @@ module Magic.IdList (
     length, null, head, get, toList, ids, elems,
 
     -- * Modifying
-    set, remove, cons, cons', snoc, snoc', filter, shuffle,
+    set, modify, remove, cons, cons', snoc, snoc', filter, shuffle,
     consM, snocM, removeM, shuffleM
 
   ) where
@@ -23,8 +23,8 @@ import qualified Prelude
 import Control.Arrow (second)
 import Control.Monad.Random (MonadRandom)
 import Control.Monad.State (MonadState)
-import Data.Label.Pure ((:->))
-import Data.Label.PureM (gets, puts)
+import Data.Label ((:->))
+import Data.Label.Monadic (gets, puts)
 import System.Random.Shuffle (shuffleM)
 
 
@@ -97,6 +97,13 @@ set i x (IdList ixs ni) = IdList (map f ixs) ni
   where
     f ix'@(i', _)
       | i == i'    = (i, x)
+      | otherwise  = ix'
+
+modify :: Id -> (a -> a) -> IdList a -> IdList a
+modify i f (IdList ixs ni) = IdList (map g ixs) ni
+  where
+    g ix'@(i', x)
+      | i == i'    = (i, f x)
       | otherwise  = ix'
 
 remove :: Id -> IdList a -> Maybe (a, IdList a)

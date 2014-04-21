@@ -8,13 +8,13 @@ import qualified Magic.IdList as IdList
 import Prelude hiding ((.), id)
 import Control.Category (Category(..), (>>>))
 import Control.Monad.State (MonadState)
-import Data.Label.Pure ((:->), lens)
-import Data.Label.PureM
+import Data.Label ((:->), lens)
+import Data.Label.Monadic
 import Data.Maybe (fromJust)
 
 
 listEl :: Id -> IdList a :-> a
-listEl i = lens (fromJust . IdList.get i) (IdList.set i)
+listEl i = lens (fromJust . IdList.get i) (IdList.modify i)
 
 (.^) :: Category cat => cat a b -> cat b c -> cat a c
 (.^) = (>>>)

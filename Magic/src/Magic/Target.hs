@@ -25,7 +25,7 @@ import Magic.Labels ((.^))
 
 import Control.Applicative
 import Control.Monad (forM, filterM)
-import Data.Label.PureM (asks)
+import Data.Label.Monadic (asks)
 
 
 evaluateTargetList :: TargetList EntityRef a -> ([EntityRef], Maybe a)

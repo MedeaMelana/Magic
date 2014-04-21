@@ -17,7 +17,7 @@ import Control.Category ((.))
 import Control.Monad.Reader (ask)
 import Control.Monad.Reader (runReader)
 
-import Data.Label.Pure (get)
+import Data.Label (get)
 import Data.List (sort)
 import Data.Maybe (catMaybes)
 import Data.Monoid (Monoid(..), (<>), mempty)

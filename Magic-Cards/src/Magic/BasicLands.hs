@@ -7,7 +7,7 @@ import Magic
 
 import Control.Applicative
 import Control.Monad (void)
-import Data.Label.PureM
+import Data.Label.Monadic ((=:), asks)
 import Data.Monoid
 import Data.String
 

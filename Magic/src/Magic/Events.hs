@@ -18,8 +18,8 @@ import Magic.Types
 
 import Control.Monad.Operational (singleton)
 import Control.Monad.Trans (lift)
-import Data.Label.Pure (get)
-import Data.Label.PureM (asks)
+import Data.Label (get)
+import Data.Label.Monadic (asks)
 import Prelude hiding (interact)
 
 

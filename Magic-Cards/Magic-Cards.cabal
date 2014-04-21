@@ -20,6 +20,6 @@ library
   build-depends:    base < 5,
                     Magic ==0.1.*,
                     containers,
-                    fclabels ==1.1.*,
+                    fclabels ==2.0.*,
                     Boolean ==0.1.*,
-                    text ==0.11.*
+                    text ==1.1.*

@@ -37,12 +37,11 @@ library
   other-modules:    Magic.Types
   build-depends:    base < 5,
                     containers,
-                    fclabels ==1.1.*,
+                    fclabels ==2.0.*,
                     operational ==0.2.*,
                     mtl ==2.1.*,
                     MonadRandom ==0.1.*,
                     random-shuffle ==0.0.*,
-                    text ==0.11.*,
+                    text ==1.1.*,
                     safe ==0.3.*,
-                    Boolean ==0.1.*,
-                    type-equality ==0.1.*
+                    Boolean ==0.1.*

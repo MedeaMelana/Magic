@@ -17,8 +17,8 @@ import Control.Applicative
 import Control.Monad.Reader (ask)
 import Control.Monad.Operational (singleton)
 import Data.Label (lens)
-import Data.Label.Pure ((:->))
-import Data.Label.PureM (asks)
+import Data.Label ((:->))
+import Data.Label.Monadic (asks)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Traversable (for)
@@ -71,17 +71,17 @@ objectBase :: SomeObjectRef -> World :-> Object
 objectBase (Some zr, i) = compileZoneRef zr .^ listEl i .^ objectPart
 
 objectPart :: ObjectOfType ty :-> Object
-objectPart = lens getObjectPart setObjectPart
+objectPart = lens getObjectPart modifyObjectPart
   where
     getObjectPart :: ObjectOfType ty -> Object
     getObjectPart (CardObject o) = o
     getObjectPart (Permanent o _ _ _ _ _) = o
     getObjectPart (StackItem o _) = o
 
-    setObjectPart :: Object -> ObjectOfType ty -> ObjectOfType ty
-    setObjectPart o (CardObject _) = CardObject o
-    setObjectPart o (Permanent _ v w x y z)  = Permanent o v w x y z
-    setObjectPart o (StackItem _ x)  = StackItem o x
+    modifyObjectPart :: (Object -> Object) -> ObjectOfType ty -> ObjectOfType ty
+    modifyObjectPart f (CardObject o) = CardObject (f o)
+    modifyObjectPart f (Permanent o v w x y z)  = Permanent (f o) v w x y z
+    modifyObjectPart f (StackItem o x)  = StackItem (f o) x
 
 anyObject :: SomeObjectRef -> World -> Some ObjectOfType
 anyObject = undefined
