@@ -1,3 +1,7 @@
+run:
+	cabal build
+	dist/build/mtg/mtg
+
 configure:
 	cabal configure
 

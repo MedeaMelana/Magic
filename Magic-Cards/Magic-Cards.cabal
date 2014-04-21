@@ -24,3 +24,14 @@ library
                     fclabels ==2.0.*,
                     Boolean ==0.1.*,
                     text ==1.1.*
+
+executable mtg
+  hs-source-dirs:   tests
+  main-is:          Main.hs
+  build-depends:    base < 5,
+                    Magic ==0.1.*,
+                    Magic-Cards ==0.1.*,
+                    containers,
+                    fclabels ==2.0.*,
+                    Boolean ==0.1.*,
+                    text ==1.1.*
