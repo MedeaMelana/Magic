@@ -107,7 +107,7 @@ playObject =
   Activation
     { timing    = playTiming
     , available = availableFromHand
-    , manaCost  = []
+    , manaCost  = Nothing
     , effect    = playObjectEffect
     }
 
@@ -194,7 +194,7 @@ loyaltyAbility cost eff = ActivatedAbility
     { abilityActivation = Activation
       { timing    = sorcerySpeed &&* hasAtLeastLoyalty cost
       , available = availableFromBattlefield
-      , manaCost  = []
+      , manaCost  = Just []
       , effect    = \rSelf you -> do
           void $ executeEffects (replicate cost (Will (RemoveCounter rSelf Loyalty)))
           eff rSelf you

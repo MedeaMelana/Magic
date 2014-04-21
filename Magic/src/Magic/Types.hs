@@ -412,7 +412,7 @@ data ActivatedAbility = ActivatedAbility
 data Activation = Activation
   { timing    :: Contextual (View Bool)  -- check timing restrictions
   , available :: Contextual (View Bool)  -- check activator and current zone
-  , manaCost  :: ManaPool
+  , manaCost  :: Maybe ManaPool
   , effect    :: Contextual (Magic ())
   }
 

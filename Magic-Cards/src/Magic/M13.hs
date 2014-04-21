@@ -49,7 +49,7 @@ ajani'sSunstriker = mkCard $ do
   name  =: Just "Ajani's Sunstriker"
   types =: creatureTypes [Cat, Cleric]
   pt    =: Just (2, 2)
-  play  =: Just playObject { manaCost = [Just White, Just White] }
+  play  =: Just playObject { manaCost = Just [Just White, Just White] }
   staticKeywordAbilities =: [Lifelink]
 
 angel'sMercy :: Card
@@ -57,7 +57,7 @@ angel'sMercy = mkCard $ do
   name =: Just "Angel's Mercy"
   types =: instantType
   play =: Just playObject
-    { manaCost = [Nothing, Nothing, Just White, Just White]
+    { manaCost = Just [Nothing, Nothing, Just White, Just White]
     , effect   = \rSelf you ->
         stackTargetlessEffect rSelf $ \_ ->
           void $ executeEffect (Will (GainLife you 7))
@@ -68,7 +68,7 @@ angelicBenediction = mkCard $ do
     name =: Just "Angelic Benediction"
     types =: enchantmentType
     play =: Just playObject
-      { manaCost = [Nothing, Nothing, Nothing, Just White] }
+      { manaCost = Just [Nothing, Nothing, Nothing, Just White] }
     triggeredAbilities =: exalted <> tapTrigger
   where
     tapTrigger :: TriggeredAbilities
@@ -95,7 +95,7 @@ attendedKnight = mkCard $ do
     types     =: creatureTypes [Human, Knight]
     pt        =: Just (2, 2)
     play      =: Just playObject
-      { manaCost = [Nothing, Nothing, Nothing, Just White] }
+      { manaCost = Just [Nothing, Nothing, Nothing, Just White] }
     staticKeywordAbilities =: [FirstStrike]
     triggeredAbilities     =: trigger
   where
@@ -120,7 +120,7 @@ avenSquire = mkCard $ do
   name  =: Just "Aven Squire"
   types =: creatureTypes [Bird, Soldier]
   pt    =: Just (1, 1)
-  play  =: Just playObject { manaCost = [Nothing, Just White] }
+  play  =: Just playObject { manaCost = Just [Nothing, Just White] }
   staticKeywordAbilities =: [Flying]
   triggeredAbilities     =: exalted
 
@@ -130,7 +130,7 @@ battleflightEagle = mkCard $ do
     types     =: creatureTypes [Bird]
     pt        =: Just (2, 2)
     play      =: Just playObject
-      { manaCost = [Nothing, Nothing, Nothing, Nothing, Just White] }
+      { manaCost = Just [Nothing, Nothing, Nothing, Nothing, Just White] }
     staticKeywordAbilities =: [Flying]
     triggeredAbilities     =: onSelfETB createBoostTrigger
   where
@@ -158,7 +158,7 @@ captainOfTheWatch = mkCard $ do
     types =: creatureTypes [Human, Soldier]
     pt    =: Just (3, 3)
     play  =: Just playObject { manaCost =
-      [Nothing, Nothing, Nothing, Nothing, Just White, Just White] }
+      Just [Nothing, Nothing, Nothing, Nothing, Just White, Just White] }
     staticKeywordAbilities =: [Vigilance]
     layeredEffects         =: [boostSoldiers]
     triggeredAbilities     =: trigger
@@ -179,7 +179,7 @@ captain'sCall = mkCard $ do
   name  =: Just "Captain's Call"
   types =: sorceryType
   play  =: Just playObject
-    { manaCost = [Nothing, Nothing, Nothing, Just White]
+    { manaCost = Just [Nothing, Nothing, Nothing, Just White]
     , effect = \rSelf you -> do
         t <- tick
         stackTargetlessEffect rSelf $
@@ -193,7 +193,7 @@ divineFavor = mkCard $ do
     staticKeywordAbilities =: [EnchantPermanent creatureType]
     triggeredAbilities =: (onSelfETB $ \_ you -> mkTargetlessTriggerObject you (gainLifeTrigger you))
     layeredEffects =: [boostEnchanted]
-    play =: Just playObject { manaCost = [Nothing, Just White] }
+    play =: Just playObject { manaCost = Just [Nothing, Just White] }
   where
     gainLifeTrigger you _source = void $
       executeEffect (Will (GainLife you 3))
@@ -212,7 +212,7 @@ fervor = mkCard $ do
     name              =: Just "Fervor"
     types             =: enchantmentType
     play              =: Just playObject
-      { manaCost = [Nothing, Nothing, Just Red] }
+      { manaCost = Just [Nothing, Nothing, Just Red] }
     layeredEffects    =: [grantHaste]
   where
     grantHaste = LayeredEffect
@@ -226,7 +226,7 @@ searingSpear = mkCard $ do
     name  =: Just "Searing Spear"
     types =: instantType
     play  =: Just playObject
-      { manaCost = [Nothing, Just Red]
+      { manaCost = Just [Nothing, Just Red]
       , effect   = searingSpearEffect
       }
   where
@@ -250,7 +250,7 @@ garrukPrimalHunter = mkCard $ do
     name =: Just "Garruk, Primal Hunter"
     types =: planeswalkerWithType Garruk
     play =: Just playObject { manaCost =
-      [Nothing, Nothing, Just Green, Just Green, Just Green] }
+      Just [Nothing, Nothing, Just Green, Just Green, Just Green] }
     activatedAbilities =: [plusOne, minusThree, minusSix]
     loyalty =: Just 3
     replacementEffects =: [etbWithLoyaltyCounters]

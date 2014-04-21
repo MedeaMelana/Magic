@@ -8,7 +8,7 @@ import Control.Monad.State (State, execState)
 import Data.Boolean (Boolean(..))
 import Data.Label
 import Data.List (sortBy)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, fromMaybe)
 import Data.Monoid (mempty)
 import Data.Ord (comparing)
 import qualified Data.Set as Set
@@ -22,7 +22,7 @@ mkCard :: State Object () -> Card
 mkCard f = Card (setColors . execState f . emptyObject 0)
   where
     setColors o = case get play o of
-      Just ab -> set colors (Set.fromList (catMaybes (manaCost ab))) o
+      Just ab -> set colors (Set.fromList (catMaybes (fromMaybe [] (manaCost ab)))) o
       Nothing -> o
 
 emptyObject :: Timestamp -> PlayerRef -> Object

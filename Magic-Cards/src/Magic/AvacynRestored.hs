@@ -19,7 +19,7 @@ misthollowGriffin = mkCard $ do
     staticKeywordAbilities =: [Flying]
     play =: Just playObject
       { available = availableFromHand ||* availableFromExile
-      , manaCost  = [Nothing, Nothing, Just Blue, Just Blue]
+      , manaCost  = Just [Nothing, Nothing, Just Blue, Just Blue]
       }
   where
     availableFromExile :: Contextual (View Bool)
@@ -35,7 +35,7 @@ bloodArtist = mkCard $ do
     name =: Just "Blood Artist"
     types =: creatureTypes [Vampire]
     pt =: Just (0, 1)
-    play =: Just playObject { manaCost = [Nothing, Just Black] }
+    play =: Just playObject { manaCost = Just [Nothing, Just Black] }
     triggeredAbilities =: ifSelfWasOrIsOnBattlefield trigger
   where
     trigger :: TriggeredAbilities
