@@ -16,13 +16,16 @@ cabal-version:      >=1.8
 executable magic-web-server
   hs-source-dirs:   src
   main-is:          Main.hs
-  build-depends:    aeson ==0.6.*,
+  build-depends:    aeson ==0.7.*,
+                    attoparsec ==0.11.*,
                     base < 5,
+                    bytestring ==0.10.*,
                     Magic ==0.1.*,
                     Magic-Cards ==0.1.*,
                     MonadRandom ==0.1.*,
                     mtl ==2.1.*,
                     operational ==0.2.*,
                     safe ==0.3.*,
-                    text ==0.11.*,
-                    websockets ==0.7.*
+                    text ==1.1.*,
+                    vector ==0.10.*,
+                    websockets ==0.8.*

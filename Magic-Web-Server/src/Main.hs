@@ -19,8 +19,7 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as Text
 
-import Network.WebSockets (WebSockets, Hybi00, Request, TextProtocol,
-  acceptRequest, sendTextData, receiveData, runServer)
+import Network.WebSockets (PendingConnection, Connection, acceptRequest, sendTextData, receiveData, runServer)
 
 
 main :: IO ()
@@ -29,10 +28,10 @@ main = do
   putStrLn ("Listening on port " <> show port)
   runServer "0.0.0.0" port app
 
-app :: Request -> WebSockets Hybi00 ()
-app req = do
-  acceptRequest req
-  runFullGame [whiteDeck, redDeck]
+app :: PendingConnection -> IO ()
+app pending = do
+  conn <- acceptRequest pending
+  runFullGame conn [whiteDeck, redDeck]
 
 redDeck :: Deck
 redDeck = replicate 18 mountain <> replicate 42 searingSpear
@@ -40,28 +39,25 @@ redDeck = replicate 18 mountain <> replicate 42 searingSpear
 whiteDeck :: Deck
 whiteDeck = replicate 18 plains <> replicate 42 attendedKnight
 
-runFullGame :: [Deck] -> WebSockets Hybi00 ()
-runFullGame decks = do
-  program <- liftIO $ evalRandTIO (evalStateT (runEngine fullGame) (newWorld decks))
-  askQuestions program
+runFullGame :: Connection -> [Deck] -> IO ()
+runFullGame conn decks = do
+  program <- evalRandTIO (evalStateT (runEngine fullGame) (newWorld decks))
+  askQuestions conn program
 
 evalRandTIO :: Monad m => RandT StdGen m a -> IO (m a)
 evalRandTIO p = evalRandT p `fmap` newStdGen
 
-askQuestions :: ProgramT Interact (Either GameOver) () -> WebSockets Hybi00 ()
-askQuestions = eval . viewT
+askQuestions :: Connection -> ProgramT Interact (Either GameOver) () -> IO ()
+askQuestions conn = eval . viewT
   where
-    eval (Left gameOver) = sendTextData (encode gameOver)
+    eval (Left gameOver) = sendTextData conn (encode gameOver)
     eval (Right program) = case program of
       Return x -> return x
       instr :>>= k -> do
-        let (instrJSON, getAnswer) = interactToJSON receiveData instr
-        sendTextData (encode instrJSON)
+        let (instrJSON, getAnswer) = interactToJSON (receiveData conn) instr
+        sendTextData conn (encode instrJSON)
         answer <- getAnswer
-        askQuestions (k answer)
+        askQuestions conn (k answer)
 
 showText :: Show a => a -> Text
 showText = Text.pack . show
-
-sendText :: TextProtocol p => Text -> WebSockets p ()
-sendText = sendTextData
