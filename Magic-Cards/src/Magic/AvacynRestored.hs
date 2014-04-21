@@ -6,8 +6,8 @@ module Magic.AvacynRestored where
 import Magic
 import Control.Applicative (pure)
 import Control.Monad (void)
-import Data.Label.Pure (get, modify)
-import Data.Label.PureM (asks, (=:))
+import Data.Label (get, modify)
+import Data.Label.Monadic (asks, (=:))
 
 misthollowGriffin :: Card
 misthollowGriffin = mkCard $ do

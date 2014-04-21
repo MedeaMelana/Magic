@@ -15,7 +15,8 @@ cabal-version:      >=1.8
 
 library
   hs-source-dirs:   src
-  exposed-modules:  Magic.BasicLands,
+  exposed-modules:  Magic.AvacynRestored,
+                    Magic.BasicLands,
                     Magic.M13
   build-depends:    base < 5,
                     Magic ==0.1.*,
