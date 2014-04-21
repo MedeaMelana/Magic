@@ -245,6 +245,35 @@ searingSpear = mkCard $ do
 
 -- GREEN CARDS
 
+arborElf :: Card
+arborElf = mkCard $ do
+    name =: Just "Arbor Elf"
+    types =: creatureTypes [Elf, Druid]
+    pt =: Just (1, 1)
+    play =: Just playObject { manaCost = Just [Just Green] }
+    activatedAbilities =: [untapTargetForest]
+  where
+    untapTargetForest = ActivatedAbility
+      { abilityType = ActivatedAb
+      , tapCost = TapCost
+      , abilityActivation = Activation
+        { timing = instantSpeed
+        , available = availableFromBattlefield
+        , manaCost = Just []
+        , effect = \rSelf you -> do
+            ts <- askMagicTargets you (target permanent <?> isForest)
+            t <- tick
+            void $ executeEffect $ WillMoveObject Nothing Stack $
+              StackItem (emptyObject t you) (mkEff <$> ts)
+        }
+      }
+
+    isForest :: ObjectRef TyPermanent -> View Bool
+    isForest r = hasTypes (landTypes [Forest]) <$> asks (object r .^ objectPart)
+
+    mkEff :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
+    mkEff rForest _ = void $ executeEffect (Will (UntapPermanent rForest))
+
 garrukPrimalHunter :: Card
 garrukPrimalHunter = mkCard $ do
     name =: Just "Garruk, Primal Hunter"
