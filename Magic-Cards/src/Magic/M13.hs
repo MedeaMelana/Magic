@@ -274,6 +274,21 @@ arborElf = mkCard $ do
     mkEff :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
     mkEff rForest _ = void $ executeEffect (Will (UntapPermanent rForest))
 
+bondBeetle :: Card
+bondBeetle = mkCard $ do
+    name =: Just "Bond Beetle"
+    types =: creatureTypes [Insect]
+    pt =: Just (0, 1)
+    play =: Just playObject { manaCost = Just [Just Green] }
+    triggeredAbilities =: onSelfETB createAddCounterTrigger
+  where
+    createAddCounterTrigger :: Contextual (Magic ())
+    createAddCounterTrigger _ p = do
+      let ok r = hasTypes creatureType <$> asks (object r .^ objectPart)
+      ts <- askMagicTargets p (target permanent <?> ok)
+      mkTriggerObject p ts $ \(Battlefield, i) _source -> do
+        void $ executeEffect $ Will $ AddCounter (Some Battlefield, i) Plus1Plus1
+
 garrukPrimalHunter :: Card
 garrukPrimalHunter = mkCard $ do
     name =: Just "Garruk, Primal Hunter"

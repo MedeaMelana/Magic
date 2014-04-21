@@ -186,6 +186,9 @@ compileEffect e =
           onlyIf (ts == Tapped) $
             simply $ object r .^ tapStatus =: Untapped
 
+        AddCounter r ty ->
+          simply $ objectBase r .^ counters ~: (ty :)
+
         DrawCard rp -> do
           lib <- gets (players .^ listEl rp .^ library)
           case IdList.toList lib of
