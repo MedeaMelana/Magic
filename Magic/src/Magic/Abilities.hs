@@ -22,6 +22,9 @@ module Magic.Abilities (
     -- * Playing objects
     playObject, playTiming, playObjectEffect,
 
+    -- * Activated abilities
+    loyaltyAbility,
+
     -- * Creating effects on the stack
     stackTargetlessEffect,
 
@@ -41,7 +44,7 @@ import Magic.Predicates
 import Magic.Some
 import Magic.Target
 import Magic.Types
-import Magic.Utils (gand, emptyObject)
+import Magic.Utils (gand, emptyObject, countCountersOfType)
 
 import Control.Applicative ((<$>), pure)
 import Control.Monad (void)
@@ -181,6 +184,29 @@ playObjectEffect rSelf you = do
         view (willMoveToStack rSelf (pure resolvePermanent)) >>= executeEffect
 
     resolvePermanent _source = return ()
+
+
+
+-- ACTIVATED ABILITIES
+
+loyaltyAbility :: Int -> Contextual (Magic ()) -> ActivatedAbility
+loyaltyAbility cost eff = ActivatedAbility
+    { abilityActivation = Activation
+      { timing    = sorcerySpeed &&* hasAtLeastLoyalty cost
+      , available = availableFromBattlefield
+      , manaCost  = []
+      , effect    = \rSelf you -> do
+          void $ executeEffects (replicate cost (Will (RemoveCounter rSelf Loyalty)))
+          eff rSelf you
+      }
+    , tapCost     = NoTapCost
+    , abilityType = LoyaltyAb
+    }
+  where
+    hasAtLeastLoyalty :: Int -> Contextual (View Bool)
+    hasAtLeastLoyalty n rSelf _you = do
+      o <- asks (objectBase rSelf)
+      return (countCountersOfType Loyalty o >= n)
 
 
 
