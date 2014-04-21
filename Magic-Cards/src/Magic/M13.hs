@@ -323,6 +323,35 @@ garrukPrimalHunter = mkCard $ do
         void $ executeEffects $ replicate n $
           WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
 
+
+
+-- COLORLESS CARDS
+
+chronomaton :: Card
+chronomaton = mkCard $ do
+    name =: Just "Chronomaton"
+    types =: artifactType <> creatureTypes [Golem]
+    pt =: Just (1, 1)
+    play =: Just playObject { manaCost = Just [Nothing] }
+    activatedAbilities =: [addCounter]
+  where
+    addCounter = ActivatedAbility
+      { abilityType = ActivatedAb
+      , tapCost = TapCost
+      , abilityActivation = Activation
+        { timing = instantSpeed
+        , available = availableFromBattlefield
+        , manaCost = Just []
+        , effect = \rSelf you -> do
+            t <- tick
+            void $ executeEffect $ WillMoveObject Nothing Stack $
+              StackItem (emptyObject t you) $ pure $ \rStackSelf ->
+                void $ executeEffect (Will (AddCounter rSelf Plus1Plus1))
+        }
+      }
+
+
+
 simpleCreatureToken ::
   Timestamp -> PlayerRef -> [CreatureSubtype] -> [Color] -> PT -> Object
 simpleCreatureToken t you tys cs pt' =
