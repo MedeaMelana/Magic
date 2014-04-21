@@ -3,3 +3,5 @@ dist
 *.o
 *.hi
 Main
+.cabal-sandbox
+cabal.sandbox.config
