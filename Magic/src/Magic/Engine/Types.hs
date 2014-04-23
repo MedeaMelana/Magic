@@ -60,18 +60,27 @@ applyLayeredEffects = do
     let ros = runView allObjects world
     return (applyAll (sortedEffects ros) world)
   where
+    allEffects :: [(SomeObjectRef, Object)] ->
+      [(Timestamp, View [SomeObjectRef], ModifyObject)]
     allEffects os =
       [ (t, vas, m)
       | (r, o) <- os
       , let p = _controller o
-      , let inherentTuples = [ (_timestamp o, vas, ms)
+      , let inherentTuples :: [(Timestamp, View [SomeObjectRef],
+                                [ModifyObject])]
+            inherentTuples = [ (_timestamp o, vas, ms)
               | LayeredEffect as ms <- _layeredEffects o, let vas = as r p ]
-      , let temporaryTuples = [ (t, vas, ms)
+      , let temporaryTuples :: [(Timestamp, View [SomeObjectRef],
+                                [ModifyObject])]
+            temporaryTuples = [ (t, vas, ms)
               | TemporaryLayeredEffect t _ (LayeredEffect as ms)
                   <- _temporaryEffects o, let vas = as r p ]
-      , (t, vas, ms) <- inherentTuples ++ temporaryTuples
+      , (t, vas, ms) <- inherentTuples ++ temporaryTuples ++
+                          [counterEffect (r, o)]
       , m <- ms ]
 
+    sortedEffects :: [(SomeObjectRef, Object)] ->
+      [(Timestamp, View [SomeObjectRef], ModifyObject)]
     sortedEffects os = sortOn (\(t, _, m) -> (layer m, t)) (allEffects os)
 
     applyAll :: [(Timestamp, View [SomeObjectRef], ModifyObject)] -> World -> World
@@ -103,3 +112,11 @@ compileModifyObject world m =
     ModifyPT vpt -> let (p, t) = runReader (runViewT vpt) world
                     in modify pt (fmap ((+ p) *** (+ t)))
     SwitchPT -> modify pt (fmap (\(p,t) -> (t,p)))
+
+counterEffect :: (SomeObjectRef, Object) ->
+  (Timestamp, View [SomeObjectRef], [ModifyObject])
+counterEffect (r, o) = (0, return [r], [ModifyPT (return (n, n))])
+  where
+    nplus  = length [ () | Plus1Plus1   <- _counters o ]
+    nminus = length [ () | Minus1Minus1 <- _counters o ]
+    n      = nplus - nminus
