@@ -337,7 +337,7 @@ untilFalse p = do
 
 -- | Collects and returns all applicable state-based actions (without executing them).
 collectSBAs :: Engine [OneShotEffect]
-collectSBAs = execWriterT $ do
+collectSBAs = view $ execWriterT $ do
     checkPlayers
     checkBattlefield
     -- TODO [704.5d]
@@ -351,13 +351,13 @@ collectSBAs = execWriterT $ do
       -- [704.5b]
       -- TODO [704.5c]
       -- TODO [704.5t]
-      ips <- IdList.toList <$> lift (gets players)
+      ips <- IdList.toList <$> lift (asks players)
       forM_ ips $ \(i,p) -> do
         when (get life p <= 0 || get failedCardDraw p) $
           tell [Will (LoseGame i)]
 
     checkBattlefield = do
-      ios <- IdList.toList <$> lift (gets battlefield)
+      ios <- IdList.toList <$> lift (asks battlefield)
       forM_ ios $ \(i, Permanent o _ dam deatht _ _) -> do
 
         -- Check creatures
