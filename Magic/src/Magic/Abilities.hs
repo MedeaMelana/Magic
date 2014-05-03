@@ -155,7 +155,7 @@ playObjectEffect rSelf you = do
 
   where
     playLandEffect :: Magic ()
-    playLandEffect = void $ executeEffect (Will (PlayLand you rSelf))
+    playLandEffect = will (PlayLand you rSelf)
 
     playEmptySpellEffect :: Magic ()
     playEmptySpellEffect = void $

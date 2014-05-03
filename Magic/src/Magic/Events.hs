@@ -8,7 +8,7 @@ module Magic.Events (
     -- * Constructing specific one-shot effects
     willMoveToGraveyard, willMoveToStack, -- willMoveToBattlefield,
 
-    executeEffects, executeEffect,
+    executeEffects, executeEffect, will,
     tick
   ) where
 
@@ -16,6 +16,7 @@ import Magic.Some (Some(..))
 import Magic.Core
 import Magic.Types
 
+import Data.Functor (void)
 import Control.Monad.Operational (singleton)
 import Control.Monad.Trans (lift)
 import Data.Label (get)
@@ -52,6 +53,10 @@ executeEffects = Magic . lift . singleton . ExecuteEffects
 
 executeEffect :: OneShotEffect -> Magic [Event]
 executeEffect = executeEffects . (: [])
+
+-- Execute a single simple effect in a single event, discarding the result.
+will :: SimpleOneShotEffect -> Magic ()
+will eff = void (executeEffect (Will eff))
 
 tick :: Magic Timestamp
 tick = Magic $ lift $ singleton $ Tick

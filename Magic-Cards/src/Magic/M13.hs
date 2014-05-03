@@ -28,7 +28,7 @@ exalted events (Some Battlefield, _) p = return [ mkTargetlessTriggerObject p (b
     boostPT :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
     boostPT (Battlefield, i) _rSelf = do
       t <- tick
-      void $ executeEffect $ Will $ InstallLayeredEffect (Some Battlefield, i) $
+      will $ InstallLayeredEffect (Some Battlefield, i) $
         TemporaryLayeredEffect
           { temporaryTimestamp = t
           , temporaryDuration  = UntilEndOfTurn
@@ -60,7 +60,7 @@ angel'sMercy = mkCard $ do
     { manaCost = Just [Nothing, Nothing, Just White, Just White]
     , effect   = \rSelf you ->
         stackTargetlessEffect rSelf $ \_ ->
-          void $ executeEffect (Will (GainLife you 7))
+          will (GainLife you 7)
     }
 
 angelicBenediction :: Card
@@ -86,7 +86,7 @@ angelicBenediction = mkCard $ do
     mkTapTriggerObject p = do
         ts <- askTarget p targetCreature
         mkTriggerObject p ts $
-          \r _source -> void $ executeEffect $ Will (TapPermanent r)
+          \r _source -> will (TapPermanent r)
 
 attendedKnight :: Card
 attendedKnight = mkCard $ do
@@ -138,7 +138,7 @@ battleflightEagle = mkCard $ do
       ts <- askTarget p targetCreature
       mkTriggerObject p ts $ \(Battlefield, i) _source -> do
         t <- tick
-        void $ executeEffect $ Will $
+        will $
           InstallLayeredEffect (Some Battlefield, i) TemporaryLayeredEffect
             { temporaryTimestamp = t
             , temporaryDuration  = UntilEndOfTurn
@@ -193,8 +193,7 @@ divineFavor = mkCard $ do
     layeredEffects =: [boostEnchanted]
     play =: Just playObject { manaCost = Just [Nothing, Just White] }
   where
-    gainLifeTrigger you _source = void $
-      executeEffect (Will (GainLife you 3))
+    gainLifeTrigger you _source = will (GainLife you 3)
     boostEnchanted = LayeredEffect
       { affectedObjects = affectAttached
       , modifications = [ModifyPT (return (1, 3))]
@@ -234,9 +233,9 @@ searingSpear = mkCard $ do
       let f :: Either (ObjectRef TyPermanent) PlayerRef -> ObjectRef TyStackItem -> Magic ()
           f t rStackSelf = do
             self <- view (asks (object rStackSelf .^ objectPart))
-            void $ executeEffect $ case t of
-              Left r  -> Will (DamageObject self r 3 False True)
-              Right p -> Will (DamagePlayer self p 3 False True)
+            will $ case t of
+              Left r  -> DamageObject self r 3 False True
+              Right p -> DamagePlayer self p 3 False True
       void (view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect)
 
 
@@ -268,7 +267,7 @@ arborElf = mkCard $ do
       }
 
     mkEff :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
-    mkEff rForest _ = void $ executeEffect (Will (UntapPermanent rForest))
+    mkEff rForest _ = will (UntapPermanent rForest)
 
 bondBeetle :: Card
 bondBeetle = mkCard $ do
@@ -281,8 +280,8 @@ bondBeetle = mkCard $ do
     createAddCounterTrigger :: Contextual (Magic ())
     createAddCounterTrigger _ p = do
       ts <- askTarget p targetCreature
-      mkTriggerObject p ts $ \(Battlefield, i) _source -> do
-        void $ executeEffect $ Will $ AddCounter (Some Battlefield, i) Plus1Plus1
+      mkTriggerObject p ts $ \(Battlefield, i) _source ->
+        will $ AddCounter (Some Battlefield, i) Plus1Plus1
 
 garrukPrimalHunter :: Card
 garrukPrimalHunter = mkCard $ do
@@ -341,7 +340,7 @@ chronomaton = mkCard $ do
             t <- tick
             void $ executeEffect $ WillMoveObject Nothing Stack $
               StackItem (emptyObject t you) $ pure $ \rStackSelf ->
-                void $ executeEffect (Will (AddCounter rSelf Plus1Plus1))
+                will (AddCounter rSelf Plus1Plus1)
         }
       }
 
