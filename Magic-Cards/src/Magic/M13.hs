@@ -22,7 +22,7 @@ import qualified Data.Text as Text
 
 
 exalted :: TriggeredAbilities
-exalted events (Some Battlefield, _) p = return [ mkTargetlessTriggerObject p (boostPT r)
+exalted events (Some Battlefield, _) p = return [ mkTrigger p (boostPT r)
     | DidDeclareAttackers p' [Attack r _] <- events, p == p' ]
   where
     boostPT :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
@@ -85,7 +85,7 @@ angelicBenediction = mkCard $ do
     mkTapTriggerObject :: PlayerRef -> Magic ()
     mkTapTriggerObject p = do
         ts <- askTarget p targetCreature
-        mkTriggerObject p ts $
+        mkTargetTrigger p ts $
           \r _source -> will (TapPermanent r)
 
 attendedKnight :: Card
@@ -99,7 +99,7 @@ attendedKnight = mkCard $ do
     triggeredAbilities     =: trigger
   where
     trigger :: TriggeredAbilities
-    trigger = onSelfETB $ \_ p -> mkTargetlessTriggerObject p $ \_self -> do
+    trigger = onSelfETB $ \_ p -> mkTrigger p $ \_self -> do
       t <- tick
       void $ executeEffect $ mkSoldierEffect t p
 
@@ -136,7 +136,7 @@ battleflightEagle = mkCard $ do
     createBoostTrigger :: Contextual (Magic ())
     createBoostTrigger _ p = do
       ts <- askTarget p targetCreature
-      mkTriggerObject p ts $ \(Battlefield, i) _source -> do
+      mkTargetTrigger p ts $ \(Battlefield, i) _source -> do
         t <- tick
         will $
           InstallLayeredEffect (Some Battlefield, i) TemporaryLayeredEffect
@@ -168,7 +168,7 @@ captainOfTheWatch = mkCard $ do
                         , ModifyPT (return (1, 1))]
       }
 
-    trigger = onSelfETB $ \_ p -> mkTargetlessTriggerObject p $ \_self -> do
+    trigger = onSelfETB $ \_ p -> mkTrigger p $ \_self -> do
       t <- tick
       void $ executeEffects $ replicate 3 $ mkSoldierEffect t p
 
@@ -189,7 +189,7 @@ divineFavor = mkCard $ do
     name =: Just "Divine Favor"
     types =: auraType
     staticKeywordAbilities =: [EnchantPermanent creatureType]
-    triggeredAbilities =: (onSelfETB $ \_ you -> mkTargetlessTriggerObject you (gainLifeTrigger you))
+    triggeredAbilities =: (onSelfETB $ \_ you -> mkTrigger you (gainLifeTrigger you))
     layeredEffects =: [boostEnchanted]
     play =: Just playObject { manaCost = Just [Nothing, Just White] }
   where
@@ -280,7 +280,7 @@ bondBeetle = mkCard $ do
     createAddCounterTrigger :: Contextual (Magic ())
     createAddCounterTrigger _ p = do
       ts <- askTarget p targetCreature
-      mkTriggerObject p ts $ \(Battlefield, i) _source ->
+      mkTargetTrigger p ts $ \(Battlefield, i) _source ->
         will $ AddCounter (Some Battlefield, i) Plus1Plus1
 
 garrukPrimalHunter :: Card
@@ -294,12 +294,12 @@ garrukPrimalHunter = mkCard $ do
     replacementEffects =: [etbWithLoyaltyCounters]
   where
     plusOne = loyaltyAbility 1 $ \_ you -> do
-      mkTargetlessTriggerObject you $ \_ -> do
+      mkTrigger you $ \_ -> do
         t <- tick
         let token = simpleCreatureToken t you [Beast] [Green] (3,3)
         void $ executeEffect $ WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
     minusThree = loyaltyAbility (-3) $ \_ you -> do
-      mkTargetlessTriggerObject you $ \_ -> do
+      mkTrigger you $ \_ -> do
         objs <- IdList.elems <$> view (asks battlefield)
         let n = foldr max 0 [ power
                             | o <- objs
@@ -307,7 +307,7 @@ garrukPrimalHunter = mkCard $ do
                             , let Just (power, _) = get (objectPart .^ pt) o ]
         void $ executeEffects (replicate n (Will (DrawCard you)))
     minusSix = loyaltyAbility (-6) $ \_ you -> do
-      mkTargetlessTriggerObject you $ \_ -> do
+      mkTrigger you $ \_ -> do
         perms <- IdList.elems <$> view (asks battlefield)
         let n = count perms $ \perm ->
                   let o = get objectPart perm

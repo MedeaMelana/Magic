@@ -45,5 +45,5 @@ bloodArtist = mkCard $ do
     createTriggerObject :: PlayerRef -> Magic ()
     createTriggerObject you = do
       ts <- askTarget you targetPlayer
-      mkTriggerObject you ts $ \p _source ->
+      mkTargetTrigger you ts $ \p _source ->
         void $ executeEffects [Will (LoseLife p 1), Will (GainLife you 1)]
