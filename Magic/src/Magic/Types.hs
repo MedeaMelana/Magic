@@ -421,7 +421,7 @@ data TapCost = NoTapCost | TapCost  -- add later: UntapCost
 data AbilityType = ActivatedAb | ManaAb | LoyaltyAb
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-type StackItem = TargetList EntityRef (ObjectRef TyStackItem -> Magic ())
+type StackItem = TargetList (ObjectRef TyStackItem -> Magic ())
 
 type ManaPool = Bag (Maybe Color)
 
@@ -589,27 +589,34 @@ data EntityRef
   | ObjectRef SomeObjectRef
   deriving (Eq, Show)
 
-data TargetList t a where
-  Nil  :: a -> TargetList t a
-  Snoc :: TargetList t (x -> a) -> (EntityRef -> Maybe x) -> t -> TargetList t a
-  Test :: (x -> a) -> (x -> View Bool) -> TargetList t x -> TargetList t a
+data TargetList a where
+  Nil  :: a -> TargetList a
+  Snoc :: TargetList (x -> y)
+       -> EntityRef
+       -> (EntityRef -> Maybe x)
+       -> (y -> View Bool)
+       -> (y -> a)
+       -> TargetList a
 
-instance Functor (TargetList t) where
+instance Functor TargetList where
   fmap f (Nil x)        = Nil (f x)
-  fmap f (Snoc xs ok t) = Snoc (fmap (f .) xs) ok t
-  fmap f (Test g ok xs) = Test (f . g) ok xs
+  fmap f (Snoc ts e cast test g) = Snoc ts e cast test (f . g)
 
-instance Applicative (TargetList t) where
+instance Applicative TargetList where
   pure = Nil
   xs <*> Nil b     = fmap ($ b) xs
-  xs <*> Snoc ys ok t = Snoc ((.) <$> xs <*> ys) ok t
-  xs <*> Test f ok ys = Test fst snd ((\g x -> (g (f x), ok x)) <$> xs <*> ys)
+  xs <*> Snoc ys e cast test g =
+      Snoc (f <$> xs <*> ys) e cast test' g'
+    where
+      f ab xy x    = (ab, xy x)
+      test' (_, y) = test y
+      g' (ab, y)   = ab (g y)
 
-instance Monoid a => Monoid (TargetList t a) where
+instance Monoid a => Monoid (TargetList a) where
   mempty  = pure mempty
   mappend = liftA2 mappend
 
-instance Show (TargetList t a) where
+instance Show (TargetList a) where
   show ts = "<target list>"
 
 

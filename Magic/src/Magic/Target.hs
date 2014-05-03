@@ -4,15 +4,16 @@
 {-# LANGUAGE GADTs #-}
 
 module Magic.Target (
-    -- * Types
+    -- * Target lists
     TargetList(..), EntityRef(..),
+    askTarget, askTarget',
+    evaluateTargetList,
 
-    -- * Producing target lists
-    target, (<?>),
+    -- * Constructing @TargetSpec@s
+    TargetSpec(..), (<?>), orTarget,
 
-    -- * Compiling target lists
-    evaluateTargetList, askMagicTargets,
-    permanent, permanentOrPlayer, targetCreatureOrPlayer, targetPlayer
+    -- * Common @TargetSpec@s
+    targetPlayer, targetPermanent, targetCreature, targetCreatureOrPlayer
   ) where
 
 import qualified Magic.IdList as IdList
@@ -25,47 +26,34 @@ import Magic.Labels ((.^))
 
 import Control.Applicative
 import Control.Monad (forM, filterM)
+import Data.Boolean (true, false, (&&*))
 import Data.Label.Monadic (asks)
 
 
-evaluateTargetList :: TargetList EntityRef a -> ([EntityRef], Maybe a)
-evaluateTargetList (Nil x) = ([], Just x)
-evaluateTargetList (Snoc xs cast t) = (ts ++ [t], mf <*> cast t)
-  where (ts, mf) = evaluateTargetList xs
-evaluateTargetList (Test f _ xs) = (ts, f <$> mx)
-  where (ts, mx) = evaluateTargetList xs
 
-target :: (EntityRef -> Maybe a) -> TargetList () a
-target f = Snoc (Nil id) f ()
+-- TARGET LISTS
 
-infixl 4 <?>
-(<?>) :: TargetList t a -> (a -> View Bool) -> TargetList t a
-xs <?> ok = Test id ok xs
 
-askTargets :: forall a. ([EntityRef] -> Magic EntityRef) -> [EntityRef] -> TargetList () a -> Magic (TargetList EntityRef a, a)
-askTargets choose = askTargets' (const (return True))
-  where
-    askTargets' :: forall b. (b -> View Bool) -> [EntityRef] -> TargetList () b -> Magic (TargetList EntityRef b, b)
-    askTargets' ok ts scheme =
-      case scheme of
-        Nil x -> return (Nil x, x)
-        Snoc tsf cast () -> do
-          (tsf', f) <- askTargets' (const (return True)) ts tsf
-          eligibleTargets <- view $ flip filterM ts $ \t -> do
-            case cast t of
-              Just y -> ok (f y)
-              Nothing -> return False
-          chosen <- choose eligibleTargets
-          let Just x = cast chosen
-          return (Snoc tsf' cast chosen, f x)
-        Test f ok' tsx -> do
-          (tsx', x) <- askTargets' (\x -> (&&) <$> ok (f x) <*> ok' x) ts tsx
-          return (f <$> tsx', f x)
-
-askMagicTargets :: PlayerRef -> TargetList () a -> Magic (TargetList EntityRef a)
-askMagicTargets p ts = do
+askTarget :: PlayerRef -> TargetSpec a -> Magic (TargetList a)
+askTarget p (TargetSpec cast test) = do
   ats <- allTargets
-  fst <$> askTargets (askQuestion p . AskTarget) ats ts
+  eligibleTargets <- view $ flip filterM ats $ \t -> do
+    case cast t of
+      Just b -> test b
+      Nothing -> false
+  chosen <- askQuestion p (AskTarget eligibleTargets)
+  return $ Snoc (Nil id) chosen cast test id
+
+askTarget' :: PlayerRef -> (a -> b -> c) -> (a -> b -> View Bool) -> TargetList a -> TargetSpec b -> Magic (TargetList c)
+askTarget' p combine test2 ts (TargetSpec cast test) = do
+  let (_, Just a) = evaluateTargetList ts
+  ats <- allTargets
+  eligibleTargets <- view $ flip filterM ats $ \t -> do
+    case cast t of
+      Just b -> test b &&* test2 a b
+      Nothing -> false
+  chosen <- askQuestion p (AskTarget eligibleTargets)
+  return $ Snoc ((,) <$> ts) chosen cast (uncurry test2) (uncurry combine)
 
 allTargets :: Magic [EntityRef]
 allTargets = do
@@ -77,29 +65,54 @@ allTargets = do
     return (map (\o -> (Some zr, o)) os)
   return (map PlayerRef ps ++ map ObjectRef (concat oss))
 
+evaluateTargetList :: TargetList a -> ([EntityRef], Maybe a)
+evaluateTargetList (Nil x) = ([], Just x)
+evaluateTargetList (Snoc xs t cast _ f) = (ts ++ [t], (f .) <$> mf <*> cast t)
+  where (ts, mf) = evaluateTargetList xs
 
 
--- HELPER FUNCTIONS: TARGETING
+
+-- CONSTRUCTING TARGETSPECS
 
 
-permanentOrPlayer :: EntityRef -> Maybe (Either (ObjectRef TyPermanent) PlayerRef)
-permanentOrPlayer (PlayerRef p) = Just (Right p)
-permanentOrPlayer (ObjectRef (Some Battlefield, i)) = Just (Left (Battlefield, i))
-permanentOrPlayer _ = Nothing
+data TargetSpec a where
+  TargetSpec :: (EntityRef -> Maybe a) -> (a -> View Bool) -> TargetSpec a
 
-permanent :: EntityRef -> Maybe (ObjectRef TyPermanent)
-permanent (ObjectRef (Some Battlefield, i)) = Just (Battlefield, i)
-permanent _ = Nothing
+(<?>) :: (a -> View Bool) -> TargetSpec a -> TargetSpec a
+test' <?> TargetSpec cast test = TargetSpec cast (test &&* test')
 
-targetCreatureOrPlayer :: TargetList () (Either (ObjectRef TyPermanent) PlayerRef)
-targetCreatureOrPlayer = target permanentOrPlayer <?> ok
+orTarget :: TargetSpec a -> TargetSpec b -> TargetSpec (Either a b)
+orTarget (TargetSpec cast1 test1) (TargetSpec cast2 test2) =
+    TargetSpec cast3 (either test1 test2)
   where
-    ok t = case t of
-      Left r  -> hasTypes creatureType <$> asks (object r .^ objectPart)
-      Right _ -> return True
+    cast3 r =
+      case cast1 r of
+        Just x -> Just (Left x)
+        Nothing ->
+          case cast2 r of
+            Just x -> Just (Right x)
+            Nothing -> Nothing
 
-targetPlayer :: TargetList () PlayerRef
-targetPlayer = target cast
+
+
+-- COMMON TARGETSPECS
+
+
+targetPlayer :: TargetSpec PlayerRef
+targetPlayer = TargetSpec cast true
   where
     cast (PlayerRef p) = Just p
     cast _ = Nothing
+
+targetPermanent :: TargetSpec (ObjectRef TyPermanent)
+targetPermanent = TargetSpec cast true
+  where
+    cast :: EntityRef -> Maybe (ObjectRef TyPermanent)
+    cast (ObjectRef (Some Battlefield, i)) = Just (Battlefield, i)
+    cast _ = Nothing
+
+targetCreature :: TargetSpec (ObjectRef TyPermanent)
+targetCreature = checkPermanent (hasTypes creatureType) <?> targetPermanent
+
+targetCreatureOrPlayer :: TargetSpec (Either (ObjectRef TyPermanent) PlayerRef)
+targetCreatureOrPlayer = targetCreature `orTarget` targetPlayer

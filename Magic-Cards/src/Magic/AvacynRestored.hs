@@ -11,6 +11,8 @@ import Data.Boolean ((||*), false)
 import Data.Label (get, modify)
 import Data.Label.Monadic (asks, (=:))
 
+
+
 misthollowGriffin :: Card
 misthollowGriffin = mkCard $ do
     name =: Just "Misthollow Griffin"
@@ -28,8 +30,6 @@ misthollowGriffin = mkCard $ do
         (Some Exile, _) -> (== you) <$> view (asks (objectBase rSelf .^ owner))
         _          -> false
 
-
-
 bloodArtist :: Card
 bloodArtist = mkCard $ do
     name =: Just "Blood Artist"
@@ -44,6 +44,6 @@ bloodArtist = mkCard $ do
 
     createTriggerObject :: PlayerRef -> Magic ()
     createTriggerObject you = do
-      ts <- askMagicTargets you targetPlayer
+      ts <- askTarget you targetPlayer
       mkTriggerObject you ts $ \p _source ->
         void $ executeEffects [Will (LoseLife p 1), Will (GainLife you 1)]

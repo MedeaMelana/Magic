@@ -84,8 +84,7 @@ angelicBenediction = mkCard $ do
 
     mkTapTriggerObject :: PlayerRef -> Magic ()
     mkTapTriggerObject p = do
-        let ok r = hasTypes creatureType <$> asks (object r .^ objectPart)
-        ts <- askMagicTargets p (target permanent <?> ok)
+        ts <- askTarget p targetCreature
         mkTriggerObject p ts $
           \r _source -> void $ executeEffect $ Will (TapPermanent r)
 
@@ -136,8 +135,7 @@ battleflightEagle = mkCard $ do
   where
     createBoostTrigger :: Contextual (Magic ())
     createBoostTrigger _ p = do
-      let ok r = hasTypes creatureType <$> asks (object r .^ objectPart)
-      ts <- askMagicTargets p (target permanent <?> ok)
+      ts <- askTarget p targetCreature
       mkTriggerObject p ts $ \(Battlefield, i) _source -> do
         t <- tick
         void $ executeEffect $ Will $
@@ -232,7 +230,7 @@ searingSpear = mkCard $ do
   where
     searingSpearEffect :: Contextual (Magic ())
     searingSpearEffect rSelf you = do
-      ts <- askMagicTargets you targetCreatureOrPlayer
+      ts <- askTarget you targetCreatureOrPlayer
       let f :: Either (ObjectRef TyPermanent) PlayerRef -> ObjectRef TyStackItem -> Magic ()
           f t rStackSelf = do
             self <- view (asks (object rStackSelf .^ objectPart))
@@ -261,15 +259,13 @@ arborElf = mkCard $ do
         , available = availableFromBattlefield
         , manaCost = Just []
         , effect = \rSelf you -> do
-            ts <- askMagicTargets you (target permanent <?> isForest)
+            ts <- askTarget you $ checkPermanent
+              (hasTypes (landTypes [Forest])) <?> targetPermanent
             t <- tick
             void $ executeEffect $ WillMoveObject Nothing Stack $
               StackItem (emptyObject t you) (mkEff <$> ts)
         }
       }
-
-    isForest :: ObjectRef TyPermanent -> View Bool
-    isForest r = hasTypes (landTypes [Forest]) <$> asks (object r .^ objectPart)
 
     mkEff :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
     mkEff rForest _ = void $ executeEffect (Will (UntapPermanent rForest))
@@ -284,8 +280,7 @@ bondBeetle = mkCard $ do
   where
     createAddCounterTrigger :: Contextual (Magic ())
     createAddCounterTrigger _ p = do
-      let ok r = hasTypes creatureType <$> asks (object r .^ objectPart)
-      ts <- askMagicTargets p (target permanent <?> ok)
+      ts <- askTarget p targetCreature
       mkTriggerObject p ts $ \(Battlefield, i) _source -> do
         void $ executeEffect $ Will $ AddCounter (Some Battlefield, i) Plus1Plus1
 

@@ -1,12 +1,18 @@
+{-# LANGUAGE DataKinds #-}
+
 module Magic.Predicates (
-    hasColor, isOwnedBy, isControlledBy, hasTypes, hasPermanentType
+    hasColor, isOwnedBy, isControlledBy, hasTypes, hasPermanentType, checkPermanent
   ) where
 
-import Magic.Types
+import Magic.Core (object, objectPart)
+import Magic.Labels ((.^))
 import Magic.ObjectTypes
+import Magic.Types
 import Magic.Utils (gor)
 
-import Data.Label
+import Control.Applicative ((<$>))
+import Data.Label (get)
+import Data.Label.Monadic (asks)
 import qualified Data.Set as Set
 
 
@@ -28,3 +34,6 @@ hasTypes t o = t `isObjectTypesSubsetOf` _types o
 -- | Checks whether the object has at least one of the permanent card types.
 hasPermanentType :: Object -> Bool
 hasPermanentType = gor $ map hasTypes [artifactType, creatureType, enchantmentType, landType, planeswalkerType]
+
+checkPermanent :: (Object -> Bool) -> ObjectRef TyPermanent -> View Bool
+checkPermanent ok r = ok <$> asks (object r .^ objectPart)

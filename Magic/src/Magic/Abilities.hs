@@ -164,9 +164,8 @@ playObjectEffect rSelf you = do
     playAuraEffect :: Magic ()
     playAuraEffect = do
       aura <- view (asks (objectBase rSelf))  -- TODO Reevaluate rSelf on the stack?
-      let ok r = collectEnchantPredicate aura <$>
-                  asks (object r .^ objectPart)
-      ts <- askMagicTargets you (target permanent <?> ok)
+      ts <- askTarget you $
+        checkPermanent (collectEnchantPredicate aura) <?> targetPermanent
       let f :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
           f (Battlefield, i) rStackSelf@(Stack, iSelf) = do
             self <- view (asks (object rStackSelf .^ objectPart))
@@ -227,7 +226,7 @@ stackTargetlessEffect rSelf item = do
 -- | Creates a trigger on the stack under the control of the specified player.
 -- The function is applied to the return value of the specified 'TargetList'
 -- and put on the stack as a 'StackItem'.
-mkTriggerObject :: PlayerRef -> TargetList EntityRef a ->
+mkTriggerObject :: PlayerRef -> TargetList a ->
   (a -> ObjectRef TyStackItem -> Magic()) -> Magic ()
 mkTriggerObject p ts f = do
   t <- tick
