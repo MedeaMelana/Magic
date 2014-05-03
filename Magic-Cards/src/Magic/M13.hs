@@ -58,9 +58,7 @@ angel'sMercy = mkCard $ do
   types =: instantType
   play =: Just playObject
     { manaCost = Just [Nothing, Nothing, Just White, Just White]
-    , effect   = \rSelf you ->
-        stackTargetlessEffect rSelf $ \_ ->
-          will (GainLife you 7)
+    , effect   = stackSelf $ \_ you -> will (GainLife you 7)
     }
 
 angelicBenediction :: Card
@@ -99,7 +97,7 @@ attendedKnight = mkCard $ do
     triggeredAbilities     =: trigger
   where
     trigger :: TriggeredAbilities
-    trigger = onSelfETB $ \_ p -> mkTrigger p $ \_self -> do
+    trigger = onSelfETB $ \_ p -> mkTrigger p $ \_ -> do
       t <- tick
       void $ executeEffect $ mkSoldierEffect t p
 
@@ -168,7 +166,7 @@ captainOfTheWatch = mkCard $ do
                         , ModifyPT (return (1, 1))]
       }
 
-    trigger = onSelfETB $ \_ p -> mkTrigger p $ \_self -> do
+    trigger = onSelfETB $ \_ p -> mkTrigger p $ \_ -> do
       t <- tick
       void $ executeEffects $ replicate 3 $ mkSoldierEffect t p
 
@@ -178,10 +176,9 @@ captain'sCall = mkCard $ do
   types =: sorceryType
   play  =: Just playObject
     { manaCost = Just [Nothing, Nothing, Nothing, Just White]
-    , effect = \rSelf you -> do
+    , effect = stackSelf $ \_ you -> do
         t <- tick
-        stackTargetlessEffect rSelf $
-          \_ -> void $ executeEffects $ replicate 3 $ mkSoldierEffect t you
+        void $ executeEffects $ replicate 3 $ mkSoldierEffect t you
     }
 
 divineFavor :: Card
@@ -230,14 +227,11 @@ searingSpear = mkCard $ do
     searingSpearEffect :: Contextual (Magic ())
     searingSpearEffect rSelf you = do
       ts <- askTarget you targetCreatureOrPlayer
-      let f :: Either (ObjectRef TyPermanent) PlayerRef -> ObjectRef TyStackItem -> Magic ()
-          f t rStackSelf = do
-            self <- view (asks (object rStackSelf .^ objectPart))
-            will $ case t of
-              Left r  -> DamageObject self r 3 False True
-              Right p -> DamagePlayer self p 3 False True
-      void (view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect)
-
+      stackTargetSelf rSelf you ts $ \t rStackSelf _stackYou -> do
+        self <- view (asks (object rStackSelf .^ objectPart))
+        will $ case t of
+          Left r  -> DamageObject self r 3 False True
+          Right p -> DamagePlayer self p 3 False True
 
 
 -- GREEN CARDS
@@ -257,17 +251,13 @@ arborElf = mkCard $ do
         { timing = instantSpeed
         , available = availableFromBattlefield
         , manaCost = Just []
-        , effect = \rSelf you -> do
+        , effect = \_ you -> do
             ts <- askTarget you $ checkPermanent
               (hasTypes (landTypes [Forest])) <?> targetPermanent
-            t <- tick
-            void $ executeEffect $ WillMoveObject Nothing Stack $
-              StackItem (emptyObject t you) (mkEff <$> ts)
+            mkTargetAbility you ts $ \rForest _ ->
+              will (UntapPermanent rForest)
         }
       }
-
-    mkEff :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
-    mkEff rForest _ = will (UntapPermanent rForest)
 
 bondBeetle :: Card
 bondBeetle = mkCard $ do
@@ -294,12 +284,12 @@ garrukPrimalHunter = mkCard $ do
     replacementEffects =: [etbWithLoyaltyCounters]
   where
     plusOne = loyaltyAbility 1 $ \_ you -> do
-      mkTrigger you $ \_ -> do
+      mkAbility you $ \_ -> do
         t <- tick
         let token = simpleCreatureToken t you [Beast] [Green] (3,3)
         void $ executeEffect $ WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
     minusThree = loyaltyAbility (-3) $ \_ you -> do
-      mkTrigger you $ \_ -> do
+      mkAbility you $ \_ -> do
         objs <- IdList.elems <$> view (asks battlefield)
         let n = foldr max 0 [ power
                             | o <- objs
@@ -307,7 +297,7 @@ garrukPrimalHunter = mkCard $ do
                             , let Just (power, _) = get (objectPart .^ pt) o ]
         void $ executeEffects (replicate n (Will (DrawCard you)))
     minusSix = loyaltyAbility (-6) $ \_ you -> do
-      mkTrigger you $ \_ -> do
+      mkAbility you $ \_ -> do
         perms <- IdList.elems <$> view (asks battlefield)
         let n = count perms $ \perm ->
                   let o = get objectPart perm
@@ -337,10 +327,8 @@ chronomaton = mkCard $ do
         , available = availableFromBattlefield
         , manaCost = Just []
         , effect = \rSelf you -> do
-            t <- tick
-            void $ executeEffect $ WillMoveObject Nothing Stack $
-              StackItem (emptyObject t you) $ pure $ \rStackSelf ->
-                will (AddCounter rSelf Plus1Plus1)
+            mkTrigger you $ \_ -> do
+              will (AddCounter rSelf Plus1Plus1)
         }
       }
 

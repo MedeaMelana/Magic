@@ -421,7 +421,7 @@ data TapCost = NoTapCost | TapCost  -- add later: UntapCost
 data AbilityType = ActivatedAb | ManaAb | LoyaltyAb
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-type StackItem = TargetList (ObjectRef TyStackItem -> Magic ())
+type StackItem = TargetList (ObjectRef TyStackItem -> PlayerRef -> Magic ())
 
 type ManaPool = Bag (Maybe Color)
 

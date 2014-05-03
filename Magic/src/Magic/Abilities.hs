@@ -23,10 +23,10 @@ module Magic.Abilities (
     playObject, playTiming, playObjectEffect,
 
     -- * Activated abilities
-    loyaltyAbility,
+    loyaltyAbility, mkTargetAbility, mkAbility,
 
     -- * Creating effects on the stack
-    stackTargetlessEffect,
+    stackSelf, stackTargetSelf,
 
     -- * Constructing triggers
     mkTargetTrigger, mkTrigger, onSelfETB,
@@ -158,20 +158,19 @@ playObjectEffect rSelf you = do
     playLandEffect = will (PlayLand you rSelf)
 
     playEmptySpellEffect :: Magic ()
-    playEmptySpellEffect = void $
-      view (willMoveToStack rSelf (pure (\_ -> return ()))) >>= executeEffect
+    playEmptySpellEffect = stackSelf (\_ _ -> return ()) rSelf you
 
     playAuraEffect :: Magic ()
     playAuraEffect = do
       aura <- view (asks (objectBase rSelf))  -- TODO Reevaluate rSelf on the stack?
       ts <- askTarget you $
         checkPermanent (collectEnchantPredicate aura) <?> targetPermanent
-      let f :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
-          f (Battlefield, i) rStackSelf@(Stack, iSelf) = do
+      let f :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> PlayerRef -> Magic ()
+          f (Battlefield, i) rStackSelf@(Stack, iSelf) _you = do
             self <- view (asks (object rStackSelf .^ objectPart))
             void $ executeEffect (WillMoveObject (Just (Some Stack, iSelf)) Battlefield (Permanent self Untapped 0 False (Just (Some Battlefield, i)) Nothing))
 
-      void $ view (willMoveToStack rSelf (f <$> ts)) >>= executeEffect
+      stackTargetSelf rSelf you ts f
 
     collectEnchantPredicate :: Object -> Object -> Bool
     collectEnchantPredicate aura enchanted = gand
@@ -179,10 +178,7 @@ playObjectEffect rSelf you = do
       | EnchantPermanent tys <- get staticKeywordAbilities aura ]
 
     playPermanentEffect :: Magic ()
-    playPermanentEffect = void $
-        view (willMoveToStack rSelf (pure resolvePermanent)) >>= executeEffect
-
-    resolvePermanent _source = return ()
+    playPermanentEffect = stackSelf (\_ _ -> return ()) rSelf you
 
 
 
@@ -207,16 +203,25 @@ loyaltyAbility cost eff = ActivatedAbility
       o <- asks (objectBase rSelf)
       return (countCountersOfType Loyalty o >= n)
 
+mkTargetAbility :: PlayerRef -> TargetList a ->
+  (a -> ObjectRef TyStackItem -> Magic()) -> Magic ()
+mkTargetAbility = mkTargetTrigger
+
+mkAbility :: PlayerRef -> (ObjectRef TyStackItem -> Magic()) -> Magic ()
+mkAbility = mkTrigger
+
 
 
 -- CREATING EFFECTS ON THE STACK
 
 
-stackTargetlessEffect :: SomeObjectRef -> (ObjectRef TyStackItem -> Magic ()) -> Magic ()
-stackTargetlessEffect rSelf item = do
-  eff <- view (willMoveToStack rSelf (pure item))
-  void $ executeEffect eff
+stackSelf :: (ObjectRef TyStackItem -> PlayerRef -> Magic ()) -> Contextual (Magic ())
+stackSelf item rSelf you = stackTargetSelf rSelf you (pure ()) (const item)
 
+stackTargetSelf :: Contextual (TargetList a -> (a -> ObjectRef TyStackItem -> PlayerRef -> Magic ()) -> Magic ())
+stackTargetSelf rSelf you ts mkItem = do
+  eff <- view (willMoveToStack rSelf (mkItem <$> ts))
+  void $ executeEffect eff
 
 
 
@@ -231,7 +236,7 @@ mkTargetTrigger :: PlayerRef -> TargetList a ->
 mkTargetTrigger p ts f = do
   t <- tick
   void $ executeEffect $ WillMoveObject Nothing Stack $
-    StackItem (emptyObject t p) (f <$> ts)
+    StackItem (emptyObject t p) ((\x rStackSelf _you -> f x rStackSelf) <$> ts)
 
 
 -- | Creates a trigger on the stack under the control of the specified player.

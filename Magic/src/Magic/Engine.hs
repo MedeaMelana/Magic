@@ -394,7 +394,7 @@ resolve r@(Stack, i) = do
   StackItem o item <- gets (object r)
   let (_, Just mkEffects) = evaluateTargetList item
   let eventSource = ResolutionOf r
-  executeMagic eventSource (mkEffects r)
+  executeMagic eventSource (mkEffects r (get controller o))
 
   -- if the object is now still on the stack, move it to the appropriate zone
   if (hasTypes instantType o || hasTypes sorceryType o)
