@@ -198,6 +198,27 @@ divineFavor = mkCard $ do
 
 
 
+-- BLACK CARDS
+
+disentomb :: Card
+disentomb = mkCard $ do
+  name =: Just "Disentomb"
+  types =: sorceryType
+  play =: Just playObject
+    { manaCost = Just [Just Black]
+    , effect = \rSelf you -> do
+        ts <- askTarget you (isCreatureCard <?> targetInZone (Graveyard you))
+        stackTargetSelf rSelf you ts $ \t@(z, i) _ stackYou -> do
+          card <- view (asks (object t))
+          void $ executeEffect $
+            WillMoveObject (Just (Some z, i)) (Hand stackYou) card
+    }
+  where
+    isCreatureCard :: ObjectRef TyCard -> View Bool
+    isCreatureCard r = hasTypes creatureType <$> asks (object r .^ objectPart)
+
+
+
 -- RED CARDS
 
 
@@ -329,6 +350,33 @@ chronomaton = mkCard $ do
         , effect = \rSelf you -> do
             mkTrigger you $ \_ -> do
               will (AddCounter rSelf Plus1Plus1)
+        }
+      }
+
+tormod'sCrypt :: Card
+tormod'sCrypt = mkCard $ do
+    name =: Just "Tormod's Crypt"
+    types =: artifactType
+    play =: Just playObject { manaCost = Just [] }
+    activatedAbilities =: [tapToExile]
+  where
+    tapToExile = ActivatedAbility
+      { abilityType = ActivatedAb
+      , tapCost = TapCost
+      , abilityActivation = Activation
+        { timing = instantSpeed
+        , available = availableFromBattlefield
+        , manaCost = Just []
+        , effect = \rSelf you -> do
+            tp <- askTarget you targetPlayer
+            self <- view (asks (objectBase rSelf))
+            executeEffect $ WillMoveObject (Just rSelf) (Graveyard (get owner self)) (CardObject self)
+            mkTargetTrigger you tp $ \p _ -> do
+              cards <- IdList.toList <$> view (asks (player p .^ graveyard))
+              void $ executeEffects
+                [ WillMoveObject (Just (Some (Graveyard p), i)) Exile card
+                | (i, card) <- cards
+                ]
         }
       }
 

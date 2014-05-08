@@ -13,7 +13,7 @@ module Magic.Target (
     TargetSpec(..), (<?>), orTarget,
 
     -- * Common @TargetSpec@s
-    targetPlayer, targetPermanent, targetCreature, targetCreatureOrPlayer
+    targetPlayer, targetInZone, targetPermanent, targetCreature, targetCreatureOrPlayer
   ) where
 
 import qualified Magic.IdList as IdList
@@ -28,6 +28,7 @@ import Control.Applicative
 import Control.Monad (forM, filterM)
 import Data.Boolean (true, false, (&&*))
 import Data.Label.Monadic (asks)
+import Data.Type.Equality (testEquality, (:~:)(..))
 
 
 
@@ -104,12 +105,17 @@ targetPlayer = TargetSpec cast true
     cast (PlayerRef p) = Just p
     cast _ = Nothing
 
-targetPermanent :: TargetSpec (ObjectRef TyPermanent)
-targetPermanent = TargetSpec cast true
+targetInZone :: ZoneRef ty -> TargetSpec (ObjectRef ty)
+targetInZone z = TargetSpec cast true
   where
-    cast :: EntityRef -> Maybe (ObjectRef TyPermanent)
-    cast (ObjectRef (Some Battlefield, i)) = Just (Battlefield, i)
+    cast (ObjectRef (Some z', i)) =
+      case testEquality z z' of
+        Just Refl -> Just (z, i)
+        Nothing -> Nothing
     cast _ = Nothing
+
+targetPermanent :: TargetSpec (ObjectRef TyPermanent)
+targetPermanent = targetInZone Battlefield
 
 targetCreature :: TargetSpec (ObjectRef TyPermanent)
 targetCreature = checkPermanent (hasTypes creatureType) <?> targetPermanent
