@@ -268,11 +268,8 @@ arborElf = mkCard $ do
     untapTargetForest = ActivatedAbility
       { abilityType = ActivatedAb
       , tapCost = TapCost
-      , abilityActivation = Activation
-        { timing = instantSpeed
-        , available = availableFromBattlefield
-        , manaCost = Just []
-        , effect = \_ you -> do
+      , abilityActivation = defaultActivation
+        { effect = \_ you -> do
             ts <- askTarget you $ checkPermanent
               (hasTypes (landTypes [Forest])) <?> targetPermanent
             mkTargetAbility you ts $ \rForest ->
@@ -343,11 +340,8 @@ chronomaton = mkCard $ do
     addCounter = ActivatedAbility
       { abilityType = ActivatedAb
       , tapCost = TapCost
-      , abilityActivation = Activation
-        { timing = instantSpeed
-        , available = availableFromBattlefield
-        , manaCost = Just []
-        , effect = \rSelf you ->
+      , abilityActivation = defaultActivation
+        { effect = \rSelf you ->
             mkTrigger you $ will (AddCounter rSelf Plus1Plus1)
         }
       }
@@ -362,11 +356,8 @@ tormod'sCrypt = mkCard $ do
     tapToExile = ActivatedAbility
       { abilityType = ActivatedAb
       , tapCost = TapCost
-      , abilityActivation = Activation
-        { timing = instantSpeed
-        , available = availableFromBattlefield
-        , manaCost = Just []
-        , effect = \(Some Battlefield, i) you -> do
+      , abilityActivation = defaultActivation
+        { effect = \(Some Battlefield, i) you -> do
             tp <- askTarget you targetPlayer
             will (Sacrifice (Battlefield, i))
             mkTargetTrigger you tp $ \p -> do

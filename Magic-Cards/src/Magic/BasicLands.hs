@@ -28,15 +28,12 @@ mkBasicLandCard ty color = mkCard $ do
 
 tapToAddMana :: Maybe Color -> ActivatedAbility
 tapToAddMana mc = ActivatedAbility
-  { abilityActivation = Activation
-    { timing = instantSpeed
-    , available = availableFromBattlefield
-    , manaCost = mempty
-    , effect = \_rSource you ->
+  { abilityType = ManaAb
+  , tapCost = TapCost
+  , abilityActivation = defaultActivation
+    { effect = \_rSource you ->
         void (executeEffect (Will (AddToManaPool you [mc])))
     }
-  , abilityType = ManaAb
-  , tapCost = TapCost
   }
 
 checkObject :: SomeObjectRef -> (Object -> Bool) -> View Bool
