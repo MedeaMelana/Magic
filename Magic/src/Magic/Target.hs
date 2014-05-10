@@ -22,7 +22,6 @@ import Magic.Types
 import Magic.Predicates
 import Magic.ObjectTypes
 import Magic.Some
-import Magic.Labels ((.^))
 
 import Control.Applicative
 import Control.Monad (forM, filterM)

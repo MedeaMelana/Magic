@@ -220,6 +220,7 @@ stackSelf item rSelf you = stackTargetSelf rSelf you (pure ()) (const item)
 
 stackTargetSelf :: Contextual (TargetList a -> (a -> ObjectRef TyStackItem -> PlayerRef -> Magic ()) -> Magic ())
 stackTargetSelf rSelf you ts mkItem = do
+  -- TODO Make 'you' controller of the object on the stack
   eff <- view (willMoveToStack rSelf (mkItem <$> ts))
   void $ executeEffect eff
 

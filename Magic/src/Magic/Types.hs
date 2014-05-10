@@ -617,7 +617,7 @@ instance Monoid a => Monoid (TargetList a) where
   mappend = liftA2 mappend
 
 instance Show (TargetList a) where
-  show ts = "<target list>"
+  show _ = "<target list>"
 
 
 
