@@ -265,17 +265,11 @@ arborElf = mkCard $ do
     play =: Just playObject { manaCost = Just [Just Green] }
     activatedAbilities =: [untapTargetForest]
   where
-    untapTargetForest = ActivatedAbility
-      { abilityType = ActivatedAb
-      , tapCost = TapCost
-      , abilityActivation = defaultActivation
-        { effect = \_ you -> do
-            ts <- askTarget you $ checkPermanent
-              (hasTypes (landTypes [Forest])) <?> targetPermanent
-            mkTargetAbility you ts $ \rForest ->
-              will (UntapPermanent rForest)
-        }
-      }
+    untapTargetForest = tapAbility $ \_ you -> do
+      ts <- askTarget you $ checkPermanent
+        (hasTypes (landTypes [Forest])) <?> targetPermanent
+      mkTargetAbility you ts $ \rForest ->
+        will (UntapPermanent rForest)
 
 bondBeetle :: Card
 bondBeetle = mkCard $ do
@@ -337,14 +331,8 @@ chronomaton = mkCard $ do
     play =: Just playObject { manaCost = Just [Nothing] }
     activatedAbilities =: [addCounter]
   where
-    addCounter = ActivatedAbility
-      { abilityType = ActivatedAb
-      , tapCost = TapCost
-      , abilityActivation = defaultActivation
-        { effect = \rSelf you ->
-            mkTrigger you $ will (AddCounter rSelf Plus1Plus1)
-        }
-      }
+    addCounter = tapAbility $ \rSelf you ->
+      mkTrigger you $ will (AddCounter rSelf Plus1Plus1)
 
 tormod'sCrypt :: Card
 tormod'sCrypt = mkCard $ do
@@ -353,21 +341,15 @@ tormod'sCrypt = mkCard $ do
     play =: Just playObject { manaCost = Just [] }
     activatedAbilities =: [tapToExile]
   where
-    tapToExile = ActivatedAbility
-      { abilityType = ActivatedAb
-      , tapCost = TapCost
-      , abilityActivation = defaultActivation
-        { effect = \(Some Battlefield, i) you -> do
-            tp <- askTarget you targetPlayer
-            will (Sacrifice (Battlefield, i))
-            mkTargetTrigger you tp $ \p -> do
-              cards <- IdList.toList <$> view (asks (player p .^ graveyard))
-              void $ executeEffects
-                [ WillMoveObject (Just (Some (Graveyard p), j)) Exile card
-                | (j, card) <- cards
-                ]
-        }
-      }
+    tapToExile = tapAbility $ \(Some Battlefield, i) you -> do
+      tp <- askTarget you targetPlayer
+      will (Sacrifice (Battlefield, i))
+      mkTargetTrigger you tp $ \p -> do
+        cards <- IdList.toList <$> view (asks (player p .^ graveyard))
+        void $ executeEffects
+          [ WillMoveObject (Just (Some (Graveyard p), j)) Exile card
+          | (j, card) <- cards
+          ]
 
 
 
