@@ -8,6 +8,7 @@ import Magic
 import qualified Magic.IdList as IdList
 
 import Control.Applicative
+import Control.Category ((.))
 import Control.Monad (void)
 import Data.Boolean ((&&*))
 import Data.Label (get)
@@ -15,6 +16,7 @@ import Data.Label.Monadic ((=:), asks)
 import Data.Monoid ((<>), mconcat)
 import qualified Data.Set as Set
 import qualified Data.Text as Text
+import Prelude hiding ((.))
 
 
 
@@ -73,7 +75,7 @@ angelicBenediction = mkCard $ do
     tapTrigger events (Some Battlefield, _) p =
       mconcat [
           do
-            p' <- asks (object rAttacker .^ objectPart .^ controller)
+            p' <- asks (controller . objectPart . object rAttacker)
             if p == p'
               then return [mkTapTriggerObject p]
               else return []
@@ -215,7 +217,7 @@ disentomb = mkCard $ do
     }
   where
     isCreatureCard :: ObjectRef TyCard -> View Bool
-    isCreatureCard r = hasTypes creatureType <$> asks (object r .^ objectPart)
+    isCreatureCard r = hasTypes creatureType <$> asks (objectPart . object r)
 
 
 
@@ -249,7 +251,7 @@ searingSpear = mkCard $ do
     searingSpearEffect rSelf you = do
       ts <- askTarget you targetCreatureOrPlayer
       stackTargetSelf rSelf you ts $ \t rStackSelf _stackYou -> do
-        self <- view (asks (object rStackSelf .^ objectPart))
+        self <- view (asks (objectPart . object rStackSelf))
         will $ case t of
           Left r  -> DamageObject self r 3 False True
           Right p -> DamagePlayer self p 3 False True
@@ -305,8 +307,8 @@ garrukPrimalHunter = mkCard $ do
         objs <- IdList.elems <$> view (asks battlefield)
         let n = foldr max 0 [ power
                             | o <- objs
-                            , get (objectPart .^ controller) o == you
-                            , let Just (power, _) = get (objectPart .^ pt) o ]
+                            , get (controller . objectPart) o == you
+                            , let Just (power, _) = get (pt . objectPart) o ]
         void $ executeEffects (replicate n (Will (DrawCard you)))
     minusSix = loyaltyAbility (-6) $ \_ you -> do
       mkAbility you $ do
@@ -345,7 +347,7 @@ tormod'sCrypt = mkCard $ do
       tp <- askTarget you targetPlayer
       will (Sacrifice (Battlefield, i))
       mkTargetTrigger you tp $ \p -> do
-        cards <- IdList.toList <$> view (asks (player p .^ graveyard))
+        cards <- IdList.toList <$> view (asks (graveyard . player p))
         void $ executeEffects
           [ WillMoveObject (Just (Some (Graveyard p), j)) Exile card
           | (j, card) <- cards

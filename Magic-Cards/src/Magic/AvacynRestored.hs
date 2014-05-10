@@ -4,10 +4,13 @@
 module Magic.AvacynRestored where
 
 import Magic
+
 import Control.Applicative ((<$>))
+import Control.Category ((.))
 import Control.Monad (void)
 import Data.Boolean ((||*), false)
 import Data.Label.Monadic (asks, (=:))
+import Prelude hiding ((.))
 
 
 
@@ -25,7 +28,7 @@ misthollowGriffin = mkCard $ do
     availableFromExile :: Contextual (View Bool)
     availableFromExile rSelf you =
       case rSelf of
-        (Some Exile, _) -> (== you) <$> view (asks (objectBase rSelf .^ owner))
+        (Some Exile, _) -> (== you) <$> view (asks (owner . objectBase rSelf))
         _          -> false
 
 bloodArtist :: Card

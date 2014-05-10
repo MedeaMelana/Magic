@@ -5,15 +5,16 @@ module Magic.Predicates (
   ) where
 
 import Magic.Core (object, objectPart)
-import Magic.Labels ((.^))
 import Magic.ObjectTypes
 import Magic.Types
 import Magic.Utils (gor)
 
 import Control.Applicative ((<$>))
+import Control.Category ((.))
 import Data.Label (get)
 import Data.Label.Monadic (asks)
 import qualified Data.Set as Set
+import Prelude hiding ((.))
 
 
 -- Objects
@@ -36,4 +37,4 @@ hasPermanentType :: Object -> Bool
 hasPermanentType = gor $ map hasTypes [artifactType, creatureType, enchantmentType, landType, planeswalkerType]
 
 checkPermanent :: (Object -> Bool) -> ObjectRef TyPermanent -> View Bool
-checkPermanent ok r = ok <$> asks (object r .^ objectPart)
+checkPermanent ok r = ok <$> asks (objectPart . object r)

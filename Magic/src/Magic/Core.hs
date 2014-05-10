@@ -14,6 +14,7 @@ import Magic.Labels
 import Magic.Types
 
 import Control.Applicative
+import Control.Category ((.))
 import Control.Monad.Reader (ask)
 import Control.Monad.Operational (singleton)
 import Data.Label (lens)
@@ -22,16 +23,16 @@ import Data.Label.Monadic (asks)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Traversable (for)
-import Prelude hiding (interact)
+import Prelude hiding (interact, (.))
 
 
 compileZoneRef :: ZoneRef ty -> World :-> IdList (ObjectOfType ty)
 compileZoneRef z =
   case z of
-    Library p   -> players .^ listEl p .^ library
-    Hand p      -> players .^ listEl p .^ hand
+    Library p   -> library . listEl p . players
+    Hand p      -> hand . listEl p . players
     Battlefield -> battlefield
-    Graveyard p -> players .^ listEl p .^ graveyard
+    Graveyard p -> graveyard . listEl p . players
     Stack       -> stack
     Exile       -> exile
     Command     -> command
@@ -65,10 +66,10 @@ debug :: MonadInteract m => Text -> m ()
 debug t = interact (singleton (Debug t))
 
 object :: ObjectRef ty -> World :-> ObjectOfType ty
-object (zoneRef, i) = compileZoneRef zoneRef .^ listEl i
+object (zoneRef, i) = listEl i . compileZoneRef zoneRef
 
 objectBase :: SomeObjectRef -> World :-> Object
-objectBase (Some zr, i) = compileZoneRef zr .^ listEl i .^ objectPart
+objectBase (Some zr, i) = objectPart . listEl i . compileZoneRef zr
 
 objectPart :: ObjectOfType ty :-> Object
 objectPart = lens getObjectPart modifyObjectPart
@@ -87,7 +88,7 @@ anyObject :: SomeObjectRef -> World -> Some ObjectOfType
 anyObject = undefined
 
 player :: PlayerRef -> World :-> Player
-player i = players .^ listEl i
+player i = listEl i . players
 
 isStackEmpty :: View Bool
 isStackEmpty = IdList.null <$> asks stack

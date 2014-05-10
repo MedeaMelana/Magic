@@ -10,22 +10,22 @@ module Magic.Engine.Events (
 import Magic.Some
 import Magic.Core
 import qualified Magic.IdList as IdList
-import Magic.Labels
 import Magic.Events (willMoveToGraveyard)
 import Magic.Types
 import Magic.Engine.Types
 
 import Control.Applicative ((<$>), (<$))
+import Control.Category ((.))
 import Control.Monad (forM_,)
 import Control.Monad.Error (throwError)
 import Control.Monad.Reader (ask, runReaderT)
 import Control.Monad.Operational (singleton, Program, ProgramT, viewT, ProgramViewT(..))
 import Data.Label (get, set)
-import Data.Label.Monadic (gets, puts, (=:), asks)
+import Data.Label.Monadic (gets, puts, (=:), (=.), asks)
 import Data.List ((\\))
 import Data.Monoid ((<>))
 import Data.Traversable (for)
-import Prelude hiding (interact)
+import Prelude hiding (interact, (.))
 
 
 executeMagic :: EventSource -> Magic a -> Engine a
@@ -58,7 +58,7 @@ executeEffects source effects = do
 
   events <- concat <$> for effects' compileEffect
 
-  turnHistory ~: (++ events)
+  turnHistory =. (++ events)
 
   raise source events
   return events
@@ -77,7 +77,7 @@ raise source events = do
       programs <- tas events ro p
       viewedObject <- asks (objectBase ro)
       return (map (\program -> ((ro, viewedObject), program)) programs)
-    player p .^ prestack ~: (++ prestackItems)
+    prestack . player p =. (++ prestackItems)
 
 executeEffect :: EventSource -> OneShotEffect -> Engine [Event]
 executeEffect source = executeEffects source . (: [])
@@ -109,7 +109,7 @@ applyReplacementEffects _ eff = return [eff]
 affectedPlayer :: OneShotEffect -> Engine PlayerRef
 affectedPlayer e =
   case e of
-    WillMoveObject _ _ o            -> return (get (objectPart .^ controller) o)
+    WillMoveObject _ _ o            -> return (get (controller . objectPart) o)
     Will (GainLife p _)             -> return p
     Will (LoseLife p _)             -> return p
     Will (DamageObject _ r _ _ _)   -> controllerOf r
@@ -133,10 +133,10 @@ affectedPlayer e =
     Will (Sacrifice r)              -> controllerOf r
   where
     controllerOf :: ObjectRef ty -> Engine PlayerRef
-    controllerOf r = view $ asks (object r .^ objectPart .^ controller)
+    controllerOf r = view $ asks (controller . objectPart . object r)
 
     controllerOfSome :: SomeObjectRef -> Engine PlayerRef
-    controllerOfSome r = view $ asks (objectBase r .^ controller)
+    controllerOfSome r = view $ asks (controller . objectBase r)
 
 
 
@@ -154,7 +154,7 @@ compileEffect e =
                   case rToZone of
                     Stack -> IdList.consM
                     _     -> IdList.snocM
-            newId <- insertOp (compileZoneRef rToZone) (set (objectPart .^ timestamp) t obj)
+            newId <- insertOp (compileZoneRef rToZone) (set (timestamp . objectPart) t obj)
             return [DidMoveObject mOldRef (Some rToZone, newId)]
       in case mOldRef of
         -- TODO 303.4f-g Auras entering the battlefield without being cast
@@ -172,59 +172,59 @@ compileEffect e =
       in case simpleEffect of
 
         GainLife p n -> onlyIf (n >= 0) $
-          simply $ player p .^ life ~: (+ n)
+          simply $ life . player p =. (+ n)
 
         LoseLife p n -> onlyIf (n >= 0) $
-          simply $ player p .^ life ~: (subtract n)
+          simply $ life . player p =. (subtract n)
 
         TapPermanent r -> do
-          ts <- gets (object r .^ tapStatus)
+          ts <- gets (tapStatus . object r)
           onlyIf (ts == Untapped) $
-            simply $ object r .^ tapStatus =: Tapped
+            simply $ tapStatus . object r =: Tapped
 
         UntapPermanent r -> do
-          ts <- gets (object r .^ tapStatus)
+          ts <- gets (tapStatus . object r)
           onlyIf (ts == Tapped) $
-            simply $ object r .^ tapStatus =: Untapped
+            simply $ tapStatus . object r =: Untapped
 
         AddCounter r ty ->
-          simply $ objectBase r .^ counters ~: (ty :)
+          simply $ counters . objectBase r =. (ty :)
 
-        DrawCard rp -> do
-          lib <- gets (players .^ listEl rp .^ library)
+        DrawCard p -> do
+          lib <- gets (library . player p)
           case IdList.toList lib of
             [] -> do
-              players .^ listEl rp .^ failedCardDraw =: True
+              failedCardDraw . player p =: True
               return []
             (ro, o) : _ ->
-              combine $ WillMoveObject (Just (Some (Library rp), ro)) (Hand rp) o
+              combine $ WillMoveObject (Just (Some (Library p), ro)) (Hand p) o
 
         DestroyPermanent r _ -> do
-          o <- gets (object r .^ objectPart)
+          o <- gets (objectPart . object r)
           combine $ willMoveToGraveyard r o
 
-        ShuffleLibrary rPlayer -> simply $ do
-          let libraryLabel = players .^ listEl rPlayer .^ library
+        ShuffleLibrary p -> simply $ do
+          let libraryLabel = library . player p
           lib <- gets libraryLabel
           lib' <- IdList.shuffle lib
           puts libraryLabel lib'
 
-        PlayLand p ro -> do
+        PlayLand _ ro -> do
           o <- gets (objectBase ro)
           -- TODO apply replacement effects on the move effect
           -- TODO store more sensible data in the PlayLand event
           combine $ WillMoveObject (Just ro) Battlefield (Permanent o Untapped 0 False Nothing Nothing)
 
         AddToManaPool p pool ->
-          simply $ player p .^ manaPool ~: (pool <>)
+          simply $ manaPool . player p =. (pool <>)
 
         SpendFromManaPool p pool ->
-          simply $ player p .^ manaPool ~: (\\ pool)
+          simply $ manaPool . player p =. (\\ pool)
 
         DamageObject _source r amount _isCombatDamage _isPreventable ->
           -- TODO check for protection, infect, wither, lifelink
           onlyIf (amount > 0) $
-            simply $ object r .^ damage ~: (+ amount)
+            simply $ damage . object r =. (+ amount)
 
         DamagePlayer _source p amount _isCombatDamage _isPreventable ->
           -- TODO check for protection, infect, wither, lifelink
@@ -241,7 +241,7 @@ compileEffect e =
           throwError (GameWin p)
 
         InstallLayeredEffect r eff ->
-          simply $ objectBase r .^ temporaryEffects ~: (++ [eff])
+          simply $ temporaryEffects . objectBase r =. (++ [eff])
 
         CeaseToExist (Some z, i) -> do
           m <- IdList.removeM (compileZoneRef z) i
@@ -250,7 +250,7 @@ compileEffect e =
             Just _  -> simply $ return ()
 
         Sacrifice r@(Battlefield, i) -> do
-          o <- view (asks (object r .^ objectPart))
+          o <- view (asks (objectPart . object r))
           combine $ WillMoveObject (Just (Some Battlefield, i)) (Graveyard (get owner o)) (CardObject o)
 
         _ -> error "compileEffect: effect not implemented"
@@ -258,5 +258,5 @@ compileEffect e =
 tick :: Engine Timestamp
 tick = do
   t <- gets time
-  time ~: succ
+  time =. succ
   return t

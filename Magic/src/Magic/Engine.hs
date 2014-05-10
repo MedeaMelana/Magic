@@ -21,17 +21,18 @@ import Magic.Engine.Events
 import Magic.Some
 
 import Control.Applicative ((<$>), (<*>))
+import Control.Category ((.))
 import Control.Monad (forever, forM_, when, void, liftM)
 import Control.Monad.Trans (lift)
 import Control.Monad.Writer (tell, execWriterT)
 import Data.Boolean ((&&*))
 import Data.Label (get, set, modify)
-import Data.Label.Monadic (gets, (=:), asks)
+import Data.Label.Monadic (gets, (=:), (=.), asks)
 import Data.List (nub, intersect, delete)
 import Data.Maybe (catMaybes)
 import Data.Monoid ((<>))
 import Data.Traversable (for)
-import Prelude hiding (round)
+import Prelude hiding (round, (.))
 
 
 
@@ -112,7 +113,7 @@ drawOpeningHands playerIds handSize = do
 
 undrawHand :: EventSource -> PlayerRef -> Engine [Event]
 undrawHand source p = do
-  idxs <- IdList.toList <$> gets (player p .^ hand)
+  idxs <- IdList.toList <$> gets (hand . player p)
   executeEffects source [ WillMoveObject (Just (Some (Hand p), i)) (Library p) x | (i, x) <- idxs ]
 
 fullGame :: Engine ()
@@ -120,7 +121,7 @@ fullGame = do
   ps <- IdList.ids <$> gets players
   drawOpeningHands ps 7
   forever $ do
-    players ~:* set manaPool []
+    players =.* set manaPool []
     (step, newTurn) <- nextStep
     when newTurn (turnHistory =: [])
     raise TurnBasedActions [DidBeginStep step]
@@ -200,7 +201,7 @@ executeStep (CombatPhase DeclareAttackersStep) = do
 
   -- [508.1j] mark creatures as attacking
   forM_ attacks $ \(Attack rAttacker rAttackee) ->
-    object rAttacker .^ attacking =: Just rAttackee
+    attacking . object rAttacker =: Just rAttackee
 
   -- [508.2]  handle triggers
   raise TurnBasedActions [DidDeclareAttackers ap attacks]
@@ -251,7 +252,7 @@ executeStep (CombatPhase EndOfCombatStep) = do
   offerPriority
 
   -- [511.3]  remove creatures from combat
-  battlefield ~:* set attacking Nothing
+  battlefield =.* set attacking Nothing
 
 executeStep (EndPhase EndOfTurnStep) = do
   -- TODO [513.1]  handle triggers
@@ -262,10 +263,10 @@ executeStep (EndPhase EndOfTurnStep) = do
 executeStep (EndPhase CleanupStep) = do
   -- TODO [514.1]  discard excess cards
   -- [514.2] remove damage from permanents
-  battlefield ~:* set damage 0
+  battlefield =.* set damage 0
 
   -- [514.2] Remove effects that last until end of turn
-  battlefield ~:* modify (objectPart .^ temporaryEffects)
+  battlefield =.* modify (temporaryEffects . objectPart)
     (filter (\tle -> temporaryDuration tle /= UntilEndOfTurn))
   shouldOfferPriority <- executeSBAsAndProcessPrestacks
   when shouldOfferPriority offerPriority
@@ -325,7 +326,7 @@ processPrestacks = do
       index <- askQuestion i (AskPickTrigger (map fst pending))
       let (lki, program) = pending !! index
       executeMagic (StackTrigger lki) program
-      player i .^ prestack ~: deleteAtIndex index
+      prestack . player i =. deleteAtIndex index
     return (not (null pending))
 
 untilFalse :: Monad m => m Bool -> m Bool
@@ -445,10 +446,10 @@ executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
 executePriorityAction p a = do
   case a of
     PlayCard r -> do
-      Just ability <- gets (objectBase r .^ play)
+      Just ability <- gets (play . objectBase r)
       activate (PriorityActionExecution a) ability r p
     ActivateAbility (r, i) -> do
-      abilities <- gets (objectBase r .^ activatedAbilities)
+      abilities <- gets (activatedAbilities . objectBase r)
       let ab = abilities !! i
       let eventSource = PriorityActionExecution a
       payTapCost eventSource (tapCost ab) r p
@@ -459,7 +460,7 @@ offerManaAbilitiesToPay _ _ []   = return ()
 offerManaAbilitiesToPay source p cost = do
   amas <- map ActivateManaAbility <$>
           collectAvailableActivatedAbilities ((== ManaAb) . abilityType) p
-  pool <- gets (player p .^ manaPool)
+  pool <- gets (manaPool . player p)
   let pms =
         if Nothing `elem` cost
           then map PayManaFromManaPool (nub pool)  -- there is at least 1 colorless mana to pay
@@ -472,14 +473,14 @@ offerManaAbilitiesToPay source p cost = do
         then offerManaAbilitiesToPay source p (delete mc cost)
         else offerManaAbilitiesToPay source p (delete Nothing cost)
     ActivateManaAbility (r, i) -> do
-      abilities <- gets (objectBase r .^ activatedAbilities)
+      abilities <- gets (activatedAbilities . objectBase r)
       activate source (abilityActivation (abilities !! i)) r p
       offerManaAbilitiesToPay source p cost
 
 canPayTapCost :: TapCost -> Contextual (Engine Bool)
 canPayTapCost NoTapCost _ _ = return True
 canPayTapCost TapCost (Some Battlefield, i) _ =
-  (== Untapped) <$> gets (object (Battlefield, i) .^ tapStatus)
+  (== Untapped) <$> gets (tapStatus . object (Battlefield, i))
 canPayTapCost TapCost _ _ = return False
 
 payTapCost :: EventSource -> TapCost -> Contextual (Engine ())

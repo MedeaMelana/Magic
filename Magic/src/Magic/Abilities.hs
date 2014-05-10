@@ -39,7 +39,6 @@ module Magic.Abilities (
 
 import Magic.Core
 import Magic.Events
-import Magic.Labels
 import Magic.ObjectTypes (instantType, sorceryType, auraType, landType, isObjectTypesSubsetOf)
 import Magic.Predicates
 import Magic.Some
@@ -48,12 +47,14 @@ import Magic.Types
 import Magic.Utils (gand, emptyObject, countCountersOfType)
 
 import Control.Applicative ((<$>), pure)
+import Control.Category ((.))
 import Control.Monad (void)
 
 import Data.Boolean (true, false, (&&*))
 import Data.Label (get, modify)
 import Data.Label.Monadic (asks)
 import Data.Monoid (mempty)
+import Prelude hiding ((.))
 
 
 
@@ -83,7 +84,7 @@ availableFromHand :: Contextual (View Bool)
 availableFromHand rSelf you =
   case rSelf of
     (Some (Hand you'), _) | you' == you ->
-      (== you) <$> view (asks (objectBase rSelf .^ controller))
+      (== you) <$> view (asks (controller . objectBase rSelf))
     _ -> false
 
 -- | Checks whether an activation's source is on the battlefield and is controlled by the playing trying to activate it.
@@ -91,7 +92,7 @@ availableFromBattlefield :: Contextual (View Bool)
 availableFromBattlefield rSelf you =
   case rSelf of
     (Some Battlefield, _) ->
-      (== you) <$> view (asks (objectBase rSelf .^ controller))
+      (== you) <$> view (asks (controller . objectBase rSelf))
     _ -> false
 
 
@@ -144,7 +145,7 @@ playTiming rSelf you = do
 -- | Default implementation for the effect of playing an object. Effects differ for lands, instants/sorceries, auras and other permanents.
 playObjectEffect :: Contextual (Magic ())
 playObjectEffect rSelf you = do
-    tys <- view (asks (objectBase rSelf .^ types))
+    tys <- view (asks (types . objectBase rSelf))
     if landType `isObjectTypesSubsetOf` tys
     then playLandEffect
     else if instantType `isObjectTypesSubsetOf` tys ||
@@ -168,7 +169,7 @@ playObjectEffect rSelf you = do
         checkPermanent (collectEnchantPredicate aura) <?> targetPermanent
       let f :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> PlayerRef -> Magic ()
           f (Battlefield, i) rStackSelf@(Stack, iSelf) _you = do
-            self <- view (asks (object rStackSelf .^ objectPart))
+            self <- view (asks (objectPart . object rStackSelf))
             void $ executeEffect (WillMoveObject (Just (Some Stack, iSelf)) Battlefield (Permanent self Untapped 0 False (Just (Some Battlefield, i)) Nothing))
 
       stackTargetSelf rSelf you ts f
@@ -286,7 +287,7 @@ ifSelfWasOrIsOnBattlefield f events rSelf you =
 etbWithLoyaltyCounters :: ReplacementEffect
 etbWithLoyaltyCounters (WillMoveObject (Just fromRef) Battlefield perm) rSelf _you
   | fromRef == rSelf =
-      case get (objectPart .^ loyalty) perm of
-        Just n -> Just $ return [WillMoveObject (Just fromRef) Battlefield (modify (objectPart .^ counters) (++ replicate n Loyalty) perm)]
+      case get (loyalty . objectPart) perm of
+        Just n -> Just $ return [WillMoveObject (Just fromRef) Battlefield (modify (counters . objectPart) (++ replicate n Loyalty) perm)]
         Nothing -> Nothing
 etbWithLoyaltyCounters _ _ _ = Nothing
