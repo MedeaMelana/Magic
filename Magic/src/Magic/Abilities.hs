@@ -203,11 +203,10 @@ loyaltyAbility cost eff = ActivatedAbility
       o <- asks (objectBase rSelf)
       return (countCountersOfType Loyalty o >= n)
 
-mkTargetAbility :: PlayerRef -> TargetList a ->
-  (a -> ObjectRef TyStackItem -> Magic()) -> Magic ()
+mkTargetAbility :: PlayerRef -> TargetList a -> (a -> Magic()) -> Magic ()
 mkTargetAbility = mkTargetTrigger
 
-mkAbility :: PlayerRef -> (ObjectRef TyStackItem -> Magic()) -> Magic ()
+mkAbility :: PlayerRef -> Magic() -> Magic ()
 mkAbility = mkTrigger
 
 
@@ -232,18 +231,17 @@ stackTargetSelf rSelf you ts mkItem = do
 -- | Creates a trigger on the stack under the control of the specified player.
 -- The function is applied to the return value of the specified 'TargetList'
 -- and put on the stack as a 'StackItem'.
-mkTargetTrigger :: PlayerRef -> TargetList a ->
-  (a -> ObjectRef TyStackItem -> Magic()) -> Magic ()
+mkTargetTrigger :: PlayerRef -> TargetList a -> (a -> Magic()) -> Magic ()
 mkTargetTrigger p ts f = do
   t <- tick
   void $ executeEffect $ WillMoveObject Nothing Stack $
-    StackItem (emptyObject t p) ((\x rStackSelf _you -> f x rStackSelf) <$> ts)
+    StackItem (emptyObject t p) ((\x _rStackSelf _you -> f x) <$> ts)
 
 
 -- | Creates a trigger on the stack under the control of the specified player.
 -- The specified program is wrapped in an empty 'TargetList' and passed to
 -- 'mkTriggerObject'.
-mkTrigger :: PlayerRef -> (ObjectRef TyStackItem -> Magic()) -> Magic ()
+mkTrigger :: PlayerRef -> Magic() -> Magic ()
 mkTrigger p f = mkTargetTrigger p (pure ()) (const f)
 
 

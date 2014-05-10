@@ -4,11 +4,9 @@
 module Magic.AvacynRestored where
 
 import Magic
-import Magic.Labels ((.^))
-import Control.Applicative (pure, (<$>))
+import Control.Applicative ((<$>))
 import Control.Monad (void)
 import Data.Boolean ((||*), false)
-import Data.Label (get, modify)
 import Data.Label.Monadic (asks, (=:))
 
 
@@ -45,5 +43,5 @@ bloodArtist = mkCard $ do
     createTriggerObject :: PlayerRef -> Magic ()
     createTriggerObject you = do
       ts <- askTarget you targetPlayer
-      mkTargetTrigger you ts $ \p _source ->
+      mkTargetTrigger you ts $ \p ->
         void $ executeEffects [Will (LoseLife p 1), Will (GainLife you 1)]

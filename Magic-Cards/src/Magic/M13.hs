@@ -25,8 +25,8 @@ exalted :: TriggeredAbilities
 exalted events (Some Battlefield, _) p = return [ mkTrigger p (boostPT r)
     | DidDeclareAttackers p' [Attack r _] <- events, p == p' ]
   where
-    boostPT :: ObjectRef TyPermanent -> ObjectRef TyStackItem -> Magic ()
-    boostPT (Battlefield, i) _rSelf = do
+    boostPT :: ObjectRef TyPermanent -> Magic ()
+    boostPT (Battlefield, i) = do
       t <- tick
       will $ InstallLayeredEffect (Some Battlefield, i) $
         TemporaryLayeredEffect
@@ -83,8 +83,7 @@ angelicBenediction = mkCard $ do
     mkTapTriggerObject :: PlayerRef -> Magic ()
     mkTapTriggerObject p = do
         ts <- askTarget p targetCreature
-        mkTargetTrigger p ts $
-          \r _source -> will (TapPermanent r)
+        mkTargetTrigger p ts (will . TapPermanent)
 
 attendedKnight :: Card
 attendedKnight = mkCard $ do
@@ -97,7 +96,7 @@ attendedKnight = mkCard $ do
     triggeredAbilities     =: trigger
   where
     trigger :: TriggeredAbilities
-    trigger = onSelfETB $ \_ p -> mkTrigger p $ \_ -> do
+    trigger = onSelfETB $ \_ p -> mkTrigger p $ do
       t <- tick
       void $ executeEffect $ mkSoldierEffect t p
 
@@ -134,7 +133,7 @@ battleflightEagle = mkCard $ do
     createBoostTrigger :: Contextual (Magic ())
     createBoostTrigger _ p = do
       ts <- askTarget p targetCreature
-      mkTargetTrigger p ts $ \(Battlefield, i) _source -> do
+      mkTargetTrigger p ts $ \(Battlefield, i) -> do
         t <- tick
         will $
           InstallLayeredEffect (Some Battlefield, i) TemporaryLayeredEffect
@@ -166,7 +165,7 @@ captainOfTheWatch = mkCard $ do
                         , ModifyPT (return (1, 1))]
       }
 
-    trigger = onSelfETB $ \_ p -> mkTrigger p $ \_ -> do
+    trigger = onSelfETB $ \_ p -> mkTrigger p $ do
       t <- tick
       void $ executeEffects $ replicate 3 $ mkSoldierEffect t p
 
@@ -186,11 +185,12 @@ divineFavor = mkCard $ do
     name =: Just "Divine Favor"
     types =: auraType
     staticKeywordAbilities =: [EnchantPermanent creatureType]
-    triggeredAbilities =: (onSelfETB $ \_ you -> mkTrigger you (gainLifeTrigger you))
+    triggeredAbilities =: gainLifeTrigger
     layeredEffects =: [boostEnchanted]
     play =: Just playObject { manaCost = Just [Nothing, Just White] }
   where
-    gainLifeTrigger you _source = will (GainLife you 3)
+    gainLifeTrigger = onSelfETB $ \_ you ->
+      mkTrigger you (will (GainLife you 3))
     boostEnchanted = LayeredEffect
       { affectedObjects = affectAttached
       , modifications = [ModifyPT (return (1, 3))]
@@ -275,7 +275,7 @@ arborElf = mkCard $ do
         , effect = \_ you -> do
             ts <- askTarget you $ checkPermanent
               (hasTypes (landTypes [Forest])) <?> targetPermanent
-            mkTargetAbility you ts $ \rForest _ ->
+            mkTargetAbility you ts $ \rForest ->
               will (UntapPermanent rForest)
         }
       }
@@ -291,7 +291,7 @@ bondBeetle = mkCard $ do
     createAddCounterTrigger :: Contextual (Magic ())
     createAddCounterTrigger _ p = do
       ts <- askTarget p targetCreature
-      mkTargetTrigger p ts $ \(Battlefield, i) _source ->
+      mkTargetTrigger p ts $ \(Battlefield, i) ->
         will $ AddCounter (Some Battlefield, i) Plus1Plus1
 
 garrukPrimalHunter :: Card
@@ -305,12 +305,12 @@ garrukPrimalHunter = mkCard $ do
     replacementEffects =: [etbWithLoyaltyCounters]
   where
     plusOne = loyaltyAbility 1 $ \_ you -> do
-      mkAbility you $ \_ -> do
+      mkAbility you $ do
         t <- tick
         let token = simpleCreatureToken t you [Beast] [Green] (3,3)
         void $ executeEffect $ WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
     minusThree = loyaltyAbility (-3) $ \_ you -> do
-      mkAbility you $ \_ -> do
+      mkAbility you $ do
         objs <- IdList.elems <$> view (asks battlefield)
         let n = foldr max 0 [ power
                             | o <- objs
@@ -318,7 +318,7 @@ garrukPrimalHunter = mkCard $ do
                             , let Just (power, _) = get (objectPart .^ pt) o ]
         void $ executeEffects (replicate n (Will (DrawCard you)))
     minusSix = loyaltyAbility (-6) $ \_ you -> do
-      mkAbility you $ \_ -> do
+      mkAbility you $ do
         perms <- IdList.elems <$> view (asks battlefield)
         let n = count perms $ \perm ->
                   let o = get objectPart perm
@@ -347,9 +347,8 @@ chronomaton = mkCard $ do
         { timing = instantSpeed
         , available = availableFromBattlefield
         , manaCost = Just []
-        , effect = \rSelf you -> do
-            mkTrigger you $ \_ -> do
-              will (AddCounter rSelf Plus1Plus1)
+        , effect = \rSelf you ->
+            mkTrigger you $ will (AddCounter rSelf Plus1Plus1)
         }
       }
 
@@ -370,11 +369,11 @@ tormod'sCrypt = mkCard $ do
         , effect = \(Some Battlefield, i) you -> do
             tp <- askTarget you targetPlayer
             will (Sacrifice (Battlefield, i))
-            mkTargetTrigger you tp $ \p _ -> do
+            mkTargetTrigger you tp $ \p -> do
               cards <- IdList.toList <$> view (asks (player p .^ graveyard))
               void $ executeEffects
-                [ WillMoveObject (Just (Some (Graveyard p), i)) Exile card
-                | (i, card) <- cards
+                [ WillMoveObject (Just (Some (Graveyard p), j)) Exile card
+                | (j, card) <- cards
                 ]
         }
       }
