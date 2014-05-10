@@ -10,12 +10,11 @@ import Magic.Engine.Types
 import qualified Magic.IdList as IdList
 
 import Control.Applicative ((<$>))
-import Control.Monad (liftM, mzero, (>=>))
+import Control.Monad (mzero, (>=>))
 
 import Data.Aeson (ToJSON(..), FromJSON(..), Value(..), (.=), decode)
 import Data.Aeson.Types (Pair, Parser, parse, (.:))
 import qualified Data.Aeson as Aeson
-import Data.Attoparsec.Number
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.Char (toLower)
@@ -26,7 +25,7 @@ import Data.Traversable (for)
 import qualified Data.Vector as Vector
 import Debug.Trace (trace)
 
-import Safe (atMay, readMay)
+import Safe (atMay)
 
 
 

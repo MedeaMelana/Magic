@@ -12,7 +12,6 @@ import Magic.Json
 import Control.Monad.Operational (ProgramT, ProgramViewT(..), viewT)
 import Control.Monad.Random (evalRandT, newStdGen, RandT, StdGen)
 import Control.Monad.State (evalStateT)
-import Control.Monad.Trans (liftIO)
 
 import Data.Aeson (encode)
 import Data.Monoid ((<>))
