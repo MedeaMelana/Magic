@@ -367,10 +367,9 @@ tormod'sCrypt = mkCard $ do
         { timing = instantSpeed
         , available = availableFromBattlefield
         , manaCost = Just []
-        , effect = \rSelf you -> do
+        , effect = \(Some Battlefield, i) you -> do
             tp <- askTarget you targetPlayer
-            self <- view (asks (objectBase rSelf))
-            executeEffect $ WillMoveObject (Just rSelf) (Graveyard (get owner self)) (CardObject self)
+            will (Sacrifice (Battlefield, i))
             mkTargetTrigger you tp $ \p _ -> do
               cards <- IdList.toList <$> view (asks (player p .^ graveyard))
               void $ executeEffects

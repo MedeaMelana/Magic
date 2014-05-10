@@ -572,6 +572,7 @@ data SimpleOneShotEffect
   | WinGame PlayerRef
   | InstallLayeredEffect SomeObjectRef TemporaryLayeredEffect
   | CeaseToExist SomeObjectRef
+  | Sacrifice (ObjectRef TyPermanent)
   deriving Show
 
 data Attack = Attack

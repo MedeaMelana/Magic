@@ -130,6 +130,7 @@ affectedPlayer e =
     Will (WinGame p)                -> return p
     Will (InstallLayeredEffect r _) -> controllerOfSome r
     Will (CeaseToExist o)           -> controllerOfSome o
+    Will (Sacrifice r)              -> controllerOf r
   where
     controllerOf :: ObjectRef ty -> Engine PlayerRef
     controllerOf r = view $ asks (object r .^ objectPart .^ controller)
@@ -247,6 +248,10 @@ compileEffect e =
           case m of
             Nothing -> return []
             Just _  -> simply $ return ()
+
+        Sacrifice r@(Battlefield, i) -> do
+          o <- view (asks (object r .^ objectPart))
+          combine $ WillMoveObject (Just (Some Battlefield, i)) (Graveyard (get owner o)) (CardObject o)
 
         _ -> error "compileEffect: effect not implemented"
 
