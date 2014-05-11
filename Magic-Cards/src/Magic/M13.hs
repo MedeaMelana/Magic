@@ -1,10 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DoAndIfThenElse #-}
 
 module Magic.M13 where
 
 import Magic
+import Magic.BasicLands (tapToAddMana)
 import qualified Magic.IdList as IdList
 
 import Control.Applicative
@@ -15,6 +17,7 @@ import Data.Label (get)
 import Data.Label.Monadic ((=:), asks)
 import Data.Monoid ((<>), mconcat)
 import qualified Data.Set as Set
+import Data.Text (Text)
 import qualified Data.Text as Text
 import Prelude hiding ((.))
 
@@ -353,6 +356,43 @@ tormod'sCrypt = mkCard $ do
           | (j, card) <- cards
           ]
 
+
+
+-- LANDS
+
+dragonskullSummit :: Card
+dragonskullSummit = checkLand "Dragonskull Summit" [Black, Red] [Swamp, Mountain]
+
+drownedCatacomb :: Card
+drownedCatacomb = checkLand "Drowned Catacomb" [Blue, Black] [Island, Swamp]
+
+glacialFortress :: Card
+glacialFortress = checkLand "Glacial Fortress" [White, Blue] [Plains, Island]
+
+rootboundCrag :: Card
+rootboundCrag = checkLand "Rootbound Crag" [Red, Green] [Mountain, Forest]
+
+sunpetalGrove :: Card
+sunpetalGrove = checkLand "Sunpetal Grove" [White, Green] [Plains, Forest]
+
+checkLand :: Text -> [Color] -> [LandSubtype] -> Card
+checkLand n cols tys = mkCard $ do
+  name =: Just n
+  types =: landType
+  play =: Just playObject { manaCost = Just [] }
+  activatedAbilities =: map (tapToAddMana . Just) cols
+  replacementEffects =: [ etbTappedUnless (map (\ty -> landTypes [ty]) tys) ]
+
+etbTappedUnless :: [ObjectTypes] -> OneShotEffect -> Contextual (Maybe (Magic [OneShotEffect]))
+etbTappedUnless tys e@(WillMoveObject (Just r') Battlefield o) r _
+  | r' == r = Just $ do
+                perms <- (map (get objectPart) . IdList.elems) <$>
+                  view (asks battlefield)
+                let p = get (owner . objectPart) o
+                if null (filter (isControlledBy p &&* gor (map hasTypes tys)) perms)
+                then return [WillMoveObject (Just r') Battlefield o { _tapStatus = Tapped } ]
+                else return [e]
+etbTappedUnless _ _ _ _ = Nothing
 
 
 simpleCreatureToken ::
