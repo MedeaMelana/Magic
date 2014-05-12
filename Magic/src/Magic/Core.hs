@@ -4,7 +4,8 @@
 {-# LANGUAGE GADTs #-}
 
 module Magic.Core
-  ( compileZoneRef, allObjects, askQuestion, debug, object, objectBase, objectPart, anyObject, player, isStackEmpty )
+  ( compileZoneRef, allObjects, askQuestion, debug, object, objectBase, objectPart, anyObject, player, isStackEmpty, viewObject, viewSomeObject,
+    allRefsInSomeZone )
   where
 
 import Magic.Some (Some(..))
@@ -17,8 +18,7 @@ import Control.Applicative
 import Control.Category ((.))
 import Control.Monad.Reader (ask)
 import Control.Monad.Operational (singleton)
-import Data.Label (lens)
-import Data.Label ((:->))
+import Data.Label (lens, get, (:->))
 import Data.Label.Monadic (asks)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -92,3 +92,13 @@ player i = listEl i . players
 
 isStackEmpty :: View Bool
 isStackEmpty = IdList.null <$> asks stack
+
+viewObject :: ObjectRef ty -> View (Maybe (ObjectOfType ty))
+viewObject (zr, i) = IdList.get i <$> asks (compileZoneRef zr)
+
+viewSomeObject :: SomeObjectRef -> View (Maybe Object)
+viewSomeObject (Some zr, i) =
+  (fmap (get objectPart) . IdList.get i) <$> asks (compileZoneRef zr)
+
+allRefsInSomeZone :: Some ZoneRef -> View [SomeObjectRef]
+allRefsInSomeZone szr@(Some zr) = map (szr, ) . IdList.ids <$> view (asks (compileZoneRef zr))

@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE TupleSections #-}
 
 module Magic.Events (
     -- * Types
@@ -7,6 +8,7 @@ module Magic.Events (
 
     -- * Constructing specific one-shot effects
     willMoveToGraveyard, willMoveToStack, -- willMoveToBattlefield,
+    shuffleIntoLibrary,
 
     executeEffects, executeEffect, will,
     tick
@@ -16,11 +18,16 @@ import Magic.Some (Some(..))
 import Magic.Core
 import Magic.Types
 
+import Data.Function (on)
 import Data.Functor (void)
+import Data.List (nub, nubBy)
+import Data.Traversable (for)
+import Control.Applicative ((<$>))
 import Control.Monad.Operational (singleton)
 import Control.Monad.Trans (lift)
 import Data.Label (get)
 import Data.Label.Monadic (asks)
+import Data.Maybe (catMaybes)
 import Prelude hiding (interact)
 
 
@@ -42,6 +49,28 @@ willMoveToStack :: SomeObjectRef -> StackItem -> View OneShotEffect
 willMoveToStack r si = do
   o <- asks (objectBase r)
   return (WillMoveObject (Just r) Stack (StackItem o si))
+
+-- | Shuffle a bunch of cards into their owners' libraries. Object references
+-- that can't be resolved are ignored. If the cards are owned by multiple
+-- players, each of those players' libraries is shuffled.
+--
+-- The libraries of the separately specified players are always shuffled,
+-- regardless of whether any of the cards were owned by those players. Use this
+-- to implement effects that fall under rule [701.16e], where generic sets of
+-- cards (e.g. "your graveyard") are shuffled into their owner's library.
+--
+-- Each player's library is shuffled at most once.
+shuffleIntoLibrary :: [SomeObjectRef] -> [PlayerRef] -> Magic [Event]
+shuffleIntoLibrary rs ps = do
+  ros <- fmap (nubBy ((==) `on` fst) . catMaybes) $ view $ for rs $ \r ->
+    fmap (r, ) <$> viewSomeObject r
+  let moves =
+        [ WillMoveObject (Just r) (Library (get owner o)) (CardObject o)
+        | (r, o) <- ros ]
+  let shuffles =
+        [ Will (ShuffleLibrary p)
+        | p <- nub (fmap (get owner . snd) ros ++ ps) ]
+  executeEffects (moves ++ shuffles)
 
 
 

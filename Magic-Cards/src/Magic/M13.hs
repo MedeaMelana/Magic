@@ -339,6 +339,25 @@ chronomaton = mkCard $ do
     addCounter = tapAbility $ \rSelf you ->
       mkTrigger you $ will (AddCounter rSelf Plus1Plus1)
 
+elixirOfImmortality :: Card
+elixirOfImmortality = mkCard $ do
+    name =: Just "Elixir of Immortality"
+    types =: artifactType
+    play =: Just playObject { manaCost = Just [Nothing] }
+    activatedAbilities =: [crack]
+  where
+    crack = ActivatedAbility
+      { abilityActivation = defaultActivation
+        { manaCost = Just [Nothing, Nothing]
+        , effect = \rSelf you -> mkTrigger you $ do
+            will (GainLife you 5)
+            rs <- view $ allRefsInSomeZone (Some (Graveyard you))
+            void $ shuffleIntoLibrary (rSelf : rs) [you]
+        }
+      , abilityType = ActivatedAb
+      , tapCost = TapCost
+      }
+
 tormod'sCrypt :: Card
 tormod'sCrypt = mkCard $ do
     name =: Just "Tormod's Crypt"
