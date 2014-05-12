@@ -62,15 +62,19 @@ willMoveToStack r si = do
 -- Each player's library is shuffled at most once.
 shuffleIntoLibrary :: [SomeObjectRef] -> [PlayerRef] -> Magic [Event]
 shuffleIntoLibrary rs ps = do
+  -- [701.16c] Resolve references
   ros <- fmap (nubBy ((==) `on` fst) . catMaybes) $ view $ for rs $ \r ->
     fmap (r, ) <$> viewSomeObject r
-  let moves =
-        [ WillMoveObject (Just r) (Library (get owner o)) (CardObject o)
-        | (r, o) <- ros ]
-  let shuffles =
-        [ Will (ShuffleLibrary p)
-        | p <- nub (fmap (get owner . snd) ros ++ ps) ]
-  executeEffects (moves ++ shuffles)
+  moves <- executeEffects
+    [ WillMoveObject (Just r) (Library (get owner o)) (CardObject o)
+    | (r, o) <- ros ]
+  -- [701.16d] Check which libraries actually received cards
+  let affectedLibraries =
+        [ p | DidMoveObject _ (Some (Library p), _) <- moves ]
+  executeEffects
+    [ Will (ShuffleLibrary p)
+    | p <- nub (ps ++ affectedLibraries)
+    ]
 
 
 
