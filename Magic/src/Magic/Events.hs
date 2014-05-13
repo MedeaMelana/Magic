@@ -71,7 +71,7 @@ shuffleIntoLibrary rs ps = do
   -- [701.16d] Check which libraries actually received cards
   let affectedLibraries =
         [ p | DidMoveObject _ (Some (Library p), _) <- moves ]
-  executeEffects
+  (moves ++) <$> executeEffects
     [ Will (ShuffleLibrary p)
     | p <- nub (ps ++ affectedLibraries)
     ]
