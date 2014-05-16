@@ -24,7 +24,7 @@ module Magic.Abilities (
 
     -- * Activated abilities
     loyaltyAbility, mkTargetAbility, mkAbility,
-    tapAbility, defaultActivation,
+    tapAbility, tapAbilityWithCost, defaultActivation,
 
     -- * Creating effects on the stack
     stackSelf, stackTargetSelf,
@@ -213,10 +213,14 @@ mkAbility = mkTrigger
 
 -- | Helper function to create an activated ability (with type 'ActivatedAb') that requires tapping to be activated. Its activation is 'defaultActivation', with its effect set to the specified argument effect.
 tapAbility :: Contextual (Magic ()) -> ActivatedAbility
-tapAbility eff = ActivatedAbility
+tapAbility = tapAbilityWithCost []
+
+-- | Helper function to create an activated ability (with type 'ActivatedAb') that requires tapping to be activated. Its activation is 'defaultActivation', with its effect set to the specified argument effect and cost.
+tapAbilityWithCost :: ManaPool -> Contextual (Magic ()) -> ActivatedAbility
+tapAbilityWithCost cost eff = ActivatedAbility
   { abilityType = ActivatedAb
   , tapCost = TapCost
-  , abilityActivation = defaultActivation { effect = eff }
+  , abilityActivation = defaultActivation { effect = eff, manaCost = Just cost }
   }
 
 -- | Default activation of an activated ability: available at 'instantSpeed', 'availableFromBattlefield', with a mana cost of 'Just' @[]@ and no effect.
