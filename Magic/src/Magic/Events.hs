@@ -4,7 +4,7 @@
 
 module Magic.Events (
     -- * Types
-    OneShotEffect(..), SimpleOneShotEffect(..), Event(..), Attack(..),
+    OneShotEffect(..), SimpleOneShotEffect(..), Event(..),
 
     -- * Constructing specific one-shot effects
     willMoveToGraveyard, willMoveToStack, -- willMoveToBattlefield,

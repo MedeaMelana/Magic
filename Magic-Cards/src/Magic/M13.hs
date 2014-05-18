@@ -201,6 +201,19 @@ divineFavor = mkCard $ do
       , modifications = [ModifyPT (return (1, 3))]
       }
 
+pacifism :: Card
+pacifism = mkCard $ do
+    name =: Just "Pacifism"
+    types =: auraType
+    staticKeywordAbilities =: [EnchantPermanent creatureType]
+    play =: Just playObject { manaCost = Just [Nothing, Just White] }
+    layeredEffects =: [eff]
+  where
+    eff = LayeredEffect
+      { affectedObjects = affectAttached
+      , modifications = [ RestrictAllowAttacks selfCantAttack
+                        , RestrictAllowBlocks  selfCantBlock ]
+      }
 
 
 -- BLACK CARDS
@@ -222,6 +235,19 @@ disentomb = mkCard $ do
     isCreatureCard :: ObjectRef TyCard -> View Bool
     isCreatureCard r = hasTypes creatureType <$> asks (objectPart . object r)
 
+tormentedSoul :: Card
+tormentedSoul = mkCard $ do
+    name =: Just "Tormented Soul"
+    types =: creatureTypes [Spirit]
+    play =: Just playObject { manaCost = Just [Just Black] }
+    layeredEffects =: [eff]
+  where
+    eff = LayeredEffect
+      { affectedObjects = affectSelf
+      , modifications =
+          [ RestrictAllowBlocks (selfCantBlock &&* selfCantBeBlocked) ]
+      }
+
 
 
 -- RED CARDS
@@ -239,6 +265,19 @@ fervor = mkCard $ do
       { affectedObjects = affectBattlefield $ \you ->
           isControlledBy you &&* hasTypes creatureType
       , modifications = [AddStaticKeywordAbility Haste]
+      }
+
+moggFlunkies :: Card
+moggFlunkies = mkCard $ do
+    name =: Just "Mogg Flunkies"
+    types =: creatureTypes [Goblin]
+    play =: Just playObject { manaCost = Just [Nothing, Just Red] }
+    layeredEffects =: [eff]
+  where
+    eff = LayeredEffect
+      { affectedObjects = affectSelf
+      , modifications = [ RestrictAllowAttacks selfCantAttackAlone
+                        , RestrictAllowBlocks  selfCantBlockAlone ]
       }
 
 searingSpear :: Card

@@ -1,5 +1,6 @@
 module Magic (
     module Magic.Abilities,
+    module Magic.Combat,
     module Magic.Core,
     module Magic.Engine,
     module Magic.Events,
@@ -16,6 +17,7 @@ module Magic (
   ) where
 
 import Magic.Abilities
+import Magic.Combat
 import Magic.Core
 import Magic.Engine
 import Magic.Events

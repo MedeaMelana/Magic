@@ -32,7 +32,7 @@ module Magic.Types (
     Card(..), Deck,
     Object(..),
       name, colors, types, owner, controller, timestamp, counters,
-      pt, loyalty,
+      pt, allowAttacks, allowBlocks, loyalty,
       play, alternativePlays, staticKeywordAbilities, layeredEffects, activatedAbilities, triggeredAbilities, replacementEffects,
       temporaryEffects,
     ObjectOfType(..),
@@ -62,7 +62,7 @@ module Magic.Types (
     TemporaryLayeredEffect(..), Duration(..),
 
     -- * Events
-    Event(..), OneShotEffect(..), SimpleOneShotEffect(..), Attack(..),
+    Event(..), OneShotEffect(..), SimpleOneShotEffect(..), Attack(..), Block(..),
 
     -- * Targets
     EntityRef(..), TargetList(..),
@@ -124,6 +124,7 @@ data ZoneRef :: ObjectType -> * where
 
 deriving instance Show (ZoneRef ty)
 instance Show1 ZoneRef where show1 = show
+deriving instance Eq (ZoneRef ty)
 
 instance TestEquality ZoneRef where
   testEquality (Library p1)   (Library p2)   | p1 == p2 = Just Refl
@@ -226,7 +227,9 @@ data Object = Object
   , _timestamp  :: Timestamp
 
   -- for creatures
-  , _pt         :: Maybe PT
+  , _pt           :: Maybe PT
+  , _allowAttacks :: [Attack] -> Contextual (View Bool)
+  , _allowBlocks  :: [Block]  -> Contextual (View Bool)
 
   -- for planeswalkers
   , _loyalty    :: Maybe Int
@@ -484,6 +487,8 @@ data ModifyObject
   | SetPT PT
   | ModifyPT (View PT)
   | SwitchPT
+  | RestrictAllowAttacks ([Attack] -> Contextual (View Bool))
+  | RestrictAllowBlocks ([Block] -> Contextual (View Bool))
 
 -- | Layers in which a layered effect can apply.
 data Layer
@@ -575,10 +580,21 @@ data SimpleOneShotEffect
   | Sacrifice (ObjectRef TyPermanent)
   deriving Show
 
+-- | A creature attacking a player or a planeswalker.
 data Attack = Attack
-  { attacker :: ObjectRef TyPermanent
+  { -- | The creature that is attacking.
+    attacker :: ObjectRef TyPermanent
+    -- | The player or planeswalker being attacked.
   , attackee :: EntityRef
   } deriving Show
+
+-- | A creature blocking another creature.
+data Block = Block
+  { -- | The creature blocking.
+    blocker :: ObjectRef TyPermanent
+    -- | The creature being blocked.
+  , blockee :: ObjectRef TyPermanent
+  }
 
 
 

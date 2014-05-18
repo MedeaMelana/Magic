@@ -5,7 +5,7 @@ module Magic.Utils (mkCard, emptyObject, countCountersOfType, sortOn, textShow, 
 import Magic.Types
 
 import Control.Monad.State (State, execState)
-import Data.Boolean (Boolean(..))
+import Data.Boolean (Boolean(..), true)
 import Data.Label
 import Data.List (sortBy)
 import Data.Maybe (catMaybes, fromMaybe)
@@ -36,6 +36,8 @@ emptyObject t rOwner = Object
   , _counters = mempty
 
   , _pt = Nothing
+  , _allowAttacks = true
+  , _allowBlocks = true
   , _loyalty = Nothing
 
   , _play = Nothing

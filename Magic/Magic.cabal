@@ -17,6 +17,7 @@ library
   hs-source-dirs:   src
   exposed-modules:  Magic,
                     Magic.Abilities,
+                    Magic.Combat,
                     Magic.Core,
                     Magic.CLI,
                     Magic.Engine,

@@ -43,6 +43,8 @@ layer m = case m of
   SetPT _                      -> Layer7b
   ModifyPT _                   -> Layer7c
   SwitchPT                     -> Layer7e
+  RestrictAllowAttacks _       -> LayerRules
+  RestrictAllowBlocks _        -> LayerRules
 
 
 -- | Affect only the object that carries the layered effect itself.

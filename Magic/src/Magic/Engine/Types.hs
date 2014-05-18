@@ -17,6 +17,7 @@ import Control.Monad.Random (MonadRandom, RandT, StdGen)
 import Control.Monad.Reader
 import Control.Monad.State (StateT, MonadState(..))
 import Control.Monad.Operational (ProgramT, liftProgram)
+import Data.Boolean ((&&*))
 import Data.Label (set, modify)
 import Data.List (delete)
 import Data.Monoid ((<>), mempty)
@@ -112,6 +113,8 @@ compileModifyObject world m =
     ModifyPT vpt -> let (p, t) = runReader (runViewT vpt) world
                     in modify pt (fmap ((+ p) *** (+ t)))
     SwitchPT -> modify pt (fmap (\(p,t) -> (t,p)))
+    RestrictAllowAttacks ok -> modify allowAttacks (&&* ok)
+    RestrictAllowBlocks ok -> modify allowBlocks (&&* ok)
 
 counterEffect :: (SomeObjectRef, Object) ->
   (Timestamp, View [SomeObjectRef], [ModifyObject])
