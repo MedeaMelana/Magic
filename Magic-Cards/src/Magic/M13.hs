@@ -37,10 +37,7 @@ exalted events (Some Battlefield, _) p = return [ mkTrigger p (boostPT r)
         TemporaryLayeredEffect
           { temporaryTimestamp = t
           , temporaryDuration  = UntilEndOfTurn
-          , temporaryEffect    = LayeredEffect
-            { affectedObjects  = affectSelf
-            , modifications    = [ModifyPT (return (1, 1))]
-            }
+          , temporaryEffect    = affectingSelf [ModifyPT (return (1, 1))]
           }
 exalted _ _ _ = return []
 
@@ -144,12 +141,8 @@ battleflightEagle = mkCard $ do
           InstallLayeredEffect (Some Battlefield, i) TemporaryLayeredEffect
             { temporaryTimestamp = t
             , temporaryDuration  = UntilEndOfTurn
-            , temporaryEffect    = LayeredEffect
-              { affectedObjects  = affectSelf
-              , modifications    = [ ModifyPT (return (2, 2))
-                                   , AddStaticKeywordAbility Flying
-                                   ]
-              }
+            , temporaryEffect    = affectingSelf
+                [ModifyPT (return (2, 2)), AddStaticKeywordAbility Flying]
             }
 
 captainOfTheWatch :: Card
@@ -283,13 +276,8 @@ tormentedSoul = mkCard $ do
     name =: Just "Tormented Soul"
     types =: creatureTypes [Spirit]
     play =: Just playObject { manaCost = Just [Just Black] }
-    layeredEffects =: [eff]
-  where
-    eff = LayeredEffect
-      { affectedObjects = affectSelf
-      , modifications =
-          [ RestrictAllowBlocks (selfCantBlock &&* selfCantBeBlocked) ]
-      }
+    layeredEffects =: [affectingSelf
+      [RestrictAllowBlocks (selfCantBlock &&* selfCantBeBlocked)]]
 
 
 
@@ -315,13 +303,9 @@ moggFlunkies = mkCard $ do
     name =: Just "Mogg Flunkies"
     types =: creatureTypes [Goblin]
     play =: Just playObject { manaCost = Just [Nothing, Just Red] }
-    layeredEffects =: [eff]
-  where
-    eff = LayeredEffect
-      { affectedObjects = affectSelf
-      , modifications = [ RestrictAllowAttacks selfCantAttackAlone
-                        , RestrictAllowBlocks  selfCantBlockAlone ]
-      }
+    layeredEffects =: [affectingSelf
+      [ RestrictAllowAttacks selfCantAttackAlone
+      , RestrictAllowBlocks  selfCantBlockAlone  ] ]
 
 searingSpear :: Card
 searingSpear = mkCard $ do

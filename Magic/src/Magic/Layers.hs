@@ -12,7 +12,8 @@ module Magic.Layers (
 
     -- * Creating layered effects
     affectSelf, affectBattlefield, affectRestOfBattlefield,
-    affectAttached
+    affectAttached,
+    affectingSelf
   ) where
 
 import Magic.Some (Some(..))
@@ -75,3 +76,6 @@ affectAttached (Some Battlefield, i) _you = do
   perm@Permanent {} <- asks (object (Battlefield, i))
   return (maybeToList (get attachedTo perm))
 affectAttached _ _ = return []
+
+affectingSelf :: [ModifyObject] -> LayeredEffect
+affectingSelf = LayeredEffect affectSelf
