@@ -216,6 +216,20 @@ pacifism = mkCard $ do
       }
 
 
+
+-- BLUE
+
+divination :: Card
+divination = mkCard $ do
+    name =: Just "Divination"  
+    types =: sorceryType
+    play =: Just playObject 
+      { manaCost = Just [Nothing, Nothing, Just Blue]
+      , effect = stackSelf $ \_ stackYou -> 
+          void $ executeEffects $ replicate 2 (Will (DrawCard stackYou)) 
+      }
+
+
 -- BLACK CARDS
 
 disentomb :: Card
