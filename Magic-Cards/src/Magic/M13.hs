@@ -247,6 +247,20 @@ tricksOfTheTrade = mkCard $ do
 
 -- BLACK CARDS
 
+cripplingBlight :: Card
+cripplingBlight = mkCard $ do
+  name =: Just "Crippling Blight"
+  types =: auraType
+  staticKeywordAbilities =: [EnchantPermanent creatureType]
+  layeredEffects =: [boostEnchanted]
+  play =: Just playObject
+    { manaCost = Just [Just Black] }
+  where
+    boostEnchanted = LayeredEffect
+      { affectedObjects = affectAttached
+      , modifications = [ModifyPT (return (-1, -1)), RestrictAllowBlocks selfCantBlock]
+      }
+
 disentomb :: Card
 disentomb = mkCard $ do
   name =: Just "Disentomb"
