@@ -229,6 +229,21 @@ divination = mkCard $ do
           void $ executeEffects $ replicate 2 (Will (DrawCard stackYou)) 
       }
 
+tricksOfTheTrade :: Card
+tricksOfTheTrade = mkCard $ do
+    name =: Just "Tricks of the Trade"
+    types =: auraType
+    staticKeywordAbilities =: [EnchantPermanent creatureType]
+    layeredEffects =: [boostEnchanted]
+    play =: Just playObject
+      { manaCost = Just [Nothing, Nothing, Nothing, Just Blue] }
+  where
+    boostEnchanted = LayeredEffect
+      { affectedObjects = affectAttached
+      , modifications = [ModifyPT (return (2, 0)), RestrictAllowBlocks selfCantBeBlocked]
+      }
+
+
 
 -- BLACK CARDS
 
