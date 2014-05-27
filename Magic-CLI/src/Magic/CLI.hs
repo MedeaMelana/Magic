@@ -4,12 +4,10 @@
 
 module Magic.CLI where
 
-import Magic.Engine (fullGame, newWorld)
-import Magic.Engine.Types (runEngine, GameOver(..))
-import Magic.Types hiding (view)
+import Magic
+import Magic.Engine.Types (GameOver(..))
 import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction,
   describeEvent, describeEntityRef, describeManaPool, describePayManaAction, describeObjectName, describeObjectNameByRef)
-import Magic.Some (Some(..))
 
 import Control.Monad (forM_)
 import Control.Monad.Operational (ProgramT, ProgramViewT(..), viewT)

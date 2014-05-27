@@ -4,10 +4,8 @@
 
 module Magic.Description where
 
-import Magic.Core
-import Magic.Types
+import Magic
 import Magic.IdList (Id, toList, ids)
-import Magic.Some
 
 import Prelude hiding (unlines, (.))
 

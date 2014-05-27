@@ -19,7 +19,6 @@ library
                     Magic.Abilities,
                     Magic.Combat,
                     Magic.Core,
-                    Magic.CLI,
                     Magic.Engine,
                     Magic.Engine.Types,
                     Magic.Engine.Events,
@@ -35,8 +34,7 @@ library
                     Magic.Target,
                     Magic.Utils,
                     Magic.World
-  other-modules:    Magic.Description,
-                    Magic.Types
+  other-modules:    Magic.Types
   build-depends:    base >= 4.7 && < 5,
                     containers,
                     fclabels ==2.0.*,
