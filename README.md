@@ -49,7 +49,7 @@ $ cabal sandbox add-source ../Magic
 $ cabal sandbox add-source ../Magic-Cards
 $ cabal install --dependencies-only
 $ cabal build
-$ dist/build/magic-cli/magic-cli
+$ dist/build/magic-web-server/magic-web-server
 ```
 
 If you want to run the command-line interface:
@@ -61,4 +61,5 @@ $ cabal sandbox add-source ../Magic
 $ cabal sandbox add-source ../Magic-Cards
 $ cabal install --dependencies-only
 $ cabal build
+$ dist/build/magic-cli/magic-cli
 ```
