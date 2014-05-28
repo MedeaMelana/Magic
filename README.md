@@ -63,3 +63,9 @@ $ cabal install --dependencies-only
 $ cabal build
 $ dist/build/magic-cli/magic-cli
 ```
+
+## Talking to the web server
+
+The web server runs on websockets. Currently it starts a new game for every websocket connection that is opened, and that connection has full access to all the cards in the game. That is, there is no hidden information yet, and you can't have two clients play a game against each other yet: the connecting client controls all the players in the game.
+
+Messages to and from the server are in JSON format. There is no documentation yet about the exact form of these messages, partly because it still unstable and changes often. However, the JSON messages from the server should be reasonably clear and should contain everything you need to build a proper client.
