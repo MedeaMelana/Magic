@@ -439,7 +439,8 @@ shouldOfferActivation activation rSource you =
 
 activate :: EventSource -> Activation -> Contextual (Engine ())
 activate source activation rSource rActivator  = do
-  --offerManaAbilitiesToPay source rActivator (manaCost ability)
+  let Just mc = manaCost activation
+  --offerManaAbilitiesToPay source rActivator mc
   executeMagic source (effect activation rSource rActivator)
 
 executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
