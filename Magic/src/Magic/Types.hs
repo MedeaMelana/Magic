@@ -726,4 +726,4 @@ instance Monoid a => Monoid (Magic a) where
   mappend = liftM2 mappend
 
 
-$(mkLabels [''World, ''Player, ''Object])
+mkLabels [''World, ''Player, ''Object]
