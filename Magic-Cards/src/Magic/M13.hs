@@ -156,10 +156,10 @@ captainOfTheWatch = mkCard $ do
     layeredEffects         =: [boostSoldiers]
     triggeredAbilities     =: trigger
   where
-    boostSoldiers = LayeredEffect
+    boostSoldiers = LayeredObjectEffect
       { affectedObjects = affectRestOfBattlefield $ \you ->
           isControlledBy you &&* hasTypes (creatureTypes [Soldier])
-      , modifications = [ AddStaticKeywordAbility Vigilance
+      , objectModifications = [ AddStaticKeywordAbility Vigilance
                         , ModifyPT (return (1, 1))]
       }
 
@@ -189,9 +189,9 @@ divineFavor = mkCard $ do
   where
     gainLifeTrigger = onSelfETB $ \_ you ->
       mkTrigger you (will (GainLife you 3))
-    boostEnchanted = LayeredEffect
+    boostEnchanted = LayeredObjectEffect
       { affectedObjects = affectAttached
-      , modifications = [ModifyPT (return (1, 3))]
+      , objectModifications = [ModifyPT (return (1, 3))]
       }
 
 pacifism :: Card
@@ -202,9 +202,9 @@ pacifism = mkCard $ do
     play =: Just playObject { manaCost = Just [Nothing, Just White] }
     layeredEffects =: [eff]
   where
-    eff = LayeredEffect
+    eff = LayeredObjectEffect
       { affectedObjects = affectAttached
-      , modifications = [ RestrictAllowAttacks selfCantAttack
+      , objectModifications = [ RestrictAllowAttacks selfCantAttack
                         , RestrictAllowBlocks  selfCantBlock ]
       }
 
@@ -231,9 +231,9 @@ tricksOfTheTrade = mkCard $ do
     play =: Just playObject
       { manaCost = Just [Nothing, Nothing, Nothing, Just Blue] }
   where
-    boostEnchanted = LayeredEffect
+    boostEnchanted = LayeredObjectEffect
       { affectedObjects = affectAttached
-      , modifications = [ModifyPT (return (2, 0)), RestrictAllowBlocks selfCantBeBlocked]
+      , objectModifications = [ModifyPT (return (2, 0)), RestrictAllowBlocks selfCantBeBlocked]
       }
 
 
@@ -249,9 +249,9 @@ cripplingBlight = mkCard $ do
   play =: Just playObject
     { manaCost = Just [Just Black] }
   where
-    boostEnchanted = LayeredEffect
+    boostEnchanted = LayeredObjectEffect
       { affectedObjects = affectAttached
-      , modifications = [ModifyPT (return (-1, -1)), RestrictAllowBlocks selfCantBlock]
+      , objectModifications = [ModifyPT (return (-1, -1)), RestrictAllowBlocks selfCantBlock]
       }
 
 disentomb :: Card
@@ -292,10 +292,10 @@ fervor = mkCard $ do
       { manaCost = Just [Nothing, Nothing, Just Red] }
     layeredEffects    =: [grantHaste]
   where
-    grantHaste = LayeredEffect
+    grantHaste = LayeredObjectEffect
       { affectedObjects = affectBattlefield $ \you ->
           isControlledBy you &&* hasTypes creatureType
-      , modifications = [AddStaticKeywordAbility Haste]
+      , objectModifications = [AddStaticKeywordAbility Haste]
       }
 
 moggFlunkies :: Card

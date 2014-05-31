@@ -454,10 +454,11 @@ data StaticKeywordAbility
 -- modifications to them. The order in which the effects are applied is
 -- managed by layers [613]. By separating the affected objects from the
 -- modifications, we can detect dependencies [613.7].
-data LayeredEffect = LayeredEffect
-  { affectedObjects :: Contextual (View [SomeObjectRef])
-  , modifications   :: [ModifyObject]
-  }
+data LayeredEffect
+  = LayeredObjectEffect
+      { affectedObjects     :: Contextual (View [SomeObjectRef])
+      , objectModifications :: [ModifyObject]
+      }
 
 instance Show LayeredEffect where
   show _ = "(layered effect)"

@@ -78,4 +78,4 @@ affectAttached (Some Battlefield, i) _you = do
 affectAttached _ _ = return []
 
 affectingSelf :: [ModifyObject] -> LayeredEffect
-affectingSelf = LayeredEffect affectSelf
+affectingSelf = LayeredObjectEffect affectSelf

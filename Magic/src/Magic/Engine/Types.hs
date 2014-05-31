@@ -70,11 +70,12 @@ applyLayeredEffects = do
       , let inherentTuples :: [(Timestamp, View [SomeObjectRef],
                                 [ModifyObject])]
             inherentTuples = [ (_timestamp o, vas, ms)
-              | LayeredEffect as ms <- _layeredEffects o, let vas = as r p ]
+              | LayeredObjectEffect as ms <- _layeredEffects o
+              , let vas = as r p ]
       , let temporaryTuples :: [(Timestamp, View [SomeObjectRef],
                                 [ModifyObject])]
             temporaryTuples = [ (t, vas, ms)
-              | TemporaryLayeredEffect t _ (LayeredEffect as ms)
+              | TemporaryLayeredEffect t _ (LayeredObjectEffect as ms)
                   <- _temporaryEffects o, let vas = as r p ]
       , (t, vas, ms) <- inherentTuples ++ temporaryTuples ++
                           [counterEffect (r, o)]
