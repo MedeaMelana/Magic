@@ -208,6 +208,14 @@ pacifism = mkCard $ do
                         , RestrictAllowBlocks  selfCantBlock ]
       }
 
+pillarfieldOx :: Card
+pillarfieldOx = mkCard $ do
+    name =: Just "Pillarfield Ox"
+    types =: creatureTypes [Ox]
+    pt =: Just (2, 4)
+    play =: Just playObject {
+        manaCost = Just [Nothing, Nothing, Nothing, Just White]
+    }
 
 erase :: Card
 erase = mkCard $ do
