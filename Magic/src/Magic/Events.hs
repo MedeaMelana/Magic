@@ -8,6 +8,7 @@ module Magic.Events (
 
     -- * Constructing specific one-shot effects
     willMoveToGraveyard, willMoveToStack, -- willMoveToBattlefield,
+    willMoveToExile,
     shuffleIntoLibrary,
 
     executeEffects, executeEffect, will,
@@ -38,6 +39,10 @@ import Prelude hiding (interact)
 -- | Effect that moves the specified object on the battlefield to its owner's graveyard.
 willMoveToGraveyard :: ObjectRef TyPermanent -> Object -> OneShotEffect
 willMoveToGraveyard (Battlefield, i) o = WillMoveObject (Just (Some Battlefield, i)) (Graveyard (get owner o)) (CardObject o)
+
+-- | Effect that exiles the specified object
+willMoveToExile :: ObjectRef TyPermanent -> Object -> OneShotEffect
+willMoveToExile (zone, i) o = WillMoveObject (Just (Some zone, i)) (Exile) (CardObject o)
 
 --willMoveToBattlefield :: SomeObjectRef -> View OneShotEffect
 --willMoveToBattlefield r = do
