@@ -3,12 +3,13 @@ module Magic.Object (
     Card(..), Deck,
     Object(..),
       name, colors, types, owner, controller, timestamp, counters,
-      tapStatus,
-      stackItem,
-      pt, loyalty, damage, deathtouched,
-      play, staticKeywordAbilities, layeredEffects, activatedAbilities, triggeredAbilities, replacementEffects,
-      temporaryEffects, attachedTo,
+      pt, allowAttacks, allowBlocks, loyalty,
+      play, alternativePlays, staticKeywordAbilities, layeredEffects, activatedAbilities, triggeredAbilities, replacementEffects,
+      temporaryEffects,
     ObjectOfType(..),
+      cardObject,
+      permanentObject, tapStatus, damage, deathtouched, attachedTo, attacking,
+      stackItemObject, stackItem,
 
     -- * Object properties
     Timestamp, Color(..), TapStatus(..), CounterType(..), PT
