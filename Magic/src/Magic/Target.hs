@@ -13,7 +13,7 @@ module Magic.Target (
     TargetSpec(..), (<?>), orTarget,
 
     -- * Common @TargetSpec@s
-    targetPlayer, targetInZone, targetPermanent, targetCreature, targetCreatureOrPlayer
+    targetPlayer, targetInZone, targetPermanent, targetCreature, targetCreatureOrPlayer, targetEnchantment
   ) where
 
 import qualified Magic.IdList as IdList
@@ -118,6 +118,9 @@ targetPermanent = targetInZone Battlefield
 
 targetCreature :: TargetSpec (ObjectRef TyPermanent)
 targetCreature = checkPermanent (hasTypes creatureType) <?> targetPermanent
+
+targetEnchantment :: TargetSpec (ObjectRef TyPermanent)
+targetEnchantment = checkPermanent (hasTypes enchantmentType) <?> targetPermanent
 
 targetCreatureOrPlayer :: TargetSpec (Either (ObjectRef TyPermanent) PlayerRef)
 targetCreatureOrPlayer = targetCreature `orTarget` targetPlayer
