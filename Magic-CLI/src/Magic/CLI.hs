@@ -20,11 +20,12 @@ import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import Safe
 import qualified System.IO as IO
+import qualified Data.Set as S
 
 runGame :: [Deck] -> IO ()
 runGame decks = do
   program <- evalRandTIO (evalStateT (runEngine fullGame) (newWorld decks))
-  askQuestions program
+  askQuestions S.empty program
 
 evalRandTIO :: Monad m => RandT StdGen m a -> IO (m a)
 evalRandTIO p = evalRandT p `fmap` newStdGen
@@ -32,9 +33,17 @@ evalRandTIO p = evalRandT p `fmap` newStdGen
 desc :: World -> Description -> Text
 desc w d = runReader (runViewT (runDescription d)) w
 
-askQuestions :: ProgramT Interact (Either GameOver) () -> IO ()
-askQuestions = eval . viewT
+data PassType = SinglePass | EndOfTurnPass
+
+
+askQuestions :: S.Set PlayerRef -> ProgramT Interact (Either GameOver) () -> IO ()
+askQuestions playerPasses = eval . viewT
   where
+    skipOr p world k action =
+        case (p `S.member` playerPasses, _activeStep world) of
+          (True, EndPhase EndOfTurnStep) -> askQuestions (S.delete p playerPasses) k
+          (True, _) -> askQuestions playerPasses k
+          (False, _) -> action
     eval (Left gameOver) = case gameOver of
       GameWin p -> Text.putStrLn ("Player " <> showText p <> " wins!")
       GameDraw  -> Text.putStrLn "The game is a draw"
@@ -44,37 +53,43 @@ askQuestions = eval . viewT
       Return x -> return x
       Debug t :>>= k -> do
         Text.putStrLn ("[DEBUG] " <> t)
-        askQuestions (k ())
+        askQuestions playerPasses (k ())
       LogEvents source es world :>>= k -> do
         IO.putStrLn ("[EVENT] Caused by " <> show source)
         forM_ es $ \e -> Text.putStrLn (desc world (">>> " <> describeEvent e))
-        askQuestions (k ())
+        askQuestions playerPasses (k ())
       AskQuestion p world AskKeepHand :>>= k -> do
         Text.putStrLn (desc world (describeZone (Some (Hand p))))
         chosen <- offerOptions p "Would you like to keep your hand?" [("Keep hand", True), ("Take mulligan", False)]
-        askQuestions (k chosen)
+        askQuestions playerPasses (k chosen)
       AskQuestion p world (AskPriorityAction actions) :>>= k -> do
-        Text.putStrLn (desc world describeWorld)
-        let pass = ("Pass", Nothing)
-        let nonPass = [ (desc world (describePriorityAction action), Just action) | action <- actions ]
-        chosen <- offerOptions p "What would you like to do?" (pass : nonPass)
-        askQuestions (k chosen)
+        skipOr p world (k Nothing) $ do
+            Text.putStrLn (desc world describeWorld)
+            let singlePass = ("Pass", Left SinglePass)
+            let multiPass = ("Skip to next turn", Left EndOfTurnPass)
+            let nonPass = [ (desc world (describePriorityAction action), Right action) | action <- actions ]
+            chosen <- offerOptions p "What would you like to do?" (singlePass : multiPass : nonPass)
+            case chosen of
+                Left SinglePass -> askQuestions playerPasses (k Nothing)
+                Left EndOfTurnPass -> askQuestions (S.insert p playerPasses) (k Nothing)
+                Right ch -> askQuestions playerPasses (k $ Just ch)
       AskQuestion p world (AskTarget ts) :>>= k -> do
         t <- offerOptions p "Choose target:" [ (desc world (describeEntityRef t), t) | t <- ts ]
-        askQuestions (k t)
+        askQuestions playerPasses (k t)
       AskQuestion p world (AskManaAbility cost actions) :>>= k -> do
         let costDesc = desc world (describeManaPool cost)
         let options = [ (desc world (describePayManaAction action), action) | action <- actions ]
         chosen <- offerOptions p ("Pay " <> costDesc) options
-        askQuestions (k chosen)
+        askQuestions playerPasses (k chosen)
       AskQuestion p world (AskPickTrigger lkis) :>>= k -> do
         let options = [ (desc world (describeObjectName o), i) | (i, (_, o)) <- zip [0..] lkis ]
         chosen <- offerOptions p "Choose trigger to put on the stack:" options
-        askQuestions (k chosen)
+        askQuestions playerPasses (k chosen)
       AskQuestion p world (AskAttackers ats defs) :>>= k -> do
-        Text.putStrLn "Declare attackers:"
-        chosen <- declareAttackers p world ats defs
-        askQuestions (k chosen)
+        skipOr p world (k []) $ do
+          Text.putStrLn "Declare attackers:"
+          chosen <- declareAttackers p world ats defs
+          askQuestions playerPasses (k chosen)
 
 declareAttackers :: PlayerRef -> World -> [ObjectRef TyPermanent] -> [EntityRef] -> IO [Attack]
 declareAttackers p world [] defs = return []
