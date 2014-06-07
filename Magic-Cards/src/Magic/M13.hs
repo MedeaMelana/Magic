@@ -265,12 +265,12 @@ warFalcon = mkCard $ do
 
 divination :: Card
 divination = mkCard $ do
-    name =: Just "Divination"  
+    name =: Just "Divination"
     types =: sorceryType
-    play =: Just playObject 
+    play =: Just playObject
       { manaCost = Just [Nothing, Nothing, Just Blue]
-      , effect = stackSelf $ \_ stackYou -> 
-          void $ executeEffects $ replicate 2 (Will (DrawCard stackYou)) 
+      , effect = stackSelf $ \_ stackYou ->
+          void $ executeEffects $ replicate 2 (Will (DrawCard stackYou))
       }
 
 tricksOfTheTrade :: Card
