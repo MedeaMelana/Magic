@@ -227,6 +227,15 @@ serraAngel = mkCard $ do
     }
     staticKeywordAbilities =: [Flying, Vigilance]
 
+silvercoatLion :: Card
+silvercoatLion = mkCard $ do
+    name =: Just "Silvercoat Lion"
+    types =: creatureTypes [Cat]
+    pt =: Just (2, 2)
+    play =: Just playObject {
+      manaCost = Just [Nothing, Just White]
+    }
+
 erase :: Card
 erase = mkCard $ do
     name =: Just "Erase"
