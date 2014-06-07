@@ -13,7 +13,7 @@ module Magic.Target (
     TargetSpec(..), (<?>), orTarget,
 
     -- * Common @TargetSpec@s
-    targetPlayer, targetInZone, targetPermanent, targetCreature, targetCreatureOrPlayer, targetEnchantment
+    targetPlayer, targetInZone, targetPermanent, targetCreature, targetCreatureOrPlayer, targetEnchantment, targetOpponent
   ) where
 
 import qualified Magic.IdList as IdList
@@ -124,3 +124,9 @@ targetEnchantment = checkPermanent (hasTypes enchantmentType) <?> targetPermanen
 
 targetCreatureOrPlayer :: TargetSpec (Either (ObjectRef TyPermanent) PlayerRef)
 targetCreatureOrPlayer = targetCreature `orTarget` targetPlayer
+
+targetOpponent :: PlayerRef -> TargetSpec PlayerRef
+targetOpponent you = TargetSpec cast true
+  where
+    cast (PlayerRef they) = if you == they then Nothing else Just they
+    cast _ = Nothing

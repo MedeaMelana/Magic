@@ -260,7 +260,6 @@ tricksOfTheTrade = mkCard $ do
       , objectModifications = [ModifyPT (return (2, 0)), RestrictAllowBlocks selfCantBeBlocked]
       }
 
-
 faerieInvaders :: Card
 faerieInvaders = mkCard $ do
     name =: Just "Faerie Invaders"
@@ -270,6 +269,21 @@ faerieInvaders = mkCard $ do
       { manaCost = Just $ replicate 4 Nothing ++ [Just Blue] }
 
 
+mindSculpt :: Card
+mindSculpt = mkCard $ do
+    name =: Just "Mind Sculpt"
+    types =: sorceryType
+    play =: Just playObject
+      { manaCost = Just [Nothing, Just Blue]
+      , effect = mindSculptEffect
+      }
+  where
+    mindSculptEffect :: Contextual (Magic ())
+    mindSculptEffect rSelf you = do
+      ps <- askTarget you (targetOpponent you)
+      stackTargetSelf rSelf you ps $ \p _ _ -> do
+        cards <- IdList.toList <$> view (asks (library . player p))
+        moveCards (take 7 cards) (Library p) (Graveyard p)
 
 -- BLACK CARDS
 
@@ -463,11 +477,15 @@ tormod'sCrypt = mkCard $ do
       will (Sacrifice (Battlefield, i))
       mkTargetTrigger you tp $ \p -> do
         cards <- IdList.toList <$> view (asks (graveyard . player p))
-        void $ executeEffects
-          [ WillMoveObject (Just (Some (Graveyard p), j)) Exile card
-          | (j, card) <- cards
-          ]
+        moveCards cards (Graveyard p) Exile
 
+
+moveCards :: [(IdList.Id, ObjectOfType 'TyCard)] -> ZoneRef TyCard -> ZoneRef TyCard -> Magic ()
+moveCards cards from to =
+  void $ executeEffects
+    [ WillMoveObject (Just (Some from, j)) to card
+    | (j, card) <- cards
+    ]
 
 
 -- LANDS
