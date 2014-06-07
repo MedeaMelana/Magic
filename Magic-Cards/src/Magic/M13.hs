@@ -12,7 +12,7 @@ import qualified Magic.IdList as IdList
 import Control.Applicative
 import Control.Category ((.))
 import Control.Monad (void)
-import Data.Boolean ((&&*))
+import Data.Boolean (true, (&&*), (||*))
 import Data.Label (get)
 import Data.Label.Monadic ((=:), asks)
 import Data.Monoid ((<>), mconcat)
@@ -208,6 +208,21 @@ pacifism = mkCard $ do
                         , RestrictAllowBlocks  selfCantBlock ]
       }
 
+warFalcon :: Card
+warFalcon = mkCard $ do
+    name =: Just "War Falcon"
+    types =: creatureTypes[Bird]
+    pt =: Just (2, 1)
+    staticKeywordAbilities =: [Flying]
+    play =: Just playObject { manaCost = Just [Just White] }
+    allowAttacks =: undefined
+    layeredEffects =: [affectingSelf [RestrictAllowAttacks selfHasKnightOrSoldier]]
+  where
+    selfHasKnightOrSoldier :: [Attack] -> Contextual (View Bool)
+    selfHasKnightOrSoldier ats (Some Battlefield, i) p = do
+        cards <- (map (get objectPart) . IdList.elems) <$> view (asks (battlefield))
+        return $ any (isControlledBy p &&* (hasTypes (creatureTypes [Knight])) ||* (hasTypes (creatureTypes [Soldier]))) cards
+    selfHasKnightOrSoldier _ _ _ = true
 
 
 -- BLUE
