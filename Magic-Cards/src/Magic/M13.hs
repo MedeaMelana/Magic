@@ -261,6 +261,15 @@ tricksOfTheTrade = mkCard $ do
       }
 
 
+faerieInvaders :: Card
+faerieInvaders = mkCard $ do
+    name =: Just "Faerie Invaders"
+    types =: creatureTypes [Faerie, Rogue]
+    staticKeywordAbilities =: [Flash]
+    play =: Just playObject
+      { manaCost = Just $ replicate 4 Nothing ++ [Just Blue] }
+
+
 
 -- BLACK CARDS
 
