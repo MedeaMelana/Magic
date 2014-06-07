@@ -217,6 +217,16 @@ pillarfieldOx = mkCard $ do
         manaCost = Just [Nothing, Nothing, Nothing, Just White]
     }
 
+serraAngel :: Card
+serraAngel = mkCard $ do
+    name =: Just "Serra Angel"
+    types =: creatureTypes [Angel]
+    pt =: Just (4, 4)
+    play =: Just playObject {
+      manaCost = Just [Nothing, Nothing, Nothing, Just White, Just White]
+    }
+    staticKeywordAbilities =: [Flying, Vigilance]
+
 erase :: Card
 erase = mkCard $ do
     name =: Just "Erase"
