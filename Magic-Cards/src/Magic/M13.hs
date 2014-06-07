@@ -323,6 +323,20 @@ mindSculpt = mkCard $ do
 
 -- BLACK CARDS
 
+bloodHunterBat :: Card
+bloodHunterBat = mkCard $ do
+    name =: Just "Bloodhunter Bat"
+    types =: creatureTypes [Bat]
+    pt =: Just (2, 2)
+    play =: Just playObject { manaCost = Just [Nothing, Nothing, Nothing, Just Black] }
+    triggeredAbilities =: onSelfETB bloodHunterBatTrigger
+  where
+    bloodHunterBatTrigger :: Contextual (Magic ())
+    bloodHunterBatTrigger _rSelf you = do
+      opps <- askTarget you (targetOpponent you)
+      mkTargetTrigger you opps $ \opp ->
+        void $ executeEffects [Will $ LoseLife opp 2, Will $ GainLife you 2]
+
 cripplingBlight :: Card
 cripplingBlight = mkCard $ do
   name =: Just "Crippling Blight"
