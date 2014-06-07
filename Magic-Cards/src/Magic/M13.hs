@@ -12,7 +12,7 @@ import qualified Magic.IdList as IdList
 import Control.Applicative
 import Control.Category ((.))
 import Control.Monad (void)
-import Data.Boolean ((&&*))
+import Data.Boolean (true, (&&*), (||*))
 import Data.Label (get)
 import Data.Label.Monadic ((=:), asks)
 import Data.Monoid ((<>), mconcat)
@@ -243,17 +243,34 @@ erase = mkCard $ do
         ench <- view (asks (objectPart . object t))
         void . executeEffect $ willMoveToExile t ench
 
+warFalcon :: Card
+warFalcon = mkCard $ do
+    name =: Just "War Falcon"
+    types =: creatureTypes[Bird]
+    pt =: Just (2, 1)
+    staticKeywordAbilities =: [Flying]
+    play =: Just playObject { manaCost = Just [Just White] }
+    allowAttacks =: controlsKnightOrSoldier
+  where
+    controlsKnightOrSoldier :: [Attack] -> Contextual (View Bool)
+    controlsKnightOrSoldier ats (Some Battlefield, i) p = do
+        cards <- (map (get objectPart) . IdList.elems) <$> view (asks (battlefield))
+        let ok = isControlledBy p &&* (hasTypes (creatureTypes [Knight]) ||* hasTypes (creatureTypes [Soldier]))
+        return $ (Battlefield, i) `notElem` map attacker ats || any ok cards
+    controlsKnightOrSoldier _ _ _ = true
+
+
 
 -- BLUE
 
 divination :: Card
 divination = mkCard $ do
-    name =: Just "Divination"  
+    name =: Just "Divination"
     types =: sorceryType
-    play =: Just playObject 
+    play =: Just playObject
       { manaCost = Just [Nothing, Nothing, Just Blue]
-      , effect = stackSelf $ \_ stackYou -> 
-          void $ executeEffects $ replicate 2 (Will (DrawCard stackYou)) 
+      , effect = stackSelf $ \_ stackYou ->
+          void $ executeEffects $ replicate 2 (Will (DrawCard stackYou))
       }
 
 tricksOfTheTrade :: Card
