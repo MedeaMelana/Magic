@@ -355,6 +355,24 @@ tormentedSoul = mkCard $ do
 
 
 
+essenceDrain :: Card
+essenceDrain = mkCard $ do
+    name =: Just "Essence Drain"
+    types =: sorceryType
+    play =: Just playObject
+      { manaCost = Just $ replicate 4 Nothing ++ [Just Black]
+      , effect = essenceDrainEffect
+      }
+  where
+    essenceDrainEffect rSelf you = do
+      ts <- askTarget you targetCreatureOrPlayer
+      stackTargetSelf rSelf you ts $ \t rStackSelf stackYou -> do
+        self <- view (asks (objectPart . object rStackSelf))
+        let damageEffect = case t of
+              Left r  -> DamageObject self r 3 False True
+              Right p -> DamagePlayer self p 3 False True
+        void $ executeEffects [Will damageEffect, Will $ GainLife stackYou 3]
+
 -- RED CARDS
 
 
