@@ -351,6 +351,22 @@ cripplingBlight = mkCard $ do
       , objectModifications = [ModifyPT (return (-1, -1)), RestrictAllowBlocks selfCantBlock]
       }
 
+darkFavor :: Card
+darkFavor = mkCard $ do
+    name =: Just "Dark Favor"
+    types =: auraType
+    play =: Just playObject
+      { manaCost = Just [Nothing, Just Black] }
+    triggeredAbilities =: loseLifeTrigger
+    layeredEffects =: [darkFavorEffect]
+  where
+    loseLifeTrigger = onSelfETB $ \_ you ->
+      mkTrigger you (will (LoseLife you 1))
+    darkFavorEffect = LayeredObjectEffect
+      { affectedObjects = affectAttached
+      , objectModifications = [ModifyPT (return (3, 1))]
+      }
+
 disentomb :: Card
 disentomb = mkCard $ do
   name =: Just "Disentomb"
@@ -367,16 +383,6 @@ disentomb = mkCard $ do
   where
     isCreatureCard :: ObjectRef TyCard -> View Bool
     isCreatureCard r = hasTypes creatureType <$> asks (objectPart . object r)
-
-tormentedSoul :: Card
-tormentedSoul = mkCard $ do
-    name =: Just "Tormented Soul"
-    types =: creatureTypes [Spirit]
-    play =: Just playObject { manaCost = Just [Just Black] }
-    layeredEffects =: [affectingSelf
-      [RestrictAllowBlocks (selfCantBlock &&* selfCantBeBlocked)]]
-
-
 
 essenceDrain :: Card
 essenceDrain = mkCard $ do
@@ -395,6 +401,15 @@ essenceDrain = mkCard $ do
               Left r  -> DamageObject self r 3 False True
               Right p -> DamagePlayer self p 3 False True
         void $ executeEffects [Will damageEffect, Will $ GainLife stackYou 3]
+
+tormentedSoul :: Card
+tormentedSoul = mkCard $ do
+    name =: Just "Tormented Soul"
+    types =: creatureTypes [Spirit]
+    play =: Just playObject { manaCost = Just [Just Black] }
+    layeredEffects =: [affectingSelf
+      [RestrictAllowBlocks (selfCantBlock &&* selfCantBeBlocked)]]
+
 
 -- RED CARDS
 
