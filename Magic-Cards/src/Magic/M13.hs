@@ -194,6 +194,32 @@ divineFavor = mkCard $ do
       , objectModifications = [ModifyPT (return (1, 3))]
       }
 
+erase :: Card
+erase = mkCard $ do
+    name =: Just "Erase"
+    types =: instantType
+    play =: Just playObject
+      { manaCost = Just [Just White]
+      , effect = eraseEffect
+      }
+  where
+    eraseEffect :: Contextual (Magic ())
+    eraseEffect rSelf you = do
+      ts <- askTarget you targetEnchantment
+      stackTargetSelf rSelf you ts $ \t _ _ -> do
+        ench <- view (asks (objectPart . object t))
+        void . executeEffect $ willMoveToExile t ench
+
+guardianLions :: Card
+guardianLions = mkCard $ do
+    name =: Just "Guardian Lions"
+    types =: creatureTypes [Cat]
+    pt =: Just (1, 6)
+    play =: Just playObject {
+      manaCost = Just [Nothing, Nothing, Nothing, Nothing, Just White]
+    }
+    staticKeywordAbilities =: [Vigilance]
+
 pacifism :: Card
 pacifism = mkCard $ do
     name =: Just "Pacifism"
@@ -235,22 +261,6 @@ silvercoatLion = mkCard $ do
     play =: Just playObject {
       manaCost = Just [Nothing, Just White]
     }
-
-erase :: Card
-erase = mkCard $ do
-    name =: Just "Erase"
-    types =: instantType
-    play =: Just playObject
-      { manaCost = Just [Just White]
-      , effect = eraseEffect
-      }
-  where
-    eraseEffect :: Contextual (Magic ())
-    eraseEffect rSelf you = do
-      ts <- askTarget you targetEnchantment
-      stackTargetSelf rSelf you ts $ \t _ _ -> do
-        ench <- view (asks (objectPart . object t))
-        void . executeEffect $ willMoveToExile t ench
 
 warFalcon :: Card
 warFalcon = mkCard $ do
