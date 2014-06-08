@@ -220,6 +220,28 @@ guardianLions = mkCard $ do
     }
     staticKeywordAbilities =: [Vigilance]
 
+healerOfThePride :: Card
+healerOfThePride = mkCard $ do
+    name =: Just "Healer of the Pride"
+    types =: creatureTypes [Cat, Cleric]
+    pt =: Just (2, 3)
+    play =: Just playObject {
+      manaCost = Just [Nothing, Nothing, Nothing, Just White]
+    }
+    triggeredAbilities =: gainLifeTrigger
+  where
+    gainLifeTrigger :: TriggeredAbilities
+    gainLifeTrigger events (Some Battlefield, _) you =
+      mconcat [
+          do
+            p <- asks (controller . objectPart . object (Battlefield, i))
+            isCreatureCard <- hasTypes creatureType <$> asks (objectPart . object (Battlefield, i))
+            if you == p && isCreatureCard
+              then return [mkTrigger you (will (GainLife you 2))]
+              else return []
+        | DidMoveObject _ (Some Battlefield, i) <- events ]
+    gainLifeTrigger _ _ _ = return []
+
 pacifism :: Card
 pacifism = mkCard $ do
     name =: Just "Pacifism"
