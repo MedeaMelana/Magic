@@ -62,6 +62,10 @@ askQuestions = eval . viewT
       AskQuestion p world (AskTarget ts) :>>= k -> do
         t <- offerOptions p "Choose target:" [ (desc world (describeEntityRef t), t) | t <- ts ]
         askQuestions (k t)
+      AskQuestion p world (AskMaybeTarget ts) :>>= k -> do
+        t <- offerOptions p "Choose target:" $
+          ("No Target", Nothing) : [ (desc world (describeEntityRef t), Just t) | t <- ts ]
+        askQuestions (k t)
       AskQuestion p world (AskManaAbility cost actions) :>>= k -> do
         let costDesc = desc world (describeManaPool cost)
         let options = [ (desc world (describePayManaAction action), action) | action <- actions ]

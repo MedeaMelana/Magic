@@ -345,6 +345,20 @@ divination = mkCard $ do
           void $ executeEffects $ replicate 2 (Will (DrawCard stackYou))
       }
 
+downpour :: Card
+downpour = mkCard $ do
+    name =: Just "Downpour"
+    types =: instantType
+    play =: Just playObject
+      { manaCost = Just [Nothing, Just Blue]
+      , effect = downpourEffect
+      }
+  where
+    downpourEffect rSelf rYou = do
+      ts <- askTargetsUpTo 3 rYou targetCreature
+      stackTargetSelf rSelf rYou ts $ \t _stackSelf _stackYou ->
+        void. executeEffects $ map (Will . TapPermanent) t
+
 faerieInvaders :: Card
 faerieInvaders = mkCard $ do
     name =: Just "Faerie Invaders"

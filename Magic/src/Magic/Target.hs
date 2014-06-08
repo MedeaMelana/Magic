@@ -6,7 +6,7 @@
 module Magic.Target (
     -- * Target lists
     TargetList(..), EntityRef(..),
-    askTarget, askTarget',
+    askTarget, askTarget', askMaybeTarget, askTargetsUpTo,
     evaluateTargetList,
 
     -- * Constructing @TargetSpec@s
@@ -27,6 +27,8 @@ import Control.Applicative
 import Control.Monad (forM, filterM)
 import Data.Boolean (true, false, (&&*))
 import Data.Label.Monadic (asks)
+import Data.List (delete)
+import Data.Traversable (sequenceA)
 import Data.Type.Equality (testEquality, (:~:)(..))
 
 
@@ -35,12 +37,8 @@ import Data.Type.Equality (testEquality, (:~:)(..))
 
 
 askTarget :: PlayerRef -> TargetSpec a -> Magic (TargetList a)
-askTarget p (TargetSpec cast test) = do
-  ats <- allTargets
-  eligibleTargets <- view $ flip filterM ats $ \t -> do
-    case cast t of
-      Just b -> test b
-      Nothing -> false
+askTarget p spec@(TargetSpec cast test) = do
+  eligibleTargets <- eligibleTargetsForSpec spec
   chosen <- askQuestion p (AskTarget eligibleTargets)
   return $ Snoc (Nil id) chosen cast test id
 
@@ -54,6 +52,25 @@ askTarget' p combine test2 ts (TargetSpec cast test) = do
       Nothing -> false
   chosen <- askQuestion p (AskTarget eligibleTargets)
   return $ Snoc ((,) <$> ts) chosen cast (uncurry test2) (uncurry combine)
+
+askMaybeTarget :: PlayerRef -> TargetSpec a -> Magic (Maybe (TargetList a))
+askMaybeTarget p spec@(TargetSpec cast test) = do
+  eligibleTargets <- eligibleTargetsForSpec spec
+  maybeChosen <- askQuestion p (AskMaybeTarget eligibleTargets)
+  return $ (\chosen -> Snoc (Nil id) chosen cast test id) <$> maybeChosen
+
+askTargetsUpTo :: Int -> PlayerRef -> TargetSpec a -> Magic (TargetList [a])
+askTargetsUpTo num p spec@(TargetSpec cast test) = do
+    eligibleTargets <- eligibleTargetsForSpec spec
+    targetLists <- askForTargets num eligibleTargets []
+    return $ sequenceA targetLists
+  where
+    askForTargets 0 _ targeted = return targeted
+    askForTargets n ts targeted = do
+      maybeTarget <- askQuestion p (AskMaybeTarget ts)
+      case maybeTarget of
+        Just chosen -> askForTargets (n-1) (delete chosen ts) (Snoc (Nil id) chosen cast test id : targeted)
+        Nothing -> return targeted
 
 allTargets :: Magic [EntityRef]
 allTargets = do
@@ -69,6 +86,11 @@ evaluateTargetList :: TargetList a -> ([EntityRef], Maybe a)
 evaluateTargetList (Nil x) = ([], Just x)
 evaluateTargetList (Snoc xs t cast _ f) = (ts ++ [t], (f .) <$> mf <*> cast t)
   where (ts, mf) = evaluateTargetList xs
+
+eligibleTargetsForSpec :: TargetSpec a -> Magic [EntityRef]
+eligibleTargetsForSpec (TargetSpec cast test) = do
+  ats <- allTargets
+  view $ flip filterM ats $ \t -> maybe false test (cast t)
 
 
 
