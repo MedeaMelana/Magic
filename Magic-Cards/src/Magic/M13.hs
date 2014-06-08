@@ -178,6 +178,26 @@ captain'sCall = mkCard $ do
         void $ executeEffects $ replicate 3 $ mkSoldierEffect t you
     }
 
+crusaderOfOdric :: Card
+crusaderOfOdric = mkCard $ do
+    name =: Just "Crusader of Odric"
+    types =: creatureTypes [Human, Soldier]
+    play =: Just playObject {
+      manaCost = Just [Nothing, Nothing, Just White]
+    }
+    layeredEffects =: [definePT]
+  where
+    definePT :: LayeredEffect
+    definePT = LayeredObjectEffect
+      { affectedObjects = affectSelf
+      , objectModifications = [DefinePT ( \rSelf ->
+        do
+          cards <- (map (get objectPart) . IdList.elems) <$> view (asks (battlefield))
+          you <- view (asks (controller . objectBase rSelf))
+          let c = length $ filter (isControlledBy you &&* hasTypes creatureType) cards
+          return (c, c))]
+      }
+
 divineFavor :: Card
 divineFavor = mkCard $ do
     name =: Just "Divine Favor"
