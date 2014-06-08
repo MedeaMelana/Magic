@@ -220,6 +220,17 @@ guardianLions = mkCard $ do
     }
     staticKeywordAbilities =: [Vigilance]
 
+guardiansOfAkrasa :: Card
+guardiansOfAkrasa = mkCard $ do
+    name =: Just "Guardians of Akrasa"
+    types =: creatureTypes [Human, Soldier]
+    pt =: Just (0, 4)
+    play =: Just playObject {
+      manaCost = Just [Nothing, Nothing, Just White]
+    }
+    staticKeywordAbilities =: [Defender]
+    triggeredAbilities =: exalted
+
 pacifism :: Card
 pacifism = mkCard $ do
     name =: Just "Pacifism"
