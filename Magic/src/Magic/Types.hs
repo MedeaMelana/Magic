@@ -698,6 +698,7 @@ data Question a where
   --AskPickReplacementEffect :: [(ReplacementEffect, Magic [OneShotEffect])] -> Question (Pick (ReplacementEffect, Magic [OneShotEffect]))
   AskPickTrigger           :: [LastKnownObjectInfo] -> Question Int
   AskAttackers             :: [ObjectRef TyPermanent] -> [EntityRef] -> Question [Attack]
+  AskSearch                :: ZoneRef ty -> [Id] -> Question (Maybe Id)
 
 type Pick a = (a, [a])
 

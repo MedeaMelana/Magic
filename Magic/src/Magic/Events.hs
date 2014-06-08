@@ -10,6 +10,7 @@ module Magic.Events (
     willMoveToGraveyard, willMoveToStack, -- willMoveToBattlefield,
     willMoveToExile,
     shuffleIntoLibrary,
+    searchCard,
 
     executeEffects, executeEffect, will,
     tick
@@ -18,6 +19,7 @@ module Magic.Events (
 import Magic.Some (Some(..))
 import Magic.Core
 import Magic.Types
+import qualified Magic.IdList as IdList
 
 import Data.Function (on)
 import Data.Functor (void)
@@ -29,7 +31,7 @@ import Control.Monad.Trans (lift)
 import Data.Label (get)
 import Data.Label.Monadic (asks)
 import Data.Maybe (catMaybes)
-import Prelude hiding (interact)
+import Prelude hiding (interact, pred)
 
 
 
@@ -42,7 +44,7 @@ willMoveToGraveyard (Battlefield, i) o = WillMoveObject (Just (Some Battlefield,
 
 -- | Effect that exiles the specified object
 willMoveToExile :: ObjectRef TyPermanent -> Object -> OneShotEffect
-willMoveToExile (zone, i) o = WillMoveObject (Just (Some zone, i)) (Exile) (CardObject o)
+willMoveToExile (zone, i) o = WillMoveObject (Just (Some zone, i)) Exile (CardObject o)
 
 --willMoveToBattlefield :: SomeObjectRef -> View OneShotEffect
 --willMoveToBattlefield r = do
@@ -81,6 +83,14 @@ shuffleIntoLibrary rs ps = do
     | p <- nub (ps ++ affectedLibraries)
     ]
 
+-- | Asks the given player to search in the give zone for objects satisfying
+-- a certain predicate.
+searchCard :: PlayerRef -> ZoneRef ty -> (Object -> Bool) -> Magic (Maybe IdList.Id)
+searchCard p zone pred = do
+    ids <- IdList.toList <$> view (asks (compileZoneRef zone))
+    let eligibleTargets = ids >>= (\(i, o) -> let obj = get objectPart o
+                                              in [i | pred obj])
+    askQuestion p (AskSearch zone eligibleTargets)
 
 
 -- EXECUTING EFFECTS
@@ -97,4 +107,4 @@ will :: SimpleOneShotEffect -> Magic ()
 will eff = void (executeEffect (Will eff))
 
 tick :: Magic Timestamp
-tick = Magic $ lift $ singleton $ Tick
+tick = Magic $ lift $ singleton Tick

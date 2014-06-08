@@ -549,6 +549,28 @@ bondBeetle = mkCard $ do
       mkTargetTrigger p ts $ \(Battlefield, i) ->
         will $ AddCounter (Some Battlefield, i) Plus1Plus1
 
+farseek :: Card
+farseek = mkCard $ do
+    name =: Just "Farseek"
+    types =: sorceryType
+    play =: Just playObject
+      { manaCost = Just [Nothing, Just Green]
+      , effect = farseekEffect
+      }
+  where
+    farseekEffect = stackSelf $ \_rStackSelf stackYou -> do
+      let validLandTypes = map (landTypes . (:[])) [Plains, Island, Swamp, Mountain]
+      maybeId <- searchCard stackYou (Library stackYou) (hasOneOfTypes validLandTypes)
+      _ <- case maybeId of
+        Just i -> do
+          let objectRef = (Some (Library stackYou), i)
+          land <- view (asks (objectPart . object (Library stackYou, i)))
+          void . executeEffect $
+            WillMoveObject (Just objectRef) Battlefield $ Permanent land Tapped 0 False Nothing Nothing
+        Nothing -> return ()
+      will $ ShuffleLibrary stackYou
+
+
 garrukPrimalHunter :: Card
 garrukPrimalHunter = mkCard $ do
     name =: Just "Garruk, Primal Hunter"

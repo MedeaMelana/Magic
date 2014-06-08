@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 
 module Magic.Predicates (
-    hasColor, isOwnedBy, isControlledBy, hasTypes, hasPermanentType, checkPermanent
+    hasColor, isOwnedBy, isControlledBy, hasTypes, hasOneOfTypes, hasPermanentType, checkPermanent
   ) where
 
 import Magic.Core (object, objectPart)
@@ -31,6 +31,10 @@ isControlledBy pr o = pr == get controller o
 -- | Checks whether the object's types are a superset of the given type set.
 hasTypes :: ObjectTypes -> Object -> Bool
 hasTypes t o = t `isObjectTypesSubsetOf` _types o
+
+-- | Checks whether the object has one of the given type set.
+hasOneOfTypes :: [ObjectTypes] -> Object -> Bool
+hasOneOfTypes ts o = any (`hasTypes` o) ts
 
 -- | Checks whether the object has at least one of the permanent card types.
 hasPermanentType :: Object -> Bool
