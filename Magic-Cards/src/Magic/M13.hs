@@ -345,20 +345,6 @@ divination = mkCard $ do
           void $ executeEffects $ replicate 2 (Will (DrawCard stackYou))
       }
 
-tricksOfTheTrade :: Card
-tricksOfTheTrade = mkCard $ do
-    name =: Just "Tricks of the Trade"
-    types =: auraType
-    staticKeywordAbilities =: [EnchantPermanent creatureType]
-    layeredEffects =: [boostEnchanted]
-    play =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Nothing, Just Blue] }
-  where
-    boostEnchanted = LayeredObjectEffect
-      { affectedObjects = affectAttached
-      , objectModifications = [ModifyPT (return (2, 0)), RestrictAllowBlocks selfCantBeBlocked]
-      }
-
 faerieInvaders :: Card
 faerieInvaders = mkCard $ do
     name =: Just "Faerie Invaders"
@@ -366,7 +352,6 @@ faerieInvaders = mkCard $ do
     staticKeywordAbilities =: [Flash]
     play =: Just playObject
       { manaCost = Just $ replicate 4 Nothing ++ [Just Blue] }
-
 
 mindSculpt :: Card
 mindSculpt = mkCard $ do
@@ -383,6 +368,21 @@ mindSculpt = mkCard $ do
       stackTargetSelf rSelf you ps $ \p _ _ -> do
         cards <- IdList.toList <$> view (asks (library . player p))
         moveCards (take 7 cards) (Library p) (Graveyard p)
+
+tricksOfTheTrade :: Card
+tricksOfTheTrade = mkCard $ do
+    name =: Just "Tricks of the Trade"
+    types =: auraType
+    staticKeywordAbilities =: [EnchantPermanent creatureType]
+    layeredEffects =: [boostEnchanted]
+    play =: Just playObject
+      { manaCost = Just [Nothing, Nothing, Nothing, Just Blue] }
+  where
+    boostEnchanted = LayeredObjectEffect
+      { affectedObjects = affectAttached
+      , objectModifications = [ModifyPT (return (2, 0)), RestrictAllowBlocks selfCantBeBlocked]
+      }
+
 
 -- BLACK CARDS
 
