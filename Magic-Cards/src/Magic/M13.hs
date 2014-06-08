@@ -210,6 +210,16 @@ erase = mkCard $ do
         ench <- view (asks (objectPart . object t))
         void . executeEffect $ willMoveToExile t ench
 
+guardianLions :: Card
+guardianLions = mkCard $ do
+    name =: Just "Guardian Lions"
+    types =: creatureTypes [Cat]
+    pt =: Just (1, 6)
+    play =: Just playObject {
+      manaCost = Just [Nothing, Nothing, Nothing, Nothing, Just White]
+    }
+    staticKeywordAbilities =: [Vigilance]
+
 pacifism :: Card
 pacifism = mkCard $ do
     name =: Just "Pacifism"
