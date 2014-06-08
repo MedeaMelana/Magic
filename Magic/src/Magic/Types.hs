@@ -484,7 +484,7 @@ data ModifyObject
   | AddActivatedAbility ActivatedAbility
   | AddTriggeredAbilities TriggeredAbilities
   | RemoveAllAbilities
-  | DefinePT (View PT)
+  | DefinePT (SomeObjectRef -> View PT)
   | SetPT PT
   | ModifyPT (View PT)
   | SwitchPT

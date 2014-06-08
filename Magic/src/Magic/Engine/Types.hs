@@ -93,10 +93,10 @@ applyLayeredEffects = do
         affected = runReader (runViewT vas) world
 
     applyOne :: [SomeObjectRef] -> ModifyObject -> World -> World
-    applyOne rs m world = foldr (.) id (map (\r -> modify (objectBase r) (compileModifyObject world m)) rs) world
+    applyOne rs m world = foldr (.) id (map (\r -> modify (objectBase r) (compileModifyObject world m r)) rs) world
 
-compileModifyObject :: World -> ModifyObject -> Object -> Object
-compileModifyObject world m =
+compileModifyObject :: World -> ModifyObject -> SomeObjectRef -> Object -> Object
+compileModifyObject world m rSelf =
   case m of
     ChangeController p -> set controller p
     ChangeTypes f -> modify types f
@@ -109,7 +109,7 @@ compileModifyObject world m =
                         . set triggeredAbilities mempty
                         . set staticKeywordAbilities []
                         . set layeredEffects []
-    DefinePT vpt -> set pt (Just (runReader (runViewT vpt) world))
+    DefinePT vpt -> set pt (Just (runReader (runViewT (vpt rSelf)) world))
     SetPT newPT -> set pt (Just newPT)
     ModifyPT vpt -> let (p, t) = runReader (runViewT vpt) world
                     in modify pt (fmap ((+ p) *** (+ t)))
