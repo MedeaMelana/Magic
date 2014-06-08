@@ -7,7 +7,7 @@ module Magic.CLI where
 import Magic
 import Magic.Engine.Types (GameOver(..))
 import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction,
-  describeEvent, describeEntityRef, describeManaPool, describePayManaAction, describeObjectName, describeObjectNameByRef)
+  describeEvent, describeEntityRef, describeManaPool, describePayManaAction, describeObjectName, describeObjectNameByRef, describeObjectByRef)
 
 import Control.Monad (forM_)
 import Control.Monad.Operational (ProgramT, ProgramViewT(..), viewT)
@@ -75,6 +75,14 @@ askQuestions = eval . viewT
         Text.putStrLn "Declare attackers:"
         chosen <- declareAttackers p world ats defs
         askQuestions (k chosen)
+      AskQuestion p world (AskSearch zone cs) :>>= k -> do
+        Text.putStrLn $ desc world $ describeZone (Some zone)
+        choice <- case cs of
+          []    -> offerOptions p "No more cards to choose from." [("No Selection", Nothing)]
+          cards -> do
+            offerOptions p "Choose card:" $
+              ("No Selection", Nothing) : [ (desc world (describeObjectByRef (Some zone, c)), Just c) | c <- cards ]
+        askQuestions (k choice)
 
 declareAttackers :: PlayerRef -> World -> [ObjectRef TyPermanent] -> [EntityRef] -> IO [Attack]
 declareAttackers p world [] defs = return []
