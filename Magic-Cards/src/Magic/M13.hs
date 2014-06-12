@@ -516,6 +516,46 @@ essenceDrain = mkCard $ do
               Right p -> DamagePlayer self p 3 False True
         void $ executeEffects [Will damageEffect, Will $ GainLife stackYou 3]
 
+liliana'sShade :: Card
+liliana'sShade = mkCard $ do
+    name =: Just "Liliana's Shade"
+    types =: creatureTypes [Shade]
+    pt =: Just (1, 1)
+    play =: Just playObject { manaCost = Just [Nothing, Nothing, Just Black, Just Black] }
+    triggeredAbilities =: liliana'sShadeTrigger
+    activatedAbilities =: [liliana'sShadeAbility]
+  where
+    liliana'sShadeTrigger = onSelfETB $ \_ you -> mkTrigger you $ do
+      doSearch <- askYesNo you "Do you want to search the library for a Swamp card?"
+      when doSearch $ do
+        swamp <- searchCard you (Library you) (hasTypes (landTypes [Swamp]))
+        case swamp of
+          Just s -> do
+            let ref = (Library you, s)
+            refObj <- view (asks (object ref))
+            void $ executeEffects
+              [ Will $ RevealCards you [ref]
+              , WillMoveObject (Just (toSomeObjectRef ref)) (Hand you) refObj
+              ]
+            will $ ShuffleLibrary you
+          Nothing -> return ()
+    plus1plus1 rSelf you = do
+      t <- tick
+      mkAbility you $
+        will $ InstallLayeredEffect rSelf TemporaryLayeredEffect
+          { temporaryTimestamp = t
+          , temporaryDuration  = UntilEndOfTurn
+          , temporaryEffect    = affectingSelf [ModifyPT (return (1, 1))]
+          }
+    liliana'sShadeAbility = ActivatedAbility
+      { abilityType = ActivatedAb
+      , tapCost = NoTapCost
+      , abilityActivation = defaultActivation
+        { effect = plus1plus1
+          , manaCost = Just [Just Black]
+        }
+      }
+
 mindRot :: Card
 mindRot = mkCard $ do
     name =: Just "Mind Rot"

@@ -131,6 +131,7 @@ affectedPlayer e =
     Will (InstallLayeredEffect r _) -> controllerOfSome r
     Will (CeaseToExist o)           -> controllerOfSome o
     Will (Sacrifice r)              -> controllerOf r
+    Will (RevealCards p _)          -> return p
   where
     controllerOf :: ObjectRef ty -> Engine PlayerRef
     controllerOf r = view $ asks (controller . objectPart . object r)
@@ -176,6 +177,9 @@ compileEffect e =
 
         LoseLife p n -> onlyIf (n >= 0) $
           simply $ life . player p =. (subtract n)
+
+        RevealCards _ _ ->
+          simply $ return ()
 
         TapPermanent r -> do
           ts <- gets (tapStatus . object r)
