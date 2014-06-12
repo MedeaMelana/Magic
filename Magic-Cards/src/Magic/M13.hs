@@ -315,6 +315,27 @@ silvercoatLion = mkCard $ do
       manaCost = Just [Nothing, Just White]
     }
 
+showOfValor :: Card
+showOfValor = mkCard $ do
+    name =: Just "Show of Valor"
+    types =: instantType
+    play =: Just playObject
+      { manaCost = Just [Nothing, Just White]
+      , effect = showOfValorEffect
+      }
+  where
+    showOfValorEffect rSelf you = do
+      ts <- askTarget you targetCreature
+      stackTargetSelf rSelf you ts $ \(zr, i) _stackSelf _stackYou -> do
+        t <- tick
+        will $
+          InstallLayeredEffect (Some zr, i) TemporaryLayeredEffect
+            { temporaryTimestamp = t
+            , temporaryDuration  = UntilEndOfTurn
+            , temporaryEffect    = affectingSelf
+                [ModifyPT (return (2, 4))]
+            }
+
 warFalcon :: Card
 warFalcon = mkCard $ do
     name =: Just "War Falcon"
