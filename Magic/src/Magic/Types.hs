@@ -695,6 +695,7 @@ data Question a where
   AskPriorityAction        :: [PriorityAction] -> Question (Maybe PriorityAction)
   AskManaAbility           :: ManaPool -> [PayManaAction] -> Question PayManaAction
   AskTarget                :: [EntityRef] -> Question EntityRef
+  AskMaybeTarget           :: [EntityRef] -> Question (Maybe EntityRef)
   --AskPickReplacementEffect :: [(ReplacementEffect, Magic [OneShotEffect])] -> Question (Pick (ReplacementEffect, Magic [OneShotEffect]))
   AskPickTrigger           :: [LastKnownObjectInfo] -> Question Int
   AskAttackers             :: [ObjectRef TyPermanent] -> [EntityRef] -> Question [Attack]

@@ -366,19 +366,19 @@ divination = mkCard $ do
           void $ executeEffects $ replicate 2 (Will (DrawCard stackYou))
       }
 
-tricksOfTheTrade :: Card
-tricksOfTheTrade = mkCard $ do
-    name =: Just "Tricks of the Trade"
-    types =: auraType
-    staticKeywordAbilities =: [EnchantPermanent creatureType]
-    layeredEffects =: [boostEnchanted]
+downpour :: Card
+downpour = mkCard $ do
+    name =: Just "Downpour"
+    types =: instantType
     play =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Nothing, Just Blue] }
-  where
-    boostEnchanted = LayeredObjectEffect
-      { affectedObjects = affectAttached
-      , objectModifications = [ModifyPT (return (2, 0)), RestrictAllowBlocks selfCantBeBlocked]
+      { manaCost = Just [Nothing, Just Blue]
+      , effect = downpourEffect
       }
+  where
+    downpourEffect rSelf rYou = do
+      ts <- askTargetsUpTo 3 rYou targetCreature
+      stackTargetSelf rSelf rYou ts $ \t _stackSelf _stackYou ->
+        void. executeEffects $ map (Will . TapPermanent) t
 
 faerieInvaders :: Card
 faerieInvaders = mkCard $ do
@@ -387,7 +387,6 @@ faerieInvaders = mkCard $ do
     staticKeywordAbilities =: [Flash]
     play =: Just playObject
       { manaCost = Just $ replicate 4 Nothing ++ [Just Blue] }
-
 
 mindSculpt :: Card
 mindSculpt = mkCard $ do
@@ -404,6 +403,21 @@ mindSculpt = mkCard $ do
       stackTargetSelf rSelf you ps $ \p _ _ -> do
         cards <- IdList.toList <$> view (asks (library . player p))
         moveCards (take 7 cards) (Library p) (Graveyard p)
+
+tricksOfTheTrade :: Card
+tricksOfTheTrade = mkCard $ do
+    name =: Just "Tricks of the Trade"
+    types =: auraType
+    staticKeywordAbilities =: [EnchantPermanent creatureType]
+    layeredEffects =: [boostEnchanted]
+    play =: Just playObject
+      { manaCost = Just [Nothing, Nothing, Nothing, Just Blue] }
+  where
+    boostEnchanted = LayeredObjectEffect
+      { affectedObjects = affectAttached
+      , objectModifications = [ModifyPT (return (2, 0)), RestrictAllowBlocks selfCantBeBlocked]
+      }
+
 
 -- BLACK CARDS
 
