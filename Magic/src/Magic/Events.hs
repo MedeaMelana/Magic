@@ -12,6 +12,7 @@ module Magic.Events (
     shuffleIntoLibrary,
     searchCard,
     askYesNo,
+    askChooseCard,
 
     executeEffects, executeEffect, will,
     tick
@@ -22,6 +23,7 @@ import Magic.Core
 import Magic.Types
 import qualified Magic.IdList as IdList
 
+import Control.Arrow (first)
 import Data.Function (on)
 import Data.Functor (void)
 import Data.List (nub, nubBy)
@@ -98,6 +100,11 @@ askYesNo :: PlayerRef -> Text -> Magic Bool
 askYesNo p txt = askQuestion p (AskChoice (Just txt) choices)
   where
     choices = [(ChoiceYesNo True, True), (ChoiceYesNo False, False)]
+
+askChooseCard :: PlayerRef -> [(SomeObjectRef, a)] -> Magic a
+askChooseCard p cards = askQuestion p (AskChoice Nothing choices)
+  where
+    choices = map (first ChoiceCard) cards
 
 -- EXECUTING EFFECTS
 

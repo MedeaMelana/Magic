@@ -514,6 +514,24 @@ essenceDrain = mkCard $ do
               Right p -> DamagePlayer self p 3 False True
         void $ executeEffects [Will damageEffect, Will $ GainLife stackYou 3]
 
+ravenousRats :: Card
+ravenousRats = mkCard $ do
+    name =: Just "Ravenous Rats"
+    types =: creatureTypes [Rat]
+    pt =: Just (1, 1)
+    play =: Just playObject { manaCost = Just [Nothing, Just Black] }
+    triggeredAbilities =: onSelfETB ravenousRatsTrigger
+  where
+    ravenousRatsTrigger _rSelf you = do
+      opp <- askTarget you (targetOpponent you)
+      mkTargetTrigger you opp $ \o -> do
+        oppHand <- IdList.toList <$> view (asks (hand . player o))
+        let choices = map (makeChoice o) oppHand
+        (someRef, obj) <- askChooseCard o choices
+        void $ executeEffect $ WillMoveObject (Just someRef) (Graveyard o) obj
+    makeChoice opp (cardId, obj) = let someRef = (Some (Hand opp), cardId)
+                               in  (someRef, (someRef, obj))
+
 tormentedSoul :: Card
 tormentedSoul = mkCard $ do
     name =: Just "Tormented Soul"
