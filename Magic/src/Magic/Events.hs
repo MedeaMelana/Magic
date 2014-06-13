@@ -12,6 +12,8 @@ module Magic.Events (
     shuffleIntoLibrary,
     searchCard,
     askYesNo,
+    askChooseCard,
+    askChooseCards,
 
     executeEffects, executeEffect, will,
     tick
@@ -94,10 +96,37 @@ searchCard p zone pred = do
                                               in [i | pred obj])
     askQuestion p (AskSearch zone eligibleTargets)
 
+-- CHOOSING
+
+-- | Presents the given player with a Yes/No question.
 askYesNo :: PlayerRef -> Text -> Magic Bool
 askYesNo p txt = askQuestion p (AskChoice (Just txt) choices)
   where
     choices = [(ChoiceYesNo True, True), (ChoiceYesNo False, False)]
+
+-- | Asks the given player to choose from a list of cards. The result is 'Nothing'
+-- if the list of cards is empty.
+askChooseCard :: PlayerRef -> [(SomeObjectRef, a)] -> Magic (Maybe (SomeObjectRef, a))
+askChooseCard _ []    = return Nothing
+askChooseCard p cards = Just <$> askQuestion p (AskChoice Nothing choices)
+  where
+    choices = map (\ch@(someRef, _) -> (ChoiceCard someRef, ch)) cards
+
+-- | Asks the given player to choose n times from a list of cards. A card
+-- can be chosen at most once.
+askChooseCards :: Int -> PlayerRef -> [(SomeObjectRef, ObjectOfType TyCard)] -> Magic [(SomeObjectRef, ObjectOfType TyCard)]
+askChooseCards n p cards = doChoose n cards []
+  where
+    doChoose 0 _  res = return res
+    doChoose i choices res = do
+      maybeChoice <- askChooseCard p choices
+      case maybeChoice of
+        Just (choice@(chRef, _)) ->
+          doChoose (i-1) (deleteBy ((chRef ==) . fst) choices) (choice:res)
+        Nothing -> return res
+
+    deleteBy _ [] = []
+    deleteBy pred (y:ys) = if pred y then ys else y : deleteBy pred ys
 
 -- EXECUTING EFFECTS
 

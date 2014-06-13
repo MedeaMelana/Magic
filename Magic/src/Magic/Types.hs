@@ -17,7 +17,7 @@ module Magic.Types (
 
     -- * Reference types
     PlayerRef, ObjectRef, SomeObjectRef, ActivatedAbilityRef, ZoneRef(..),
-    ObjectType(..), LastKnownObjectInfo,
+    ObjectType(..), LastKnownObjectInfo, toSomeObjectRef,
 
     -- * World
     World(..), players, activePlayer, activeStep, time, turnStructure, exile, battlefield, stack, command, turnHistory,
@@ -112,6 +112,9 @@ type PlayerRef = Id
 type ObjectRef ty = (ZoneRef ty, Id)
 type SomeObjectRef = (Some ZoneRef, Id)
 type ActivatedAbilityRef = (SomeObjectRef, Int)
+
+toSomeObjectRef :: ObjectRef ty -> SomeObjectRef
+toSomeObjectRef (zoneRef, i) = (Some zoneRef, i)
 
 data ZoneRef :: ObjectType -> * where
   Library     :: PlayerRef -> ZoneRef TyCard

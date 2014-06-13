@@ -10,6 +10,7 @@ import Magic.Description (Description(..), describeWorld, describeZone, describe
   describeEvent, describeEntityRef, describeManaPool, describePayManaAction, describeObjectName, describeObjectNameByRef, describeObjectByRef,
   describeChoice)
 
+import Control.Arrow (first)
 import Control.Monad (forM_)
 import Control.Monad.Operational (ProgramT, ProgramViewT(..), viewT)
 import Control.Monad.Random (RandT, StdGen, evalRandT, newStdGen)
@@ -85,13 +86,12 @@ askQuestions = eval . viewT
         Text.putStrLn $ desc world $ describeZone (Some zone)
         choice <- case cs of
           []    -> offerOptions p "No more cards to choose from." [("No Selection", Nothing)]
-          cards -> do
-            offerOptions p "Choose card:" $
-              ("No Selection", Nothing) : [ (desc world (describeObjectByRef (Some zone, c)), Just c) | c <- cards ]
+          cards -> offerOptions p "Choose card:" $
+            ("No Selection", Nothing) : [ (desc world (describeObjectByRef (Some zone, c)), Just c) | c <- cards ]
         askQuestions (k choice)
       AskQuestion p world (AskChoice maybeQ choices) :>>= k -> do
         choice <- offerOptions p (fromMaybe "Choose:" maybeQ) $
-          [ (desc world (describeChoice ch), a) | (ch, a) <- choices ]
+          map (first (desc world . describeChoice)) choices
         askQuestions (k choice)
 
 declareAttackers :: PlayerRef -> World -> [ObjectRef TyPermanent] -> [EntityRef] -> IO [Attack]

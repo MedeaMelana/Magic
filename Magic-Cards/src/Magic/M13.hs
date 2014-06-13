@@ -10,6 +10,7 @@ import Magic.BasicLands (tapToAddMana)
 import qualified Magic.IdList as IdList
 
 import Control.Applicative
+import Control.Arrow (first)
 import Control.Category ((.))
 import Control.Monad (void, when)
 import Data.Boolean (true, (&&*), (||*))
@@ -514,6 +515,31 @@ essenceDrain = mkCard $ do
               Right p -> DamagePlayer self p 3 False True
         void $ executeEffects [Will damageEffect, Will $ GainLife stackYou 3]
 
+mindRot :: Card
+mindRot = mkCard $ do
+    name =: Just "Mind Rot"
+    types =: sorceryType
+    play =: Just playObject
+      { manaCost = Just [Nothing, Nothing, Just Black]
+      , effect = mindRotEffect
+      }
+  where
+    mindRotEffect rSelf you = do
+      tpl <- askTarget you targetPlayer
+      stackTargetSelf rSelf you tpl $ \tp _rStackSelf _stackYou -> discardCards tp 2
+
+ravenousRats :: Card
+ravenousRats = mkCard $ do
+    name =: Just "Ravenous Rats"
+    types =: creatureTypes [Rat]
+    pt =: Just (1, 1)
+    play =: Just playObject { manaCost = Just [Nothing, Just Black] }
+    triggeredAbilities =: onSelfETB ravenousRatsTrigger
+  where
+    ravenousRatsTrigger _rSelf you = do
+      opp <- askTarget you (targetOpponent you)
+      mkTargetTrigger you opp $ \o -> discardCards o 1
+
 tormentedSoul :: Card
 tormentedSoul = mkCard $ do
     name =: Just "Tormented Soul"
@@ -703,6 +729,13 @@ moveCards cards from to =
     [ WillMoveObject (Just (Some from, j)) to card
     | (j, card) <- cards
     ]
+
+discardCards :: PlayerRef -> Int -> Magic ()
+discardCards p n = do
+  pHand <- playerHand p
+  let choices = map (first toSomeObjectRef) pHand
+  toDiscard <- askChooseCards n p choices
+  void $ executeEffects [ WillMoveObject (Just someRef) (Graveyard p) obj  | (someRef, obj) <- toDiscard ]
 
 
 -- LANDS

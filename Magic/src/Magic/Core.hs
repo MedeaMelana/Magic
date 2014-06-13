@@ -1,10 +1,11 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE GADTs #-}
 
 module Magic.Core
-  ( compileZoneRef, allObjects, askQuestion, debug, object, objectBase, objectPart, anyObject, player, isStackEmpty, viewObject, viewSomeObject,
+  ( compileZoneRef, allObjects, askQuestion, debug, object, objectBase, objectPart, anyObject, player, isStackEmpty, viewObject, viewSomeObject, playerHand,
     allRefsInSomeZone )
   where
 
@@ -15,6 +16,7 @@ import Magic.Labels
 import Magic.Types
 
 import Control.Applicative
+import Control.Arrow (first)
 import Control.Category ((.))
 import Control.Monad.Reader (ask)
 import Control.Monad.Operational (singleton)
@@ -102,3 +104,9 @@ viewSomeObject (Some zr, i) =
 
 allRefsInSomeZone :: Some ZoneRef -> View [SomeObjectRef]
 allRefsInSomeZone szr@(Some zr) = map (szr, ) . IdList.ids <$> view (asks (compileZoneRef zr))
+
+playerHand :: PlayerRef -> Magic [(ObjectRef TyCard, ObjectOfType TyCard)]
+playerHand p = do
+  cards <- IdList.toList <$> view (asks (hand . player p))
+  return $ map (first (Hand p,)) cards
+
