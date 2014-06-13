@@ -11,6 +11,7 @@ module Magic.Events (
     willMoveToExile,
     shuffleIntoLibrary,
     searchCard,
+    askYesNo,
 
     executeEffects, executeEffect, will,
     tick
@@ -24,6 +25,7 @@ import qualified Magic.IdList as IdList
 import Data.Function (on)
 import Data.Functor (void)
 import Data.List (nub, nubBy)
+import Data.Text (Text)
 import Data.Traversable (for)
 import Control.Applicative ((<$>))
 import Control.Monad.Operational (singleton)
@@ -92,6 +94,10 @@ searchCard p zone pred = do
                                               in [i | pred obj])
     askQuestion p (AskSearch zone eligibleTargets)
 
+askYesNo :: PlayerRef -> Text -> Magic Bool
+askYesNo p txt = askQuestion p (AskChoice (Just txt) choices)
+  where
+    choices = [(ChoiceYesNo True, True), (ChoiceYesNo False, False)]
 
 -- EXECUTING EFFECTS
 

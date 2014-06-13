@@ -253,3 +253,14 @@ describePlayer :: PlayerRef -> Description
 describePlayer rPlayer = withWorld $ \world ->
   let p = get (player rPlayer) world
    in "Player " <> sh rPlayer <> ": " <> sh (get life p) <> " life"
+
+describeChoice :: Choice -> Description
+describeChoice choice = case choice of
+  ChoiceYesNo True -> string "Yes"
+  ChoiceYesNo False -> string "No"
+
+  ChoiceColor color -> sh color
+
+  ChoiceCard someRef -> describeObjectNameByRef someRef
+
+  ChoiceText txt -> text txt

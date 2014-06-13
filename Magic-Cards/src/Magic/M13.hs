@@ -11,7 +11,7 @@ import qualified Magic.IdList as IdList
 
 import Control.Applicative
 import Control.Category ((.))
-import Control.Monad (void)
+import Control.Monad (void, when)
 import Data.Boolean (true, (&&*), (||*))
 import Data.Label (get)
 import Data.Label.Monadic ((=:), asks)
@@ -352,6 +352,20 @@ warFalcon = mkCard $ do
         return $ (Battlefield, i) `notElem` map attacker ats || any ok cards
     controlsKnightOrSoldier _ _ _ = true
 
+warPriestOfThune :: Card
+warPriestOfThune = mkCard $ do
+    name =: Just "War Priest of Thune"
+    types =: creatureTypes [Human, Cleric]
+    pt =: Just (2, 2)
+    play =: Just playObject { manaCost = Just [Nothing, Just White] }
+    triggeredAbilities =: onSelfETB warPriestOfThuneTrigger
+  where
+    warPriestOfThuneTrigger _rSelf you = do
+      ench <- askTarget you targetEnchantment
+      mkTargetTrigger you ench $ \ref -> do
+        shouldDestroy <- askYesNo you "Destroy target enchantment?"
+        when shouldDestroy $
+          will $ DestroyPermanent ref True
 
 
 -- BLUE

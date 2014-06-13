@@ -3,7 +3,7 @@ module Magic.Monads (
     ViewT(..), View, MonadView(..),
 
     -- * Monadic interaction with players
-    Interact(..), EventSource(..), Question(..), Pick, MonadInteract(..),
+    Interact(..), EventSource(..), Question(..), Pick, MonadInteract(..), Choice(..),
 
     -- * Executing effects
     ExecuteEffects(..),

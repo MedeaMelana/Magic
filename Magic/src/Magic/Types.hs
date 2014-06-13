@@ -71,7 +71,7 @@ module Magic.Types (
     ViewT(..), View, runView, MonadView(..),
 
     -- * Monadic interaction with players
-    Interact(..), EventSource(..), Question(..), Pick, MonadInteract(..),
+    Interact(..), EventSource(..), Question(..), Pick, MonadInteract(..), Choice(..),
 
     -- * Executing effects
     ExecuteEffects(..),
@@ -690,6 +690,12 @@ data EventSource
     -- ^ Events caused by casting a spell or activating an ability
   deriving Show
 
+data Choice =
+    ChoiceYesNo Bool
+  | ChoiceColor Color
+  | ChoiceCard SomeObjectRef
+  | ChoiceText Text
+
 data Question a where
   AskKeepHand              :: Question Bool
   AskPriorityAction        :: [PriorityAction] -> Question (Maybe PriorityAction)
@@ -700,6 +706,7 @@ data Question a where
   AskPickTrigger           :: [LastKnownObjectInfo] -> Question Int
   AskAttackers             :: [ObjectRef TyPermanent] -> [EntityRef] -> Question [Attack]
   AskSearch                :: ZoneRef ty -> [Id] -> Question (Maybe Id)
+  AskChoice                :: Maybe Text -> [(Choice, a)] -> Question a
 
 type Pick a = (a, [a])
 

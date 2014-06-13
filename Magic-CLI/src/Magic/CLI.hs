@@ -7,13 +7,15 @@ module Magic.CLI where
 import Magic
 import Magic.Engine.Types (GameOver(..))
 import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction,
-  describeEvent, describeEntityRef, describeManaPool, describePayManaAction, describeObjectName, describeObjectNameByRef, describeObjectByRef)
+  describeEvent, describeEntityRef, describeManaPool, describePayManaAction, describeObjectName, describeObjectNameByRef, describeObjectByRef,
+  describeChoice)
 
 import Control.Monad (forM_)
 import Control.Monad.Operational (ProgramT, ProgramViewT(..), viewT)
 import Control.Monad.Random (RandT, StdGen, evalRandT, newStdGen)
 import Control.Monad.Reader (runReader)
 import Control.Monad.State (evalStateT)
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -86,6 +88,10 @@ askQuestions = eval . viewT
           cards -> do
             offerOptions p "Choose card:" $
               ("No Selection", Nothing) : [ (desc world (describeObjectByRef (Some zone, c)), Just c) | c <- cards ]
+        askQuestions (k choice)
+      AskQuestion p world (AskChoice maybeQ choices) :>>= k -> do
+        choice <- offerOptions p (fromMaybe "Choose:" maybeQ) $
+          [ (desc world (describeChoice ch), a) | (ch, a) <- choices ]
         askQuestions (k choice)
 
 declareAttackers :: PlayerRef -> World -> [ObjectRef TyPermanent] -> [EntityRef] -> IO [Attack]
