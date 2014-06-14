@@ -15,6 +15,7 @@ import Control.Category ((.))
 import Control.Monad.Reader (ask)
 import Control.Monad.Reader (runReader)
 
+import Data.Foldable (foldMap)
 import Data.Label (get)
 import Data.List (sort)
 import Data.Maybe (catMaybes)
@@ -184,7 +185,11 @@ describeManaPool mcs =
     (0, cs) -> describeColoredMana cs
     (n, cs) -> sh n <> describeColoredMana cs
   where
-    describeColoredMana cs = mconcat (map (string . (: []) . head . show) cs)
+    describeColoredMana = foldMap describeColor
+
+describeColor :: Color -> Description
+describeColor Blue = string "U"
+describeColor m = string . take 1 . show $ m
 
 partitionMaybes :: [Maybe a] -> (Int, [a])
 partitionMaybes []              = (0, [])
