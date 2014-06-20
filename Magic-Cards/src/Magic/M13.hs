@@ -85,7 +85,9 @@ angelicBenediction = mkCard $ do
     mkTapTriggerObject :: PlayerRef -> Magic ()
     mkTapTriggerObject p = do
         ts <- askTarget p targetCreature
-        mkTargetTrigger p ts (will . TapPermanent)
+        mkTargetTrigger p ts $ \t -> do
+          shouldTap <- askYesNo p "Do you want to tap target creature?"
+          when shouldTap $ will (TapPermanent t)
 
 attendedKnight :: Card
 attendedKnight = mkCard $ do
@@ -364,8 +366,7 @@ warPriestOfThune = mkCard $ do
       ench <- askTarget you targetEnchantment
       mkTargetTrigger you ench $ \ref -> do
         shouldDestroy <- askYesNo you "Destroy target enchantment?"
-        when shouldDestroy $
-          will $ DestroyPermanent ref True
+        when shouldDestroy $ will (DestroyPermanent ref True)
 
 
 -- BLUE
