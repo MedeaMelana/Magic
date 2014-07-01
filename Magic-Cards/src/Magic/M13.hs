@@ -721,6 +721,21 @@ garrukPrimalHunter = mkCard $ do
         void $ executeEffects $ replicate n $
           WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
 
+titanicGrowth :: Card
+titanicGrowth = mkCard $ do
+    name =: Just "Titanic Growth"
+    types =: instantType
+    play =: Just playObject
+      { manaCost = Just [Nothing, Nothing, Nothing, Just Green]
+      , effect = titanicGrowthEffect
+      }
+  where
+    titanicGrowthEffect rSelf you = do
+      ts <- askTarget you targetCreature
+      stackTargetSelf rSelf you ts $ \(zone, i) _rStackSelf _stackYou -> do
+        t <- tick
+        modifyPTUntilEOT (4, 4) (Some zone, i) t
+
 yeva'sForcemage :: Card
 yeva'sForcemage = mkCard $ do
     name =: Just "Yeva's Forcemage"
