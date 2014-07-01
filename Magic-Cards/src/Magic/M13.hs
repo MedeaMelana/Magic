@@ -721,7 +721,19 @@ garrukPrimalHunter = mkCard $ do
         void $ executeEffects $ replicate n $
           WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
 
-
+yeva'sForcemage :: Card
+yeva'sForcemage = mkCard $ do
+    name =: Just "Yeva's Forcemage"
+    types =: creatureTypes [Elf, Shaman]
+    pt =: Just (2, 2)
+    play =: Just playObject { manaCost = Just [Nothing, Nothing, Just Green] }
+    triggeredAbilities =: onSelfETB yeva'sForcemageTrigger
+  where
+    yeva'sForcemageTrigger _rSelf you = do
+      ts <- askTarget you targetCreature
+      mkTargetTrigger you ts $ \(zone, i) -> do
+        t <- tick
+        modifyPTUntilEOT (2, 2) (Some zone, i) t
 
 -- COLORLESS CARDS
 
@@ -804,6 +816,9 @@ checkLand n cols tys = mkCard $ do
   activatedAbilities =: map (tapToAddMana . Just) cols
   replacementEffects =: [ etbTappedUnless (map (\ty -> landTypes [ty]) tys) ]
 
+
+-- COMMON FUNCTIONALITY
+
 etbTappedUnless :: [ObjectTypes] -> OneShotEffect -> Contextual (Maybe (Magic [OneShotEffect]))
 etbTappedUnless tys e@(WillMoveObject (Just r') Battlefield o) r _
   | r' == r = Just $ do
@@ -815,6 +830,13 @@ etbTappedUnless tys e@(WillMoveObject (Just r') Battlefield o) r _
                 else return [e]
 etbTappedUnless _ _ _ _ = Nothing
 
+modifyPTUntilEOT :: PT -> SomeObjectRef -> Timestamp -> Magic ()
+modifyPTUntilEOT pt' ref t = will $
+  InstallLayeredEffect ref TemporaryLayeredEffect
+    { temporaryTimestamp = t
+    , temporaryDuration  = UntilEndOfTurn
+    , temporaryEffect    = affectingSelf [ModifyPT (return pt')]
+    }
 
 simpleCreatureToken ::
   Timestamp -> PlayerRef -> [CreatureSubtype] -> [Color] -> PT -> Object
