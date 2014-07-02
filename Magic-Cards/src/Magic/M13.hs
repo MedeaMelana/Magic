@@ -721,6 +721,29 @@ garrukPrimalHunter = mkCard $ do
         void $ executeEffects $ replicate n $
           WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
 
+roaringPrimadox :: Card
+roaringPrimadox = mkCard $ do
+    name =: Just "Roaring Primadox"
+    types =: creatureTypes [Beast]
+    pt =: Just (4, 4)
+    play =: Just playObject { manaCost = Just [Nothing, Nothing, Nothing, Just Green] }
+    triggeredAbilities =: roaringPrimadoxTrigger
+  where
+    roaringPrimadoxTrigger :: TriggeredAbilities
+    roaringPrimadoxTrigger events (Some Battlefield, _) p = do
+      activeP <- view (asks activePlayer)
+      return $ if activeP == p
+        then [makeReturnCardTrigger p | DidBeginStep (BeginningPhase UpkeepStep) <- events]
+        else []
+    roaringPrimadoxTrigger _ _ _ = return []
+
+    makeReturnCardTrigger p = do
+      ts <- askTarget p (checkPermanent (isControlledBy p) <?> targetCreature)
+      mkTargetTrigger p ts $ \ref@(zone, i) -> do
+        obj <- view (asks (objectPart . object ref))
+        let objOwner = get owner obj
+        void $ executeEffect $ WillMoveObject (Just (Some zone, i)) (Hand objOwner) (CardObject obj)
+
 sentinelSpider :: Card
 sentinelSpider = mkCard $ do
   name =: Just "Sentinel Spider"
