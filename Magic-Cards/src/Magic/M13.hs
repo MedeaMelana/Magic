@@ -721,6 +721,14 @@ garrukPrimalHunter = mkCard $ do
         void $ executeEffects $ replicate n $
           WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
 
+spikedBaloth :: Card
+spikedBaloth = mkCard $ do
+  name =: Just "Spiked Baloth"
+  types =: creatureTypes [Beast]
+  play =: Just playObject { manaCost = Just [Nothing, Nothing, Nothing, Just Green] }
+  pt =: Just (4, 2)
+  staticKeywordAbilities =: [Trample]
+
 titanicGrowth :: Card
 titanicGrowth = mkCard $ do
     name =: Just "Titanic Growth"
