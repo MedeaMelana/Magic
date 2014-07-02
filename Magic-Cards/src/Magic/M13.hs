@@ -721,6 +721,14 @@ garrukPrimalHunter = mkCard $ do
         void $ executeEffects $ replicate n $
           WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
 
+sentinelSpider :: Card
+sentinelSpider = mkCard $ do
+  name =: Just "Sentinel Spider"
+  types =: creatureTypes [Spider]
+  play =: Just playObject { manaCost = Just [Nothing, Nothing, Nothing, Just Green, Just Green] }
+  pt =: Just (4, 4)
+  staticKeywordAbilities =: [Vigilance, Reach]
+
 serpent'sGift :: Card
 serpent'sGift = mkCard $ do
     name =: Just "Serpent's Gift"
