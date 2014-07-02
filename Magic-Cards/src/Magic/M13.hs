@@ -721,6 +721,23 @@ garrukPrimalHunter = mkCard $ do
         void $ executeEffects $ replicate n $
           WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
 
+revive :: Card
+revive = mkCard $ do
+    name =: Just "Revive"
+    types =: sorceryType
+    play =: Just playObject
+      { manaCost = Just [Nothing, Just Green]
+      , effect = reviveEffect
+      }
+  where
+    reviveEffect rSelf you = do
+      ts <- askTarget you (isGreen <?> targetInZone (Graveyard you))
+      stackTargetSelf rSelf you ts $ \ref@(zone, i) _stackSelf stackYou -> do
+        obj <- view (asks (objectPart . object ref))
+        void . executeEffect $ WillMoveObject (Just (Some zone, i)) (Hand stackYou) (CardObject obj)
+    isGreen :: ObjectRef TyCard -> View Bool
+    isGreen r = hasColor Green <$> asks (objectPart . object r)
+
 roaringPrimadox :: Card
 roaringPrimadox = mkCard $ do
     name =: Just "Roaring Primadox"
