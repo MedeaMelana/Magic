@@ -721,6 +721,25 @@ garrukPrimalHunter = mkCard $ do
         void $ executeEffects $ replicate n $
           WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
 
+serpent'sGift :: Card
+serpent'sGift = mkCard $ do
+    name =: Just "Serpent's Gift"
+    types =: instantType
+    play =: Just playObject
+      { manaCost = Just [Nothing, Nothing, Just Green]
+      , effect = serpent'sGiftEffect
+      }
+  where
+    serpent'sGiftEffect rSelf you = do
+      ts <- askTarget you targetCreature
+      stackTargetSelf rSelf you ts $ \(zone, i) _rStackSelf _stackYou -> do
+        t <- tick
+        will $ InstallLayeredEffect (Some zone, i) TemporaryLayeredEffect
+          { temporaryTimestamp = t
+          , temporaryDuration  = UntilEndOfTurn
+          , temporaryEffect    = affectingSelf [AddStaticKeywordAbility Deathtouch]
+          }
+
 spikedBaloth :: Card
 spikedBaloth = mkCard $ do
   name =: Just "Spiked Baloth"
