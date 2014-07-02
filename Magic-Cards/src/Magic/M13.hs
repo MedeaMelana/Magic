@@ -736,6 +736,13 @@ titanicGrowth = mkCard $ do
         t <- tick
         modifyPTUntilEOT (4, 4) (Some zone, i) t
 
+vastwoodGorger :: Card
+vastwoodGorger = mkCard $ do
+  name =: Just "Vastwood Gorger"
+  types =: creatureTypes [Wurm]
+  play =: Just playObject { manaCost = Just $ replicate 5 Nothing ++ [Just Green] }
+  pt =: Just (5, 6)
+
 yeva'sForcemage :: Card
 yeva'sForcemage = mkCard $ do
     name =: Just "Yeva's Forcemage"
