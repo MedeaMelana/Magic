@@ -722,6 +722,14 @@ garrukPrimalHunter = mkCard $ do
         void $ executeEffects $ replicate n $
           WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
 
+primalHuntbeast :: Card
+primalHuntbeast = mkCard $ do
+  name =: Just "Primal Huntbeast"
+  types =: creatureTypes [Beast]
+  pt =: Just (3, 3)
+  play =: Just playObject { manaCost = Just [Nothing, Nothing, Nothing, Just Green] }
+  staticKeywordAbilities =: [Hexproof]
+
 quirionDryad :: Card
 quirionDryad = mkCard $ do
     name =: Just "Quirion Dryad"
