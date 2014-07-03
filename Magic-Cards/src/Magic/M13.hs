@@ -722,6 +722,29 @@ garrukPrimalHunter = mkCard $ do
         void $ executeEffects $ replicate n $
           WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
 
+preyUpon :: Card
+preyUpon = mkCard $ do
+    name =: Just "Prey Upon"
+    types =: sorceryType
+    play =: Just playObject
+      { manaCost = Just [Just Green]
+      , effect = preyUponEffect
+      }
+  where
+    preyUponEffect rSelf you = do
+      yourCreature  <- askTarget you $ checkPermanent (      isControlledBy you) <?> targetCreature
+      otherCreature <- askTarget you $ checkPermanent (not . isControlledBy you) <?> targetCreature
+      let creatures = (,) <$> yourCreature <*> otherCreature
+      stackTargetSelf rSelf you creatures $ \(yours@(yz, yi), other@(oz, oi)) _stackSelf _stackYou -> do
+        yourObj <- view (asks (objectBase (Some yz, yi)))
+        otherObj <- view (asks (objectBase (Some oz, oi)))
+        let Just (yourPower, _) = get pt yourObj
+            Just (otherPower, _) = get pt otherObj
+        void . executeEffects $
+          [ Will $ DamageObject yourObj other yourPower False True
+          , Will $ DamageObject otherObj yours otherPower False True
+          ]
+
 primalHuntbeast :: Card
 primalHuntbeast = mkCard $ do
   name =: Just "Primal Huntbeast"
