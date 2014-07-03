@@ -1,7 +1,14 @@
 {-# LANGUAGE DataKinds #-}
 
 module Magic.Predicates (
-    hasColor, isOwnedBy, isControlledBy, hasTypes, hasOneOfTypes, hasPermanentType, checkPermanent
+    hasColor,
+    isOwnedBy,
+    isControlledBy,
+    hasTypes,
+    hasOneOfTypes,
+    hasPermanentType,
+    checkPermanent,
+    hasStaticKeywordAbility
   ) where
 
 import Magic.Core (object, objectPart)
@@ -39,6 +46,11 @@ hasOneOfTypes ts o = any (`hasTypes` o) ts
 -- | Checks whether the object has at least one of the permanent card types.
 hasPermanentType :: Object -> Bool
 hasPermanentType = gor $ map hasTypes [artifactType, creatureType, enchantmentType, landType, planeswalkerType]
+
+-- | Checks whether the object has a given static keyword ability.
+hasStaticKeywordAbility:: StaticKeywordAbility -> Object -> Bool
+hasStaticKeywordAbility a o = a `elem` get staticKeywordAbilities o
+
 
 checkPermanent :: (Object -> Bool) -> ObjectRef TyPermanent -> View Bool
 checkPermanent ok r = ok <$> asks (objectPart . object r)

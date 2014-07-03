@@ -722,6 +722,17 @@ garrukPrimalHunter = mkCard $ do
         void $ executeEffects $ replicate n $
           WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
 
+plummet :: Card
+plummet = mkCard $ do
+    name =: Just "Plummet"
+    types =: instantType
+    play =: Just playObject
+      { manaCost = Just [Nothing, Just Green]
+      , effect = plummetEffect
+      }
+  where
+    plummetEffect = destroyTargetPermanent (hasStaticKeywordAbility Flying)
+
 preyUpon :: Card
 preyUpon = mkCard $ do
     name =: Just "Prey Upon"
@@ -985,6 +996,12 @@ modifyPTUntilEOT pt' ref t = will $
     , temporaryDuration  = UntilEndOfTurn
     , temporaryEffect    = affectingSelf [ModifyPT (return pt')]
     }
+
+destroyTargetPermanent :: (Object -> Bool) -> Contextual (Magic ())
+destroyTargetPermanent spec rSelf you = do
+  ts <- askTarget you $ checkPermanent spec <?> targetPermanent
+  stackTargetSelf rSelf you ts $ \t _stackSelf _stackYou ->
+    will $ DestroyPermanent t True
 
 simpleCreatureToken ::
   Timestamp -> PlayerRef -> [CreatureSubtype] -> [Color] -> PT -> Object
