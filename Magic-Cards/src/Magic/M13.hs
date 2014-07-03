@@ -722,6 +722,17 @@ garrukPrimalHunter = mkCard $ do
         void $ executeEffects $ replicate n $
           WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
 
+naturalize :: Card
+naturalize = mkCard $ do
+    name =: Just "Naturalize"
+    types =: instantType
+    play =: Just playObject
+      { manaCost = Just [Nothing, Just Green]
+      , effect = naturalizeEffect
+      }
+  where
+    naturalizeEffect = destroyTargetPermanent (hasOneOfTypes [artifactType, enchantmentType])
+
 plummet :: Card
 plummet = mkCard $ do
     name =: Just "Plummet"
