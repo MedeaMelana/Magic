@@ -14,6 +14,7 @@ import Control.Arrow (first)
 import Control.Category ((.))
 import Control.Monad (void, when)
 import Data.Boolean (true, (&&*), (||*))
+import qualified Data.Foldable as Foldable
 import Data.Label (get)
 import Data.Label.Monadic ((=:), asks)
 import Data.Monoid ((<>), mconcat)
@@ -720,6 +721,25 @@ garrukPrimalHunter = mkCard $ do
         let token = simpleCreatureToken t you [Wurm] [Green] (6,6)
         void $ executeEffects $ replicate n $
           WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
+
+quirionDryad :: Card
+quirionDryad = mkCard $ do
+    name =: Just "Quirion Dryad"
+    types =: creatureTypes [Dryad]
+    pt =: Just (1, 1)
+    play =: Just playObject { manaCost = Just [Nothing, Just Green] }
+    triggeredAbilities =: dryadTrigger
+  where
+    dryadTrigger :: TriggeredAbilities
+    dryadTrigger events rSelf@(Some Battlefield, _) p = mconcat [
+      do
+        obj <- asks (objectBase someRef)
+        let controlledByYou = p == get controller obj
+            nonGreenSpell = Foldable.any (`elem` [White, Blue, Black, Red]) (get colors obj)
+            mkAddCounterTrigger = mkTrigger p $ will $ AddCounter rSelf Plus1Plus1
+        return [mkAddCounterTrigger | controlledByYou && nonGreenSpell]
+      | DidMoveObject (Just _) someRef@(Some Stack, _) <- events]
+    dryadTrigger _ _ _ = return []
 
 revive :: Card
 revive = mkCard $ do
