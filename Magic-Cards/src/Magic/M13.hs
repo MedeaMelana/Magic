@@ -666,6 +666,16 @@ bondBeetle = mkCard $ do
       mkTargetTrigger p ts $ \(Battlefield, i) ->
         will $ AddCounter (Some Battlefield, i) Plus1Plus1
 
+elvishVisionary :: Card
+elvishVisionary = mkCard $ do
+    name =: Just "Elvish Visionary"
+    types =: creatureTypes [Elf, Shaman]
+    pt =: Just (1, 1)
+    play =: Just playObject { manaCost = Just [Nothing, Just Green] }
+    triggeredAbilities =: onSelfETB drawCardEffect
+  where
+    drawCardEffect _ you = mkTrigger you $ will $ DrawCard you
+
 farseek :: Card
 farseek = mkCard $ do
     name =: Just "Farseek"
