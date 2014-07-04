@@ -666,6 +666,23 @@ bondBeetle = mkCard $ do
       mkTargetTrigger p ts $ \(Battlefield, i) ->
         will $ AddCounter (Some Battlefield, i) Plus1Plus1
 
+bountifulHarvest :: Card
+bountifulHarvest = mkCard $ do
+    name =: Just "Bountiful Harvest"
+    types =: sorceryType
+    play =: Just playObject
+      { manaCost = Just $ replicate 4 Nothing ++ [Just Green]
+      , effect = bountifulHarvestEffect
+      }
+  where
+    bountifulHarvestEffect :: Contextual (Magic ())
+    bountifulHarvestEffect = stackSelf $ \_stackSelf stackYou -> do
+      objs <- IdList.elems <$> view (asks battlefield)
+      let objectParts = map (get objectPart) objs
+          lands = flip filter objectParts $ \o ->
+            get controller o == stackYou && hasTypes landType o
+      will $ GainLife stackYou (length lands)
+
 centaurCourser :: Card
 centaurCourser = mkCard $ do
   name =: Just "Centaur Courser"
