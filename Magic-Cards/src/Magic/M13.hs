@@ -666,6 +666,14 @@ bondBeetle = mkCard $ do
       mkTargetTrigger p ts $ \(Battlefield, i) ->
         will $ AddCounter (Some Battlefield, i) Plus1Plus1
 
+deadlyRecluse :: Card
+deadlyRecluse = mkCard $ do
+  name =: Just "Deadly Recluse"
+  types =: creatureTypes [Spider]
+  pt =: Just (1, 2)
+  play =: Just playObject { manaCost = Just [Nothing, Just Green] }
+  staticKeywordAbilities =: [Reach, Deathtouch]
+
 duskdaleWurm :: Card
 duskdaleWurm = mkCard $ do
   name =: Just "Duskdale Wurm"
