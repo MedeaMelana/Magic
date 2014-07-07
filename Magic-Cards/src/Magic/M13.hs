@@ -638,6 +638,20 @@ searingSpear = mkCard $ do
 
 -- GREEN CARDS
 
+acidicSlime :: Card
+acidicSlime = mkCard $ do
+    name =: Just "Acidic Slime"
+    types =: creatureTypes [Ooze]
+    pt =: Just (2, 2)
+    play =: Just playObject { manaCost = Just [Nothing, Nothing, Nothing, Just Green, Just Green] }
+    staticKeywordAbilities =: [Deathtouch]
+    triggeredAbilities =: onSelfETB acidicSlimeTrigger
+  where
+    targetTypes = [artifactType, enchantmentType, landType]
+    acidicSlimeTrigger _ p = do
+      ts <- askTarget p $ checkPermanent (hasOneOfTypes targetTypes) <?> targetPermanent
+      mkTargetTrigger p ts $ \ref -> will $ DestroyPermanent ref True
+
 arborElf :: Card
 arborElf = mkCard $ do
     name =: Just "Arbor Elf"
