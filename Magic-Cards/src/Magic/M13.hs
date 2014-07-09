@@ -771,6 +771,23 @@ farseek = mkCard $ do
         Nothing -> return ()
       will $ ShuffleLibrary stackYou
 
+fungalSprouting :: Card
+fungalSprouting = mkCard $ do
+    name =: Just "Fungal Sprouting"
+    types =: sorceryType
+    play =: Just playObject
+      { manaCost = Just [Nothing, Nothing, Nothing, Just Green]
+      , effect = makeTokenEffect
+      }
+  where
+    makeTokenEffect = stackSelf $ \_rSelf you -> do
+      perms <- (map (get objectPart) . IdList.elems) <$> view (asks battlefield)
+      t <- tick
+      let yours = filter (isControlledBy you &&* hasTypes creatureType) perms
+          maxPower = maximum $ 0 : map (maybe 0 fst . get pt) yours
+          token = simpleCreatureToken t you [Saproling] [Green] (1,1)
+      void $ executeEffects $ replicate maxPower $
+        WillMoveObject Nothing Battlefield (Permanent token Untapped 0 False Nothing Nothing)
 
 garrukPrimalHunter :: Card
 garrukPrimalHunter = mkCard $ do
