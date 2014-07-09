@@ -720,6 +720,26 @@ duskdaleWurm = mkCard $ do
   play =: Just playObject { manaCost = Just $ replicate 5 Nothing ++ [Just Green, Just Green] }
   staticKeywordAbilities =: [Trample]
 
+elvishArchdruid :: Card
+elvishArchdruid = mkCard $ do
+    name =: Just "Elvish Archdruid"
+    types =: creatureTypes [Elf, Druid]
+    pt =: Just (2, 2)
+    play =: Just playObject { manaCost = Just [Nothing, Just Green, Just Green] }
+    activatedAbilities =: [addManaAbility]
+    layeredEffects =: [boostYourElves]
+  where
+    addManaAbility = tapAbility $ \_rSelf you -> do
+      cards <- (map (get objectPart) . IdList.elems) <$> view (asks battlefield)
+      let yourElves = filter (isControlledBy you &&* hasTypes (creatureTypes [Elf])) cards
+      mkTrigger you $ will $ AddToManaPool you $ replicate (length yourElves) (Just Green)
+
+    boostYourElves = LayeredObjectEffect
+      { affectedObjects = affectRestOfBattlefield $ \you ->
+          isControlledBy you &&* hasTypes (creatureTypes [Elf])
+      , objectModifications = [ModifyPT (return (1, 1))]
+      }
+
 elvishVisionary :: Card
 elvishVisionary = mkCard $ do
     name =: Just "Elvish Visionary"
