@@ -266,6 +266,6 @@ describeChoice choice = case choice of
 
   ChoiceColor color -> sh color
 
-  ChoiceCard someRef -> describeObjectNameByRef someRef
+  ChoiceCard someRef -> describeObjectByRef someRef
 
   ChoiceText txt -> text txt
