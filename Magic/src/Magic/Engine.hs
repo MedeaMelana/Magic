@@ -22,7 +22,7 @@ import Magic.Some
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Category ((.))
-import Control.Monad (forever, forM_, when, void, liftM)
+import Control.Monad (forever, forM_, when, void, liftM, unless)
 import Control.Monad.Trans (lift)
 import Control.Monad.Writer (tell, execWriterT)
 import Data.Boolean ((&&*))
@@ -194,7 +194,12 @@ executeStep (CombatPhase DeclareAttackersStep) = do
   -- TODO [508.1c] check attacking restrictions
   -- TODO [508.1d] check attacking requirements
   -- TODO [508.1e] declare banding
-  -- TODO [508.1f] tap attackers
+
+  -- [508.1f] tap attackers
+  forM_ attacks $ \(Attack rAttacker _rAttackee) -> do
+    keywords <- view (asks (staticKeywordAbilities . objectPart . object rAttacker))
+    unless (elem Vigilance keywords) $
+        tapStatus . object rAttacker =: Tapped
   -- TODO [508.1g] determine costs
   -- TODO [508.1h] allow mana abilities
   -- TODO [508.1i] pay costs
