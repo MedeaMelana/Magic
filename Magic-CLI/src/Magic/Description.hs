@@ -225,6 +225,7 @@ describeEvent e =
       Did (LoseGame p) -> "Player " <> sh p <> " loses"
       Did (WinGame p) -> "Player " <> sh p <> " wins the game"
       Did (CeaseToExist r) -> sh r <> " ceases to exist"
+      Did (RevealCards p cs) -> unlines $ "Player " <> sh p <> " reveals" : (map (describeObjectByRef . toSomeObjectRef) cs)
       DidMoveObject (Just (rFromZone, _)) r@(rToZone, _) ->
         describeObjectName (get (objectBase r) world) <> " moves from " <>
         describeZoneRef rFromZone <> " to " <> describeZoneRef rToZone

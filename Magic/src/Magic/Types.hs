@@ -546,7 +546,6 @@ data Event
   -- Keyword actions [701]
   | DidActivateAbility SomeObjectRef Int  -- index of ability
   | DidCounter (ObjectRef TyStackItem) (ObjectRef TyStackItem)  -- source (spell or ability), target
-  | DidRevealCard (ObjectRef TyCard)
   | DidBeginStep Step
   | WillEndStep Step
   deriving Show
@@ -582,6 +581,7 @@ data SimpleOneShotEffect
   | InstallLayeredEffect SomeObjectRef TemporaryLayeredEffect
   | CeaseToExist SomeObjectRef
   | Sacrifice (ObjectRef TyPermanent)
+  | RevealCards PlayerRef [ObjectRef TyCard]
   deriving Show
 
 -- | A creature attacking a player or a planeswalker.
