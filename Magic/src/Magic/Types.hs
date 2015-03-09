@@ -523,7 +523,7 @@ type ReplacementEffect =
 type TriggeredAbilities = [Event] -> Contextual (View [Magic ()])
 
 data PriorityAction
-  = PlayCard SomeObjectRef
+  = PlayCard (ObjectRef TyCard)
   | ActivateAbility ActivatedAbilityRef
   deriving Show
 

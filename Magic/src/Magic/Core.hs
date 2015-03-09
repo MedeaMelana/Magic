@@ -5,7 +5,7 @@
 {-# LANGUAGE GADTs #-}
 
 module Magic.Core
-  ( compileZoneRef, allObjects, askQuestion, debug, object, objectBase, objectPart, anyObject, player, isStackEmpty, viewObject, viewSomeObject, playerHand,
+  ( compileZoneRef, allObjects, allCards, askQuestion, debug, object, objectBase, objectPart, anyObject, someObjectRef, player, isStackEmpty, viewObject, viewSomeObject, playerHand,
     allRefsInSomeZone )
   where
 
@@ -59,6 +59,22 @@ allObjects = do
       <>
       [ ((Some (Graveyard ip), i), c) | (i, CardObject c) <- IdList.toList (_graveyard p) ]
 
+allCards :: View [(ObjectRef TyCard, Object)]
+allCards = do
+    ips <- IdList.toList <$> asks players
+    sharedObjects <> (concat <$> for ips objectsForPlayer)
+  where
+    sharedObjects =
+        (map (\(i, CardObject c) -> ((Exile, i), c)) . IdList.toList <$> asks exile)
+      <>
+        (map (\(i, CardObject c) -> ((Command, i), c)) . IdList.toList <$> asks command)
+    objectsForPlayer (ip, p) = return $
+      [ ((Library ip, i), c) | (i, CardObject c) <- IdList.toList (_library p) ]
+      <>
+      [ ((Hand ip, i), c) | (i, CardObject c) <- IdList.toList (_hand p) ]
+      <>
+      [ ((Graveyard ip, i), c) | (i, CardObject c) <- IdList.toList (_graveyard p) ]
+
 askQuestion :: (MonadInteract m, MonadView m) => PlayerRef -> Question a -> m a
 askQuestion p q = do
   world <- view ask
@@ -88,6 +104,9 @@ objectPart = lens getObjectPart modifyObjectPart
 
 anyObject :: SomeObjectRef -> World -> Some ObjectOfType
 anyObject = undefined
+
+someObjectRef :: ObjectRef ty -> SomeObjectRef
+someObjectRef (z, i) = (Some z, i)
 
 player :: PlayerRef -> World :-> Player
 player i = listEl i . players

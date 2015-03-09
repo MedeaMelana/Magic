@@ -427,14 +427,14 @@ collectAvailableActivatedAbilities predicate p = do
         payCostsOk <- lift (canPayTapCost (tapCost ability) r p)
         when (predicate ability && ok && payCostsOk) (tell [(r, i)])
 
-collectPlayableCards :: PlayerRef -> Engine [SomeObjectRef]
+collectPlayableCards :: PlayerRef -> Engine [ObjectRef TyCard]
 collectPlayableCards p = do
-  objects <- view allObjects
+  objects <- view allCards
   execWriterT $ do
     forM_ objects $ \(r,o) -> do
       case get play o of
         Just playAbility -> do
-          ok <- lift (shouldOfferActivation playAbility r p)
+          ok <- lift (shouldOfferActivation playAbility (someObjectRef r) p)
           when ok (tell [r])
         Nothing -> return ()
 
@@ -452,8 +452,8 @@ executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
 executePriorityAction p a = do
   case a of
     PlayCard r -> do
-      Just ability <- gets (play . objectBase r)
-      activate (PriorityActionExecution a) ability r p
+      Just ability <- gets (play . objectPart . object r)
+      activate (PriorityActionExecution a) ability (someObjectRef r) p
     ActivateAbility (r, i) -> do
       abilities <- gets (activatedAbilities . objectBase r)
       let ab = abilities !! i

@@ -75,7 +75,7 @@ nullDesc world (Description (ViewT vt)) = Text.null (runReader vt world)
 describePriorityAction :: PriorityAction -> Description
 describePriorityAction a =
   case a of
-    PlayCard ro@(zr, _) -> "Play from " <> describeZoneRef zr <> ": " <> describeObjectByRef ro
+    PlayCard ro@(zr, _) -> "Play from " <> describeZoneRef (Some zr) <> ": " <> describeObjectByRef (someObjectRef ro)
     ActivateAbility (ro, i) -> "Activate ability " <> sh i <> " of " <> describeObjectByRef ro
 
 describePayManaAction :: PayManaAction -> Description
