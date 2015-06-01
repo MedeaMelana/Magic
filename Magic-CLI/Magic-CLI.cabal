@@ -19,13 +19,13 @@ executable magic-cli
   other-modules:    Magic.CLI,
                     Magic.Description
   build-depends:    base < 5,
-                    Boolean ==0.1.*,
+                    Boolean ==0.2.*,
                     Magic ==0.1.*,
                     Magic-Cards ==0.1.*,
-                    MonadRandom ==0.1.*,
-                    mtl ==2.1.*,
+                    MonadRandom >= 0.1 && <0.4,
+                    mtl >=2.1 && <2.3,
                     containers,
                     fclabels ==2.0.*,
                     operational ==0.2.*,
                     safe ==0.3.*,
-                    text ==1.1.*
+                    text >=1.1 && <1.3
