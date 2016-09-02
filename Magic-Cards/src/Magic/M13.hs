@@ -590,6 +590,14 @@ tormentedSoul = mkCard $ do
     layeredEffects =: [affectingSelf
       [RestrictAllowBlocks (selfCantBlock &&* selfCantBeBlocked)]]
 
+vampireNighthawk :: Card
+vampireNighthawk = mkCard $ do
+  name  =: Just "Vampire Nighthawk"
+  types =: creatureTypes [Vampire, Shaman]
+  pt    =: Just (2, 3)
+  play  =: Just playObject { manaCost = Just [Nothing, Just Black, Just Black] }
+  staticKeywordAbilities =: [Flying, Deathtouch, Lifelink]
+
 
 -- RED CARDS
 
