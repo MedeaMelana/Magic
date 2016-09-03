@@ -21,7 +21,7 @@ A good indication of the current progress is to open [module M13](/Magic-Cards/s
 
 There is also a command-line interface that allows you to play the game. To run it, follow the installation instructions below and run the executable that it produced by building `Magic-CLI`. This will run a two-player game with preselected decks.
 
-## Building
+## Building with cabal
 
 You need [GHC 7.8](http://www.haskell.org/ghc/download_ghc_7_8_2) or greater and [cabal-install 1.20](http://www.haskell.org/cabal/download.html) or greater to build Magic.
 
@@ -29,11 +29,11 @@ Clone the repository and create Cabal sandboxes for the projects in dependency o
 
 ```
 $ git clone git@github.com:MedeaMelana/Magic.git
-$ cd REPO/Magic
+$ cd Magic/Magic
 $ cabal sandbox init
 $ cabal install --dependencies-only
 $ cabal build
-$ cd REPO/Magic-Cards
+$ cd ../Magic-Cards
 $ cabal sandbox init
 $ cabal sandbox add-source ../Magic
 $ cabal install --dependencies-only
@@ -43,7 +43,7 @@ $ cabal build
 If you want to run the web server:
 
 ```
-$ cd REPO/Magic-Web-Server
+$ cd Magic/Magic-Web-Server
 $ cabal sandbox init
 $ cabal sandbox add-source ../Magic
 $ cabal sandbox add-source ../Magic-Cards
@@ -55,7 +55,7 @@ $ dist/build/magic-web-server/magic-web-server
 If you want to run the command-line interface:
 
 ```
-$ cd REPO/Magic-CLI
+$ cd Magic/Magic-CLI
 $ cabal sandbox init
 $ cabal sandbox add-source ../Magic
 $ cabal sandbox add-source ../Magic-Cards
@@ -63,6 +63,36 @@ $ cabal install --dependencies-only
 $ cabal build
 $ dist/build/magic-cli/magic-cli
 ```
+
+## Building with stack
+
+You need the newest version of [stack](https://github.com/commercialhaskell/stack/blob/master/doc/GUIDE.md) to build Magic.
+Clone the repository.
+
+```
+$ git clone git@github.com:MedeaMelana/Magic.git
+$ cd Magic/Magic && stack build
+$ cd ../../Magic/Magic-Cards && stack build
+```
+
+If you want to run the web server:
+
+```
+$ cd Magic/Magic-Web-Server
+$ stack build
+$ stack exec magic-web-server
+```
+
+If you want to run the command-line:
+
+```
+$ cd Magic/Magic-Cards
+$ stack build
+$ stack exec magic-cli
+```
+
+**Info for NixOS users**: Please use the `nix-shell` to download the newest `stack` version
+
 
 ## Talking to the web server
 
