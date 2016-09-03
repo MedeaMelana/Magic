@@ -17,7 +17,7 @@ module Magic.Abilities (
 
     -- * Availability
     -- | Checks that can be used for 'available' fields in 'Activation's.
-    availableFromHand, availableFromBattlefield,
+    availableFromHand, availableFromBattlefield, availableFromGraveyard,
 
     -- * Playing objects
     playObject, playTiming, playObjectEffect,
@@ -95,6 +95,14 @@ availableFromBattlefield rSelf you =
       (== you) <$> view (asks (controller . objectBase rSelf))
     _ -> false
 
+
+-- | Checks whether an activation's source is on the graveyard
+availableFromGraveyard :: Contextual (View Bool)
+availableFromGraveyard rSelf you =
+  case rSelf of
+    (Some (Graveyard you'), _) | you' == you ->
+      (== you) <$> view (asks (controller . objectBase rSelf))
+    _ -> false
 
 
 -- PLAYING OBJECTS
