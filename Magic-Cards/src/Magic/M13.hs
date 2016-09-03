@@ -626,31 +626,53 @@ fireElemental = mkCard $ do
 
 firewingPhoenix :: Card
 firewingPhoenix = mkCard $ do
-    name =: Just "Firewing Phoenix"
-    types =: creatureTypes [Phoenix]
-    pt    =: Just (4, 2)
-    staticKeywordAbilities =: [Flying]
-    play =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Nothing, Just Red] }
-    activatedAbilities =: [returnFromGraveyard]
+  name =: Just "Firewing Phoenix"
+  types =: creatureTypes [Phoenix]
+  pt    =: Just (4, 2)
+  staticKeywordAbilities =: [Flying]
+  play =: Just playObject
+    { manaCost = Just [Nothing, Nothing, Nothing, Just Red] }
+  activatedAbilities =: [returnFromGraveyard]
   where
     returnFromGraveyard = ActivatedAbility { abilityActivation = Activation
-          { timing    = instantSpeed
-          , available = availableFromGraveyard
-          , manaCost  = Just [Nothing, Just Red, Just Red, Just Red]
-          , effect    = \rSelf@(Some (Graveyard zr), i) you -> mkAbility you $ do
-                card <- view (asks (object (Graveyard zr, i)))
-                void $ executeEffect $
-                    WillMoveObject (Just (Some (Graveyard you), i)) (Hand you) card
-}
-        , tapCost     = NoTapCost
-        , abilityType = ActivatedAb
+      { timing    = instantSpeed
+      , available = availableFromGraveyard
+      , manaCost  = Just [Nothing, Just Red, Just Red, Just Red]
+      , effect    = \rSelf@(Some (Graveyard zr), i) you -> mkAbility you $ do
+        card <- view (asks (object (Graveyard zr, i)))
+        void $ executeEffect $
+          WillMoveObject (Just (Some (Graveyard you), i)) (Hand you) card
+      }
+    , tapCost     = NoTapCost
+    , abilityType = ActivatedAb
+    }
+
+furnaceWhelp :: Card
+furnaceWhelp = mkCard $ do
+  name =: Just "Furnace Whelp"
+  types =: creatureTypes [Dragon]
+  pt =: Just (2, 2)
+  play =: Just playObject {
+    manaCost = Just [Nothing, Nothing, Just Red, Just Red]
+    }
+  activatedAbilities =: [plusOneAbility]
+  where
+    plusOneAbility = ActivatedAbility
+      { abilityType = ActivatedAb
+      , tapCost = NoTapCost
+      , abilityActivation = defaultActivation
+        { effect = \rSelf you -> mkAbility you $ do
+          t <- tick
+          modifyPTUntilEOT (1, 0) rSelf t
+        , manaCost = Just [Just Red]
         }
+      }
 
 moggFlunkies :: Card
 moggFlunkies = mkCard $ do
     name =: Just "Mogg Flunkies"
     types =: creatureTypes [Goblin]
+    pt =: Just (3, 3)
     play =: Just playObject { manaCost = Just [Nothing, Just Red] }
     layeredEffects =: [affectingSelf
       [ RestrictAllowAttacks selfCantAttackAlone

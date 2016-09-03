@@ -96,12 +96,11 @@ availableFromBattlefield rSelf you =
     _ -> false
 
 
--- | Checks whether an activation's source is on the graveyard
+-- | Checks whether an activation's source is in the graveyard
 availableFromGraveyard :: Contextual (View Bool)
 availableFromGraveyard rSelf you =
   case rSelf of
-    (Some (Graveyard you'), _) | you' == you ->
-      (== you) <$> view (asks (controller . objectBase rSelf))
+    (Some (Graveyard you'), _) | you' == you -> true
     _ -> false
 
 
