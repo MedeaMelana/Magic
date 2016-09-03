@@ -11,7 +11,7 @@ import Magic.Utils
 
 import Control.Applicative
 import Control.Arrow ((***))
-import Control.Monad.Error (MonadError(..), Error(..))
+import Control.Monad.Except (MonadError(..))
 import Control.Monad.Identity
 import Control.Monad.Random (MonadRandom, RandT, StdGen)
 import Control.Monad.Reader
@@ -31,7 +31,6 @@ newtype Engine a = Engine { runEngine :: StateT World (RandT StdGen (ProgramT In
 instance Monad Engine where
   return         = Engine . return
   Engine x >>= f = Engine (x >>= (runEngine . f))
-  fail           = throwError . strMsg
 
 instance MonadView Engine where
   view (ViewT f) = runReader f <$> applyLayeredEffects
@@ -47,11 +46,6 @@ data GameOver
   = GameWin PlayerRef
   | GameDraw
   | ErrorWithMessage Text
-  | UnknownError
-
-instance Error GameOver where
-  noMsg  = UnknownError
-  strMsg = ErrorWithMessage . pack
 
 applyLayeredEffects :: Engine World
 applyLayeredEffects = do
