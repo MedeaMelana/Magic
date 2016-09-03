@@ -1195,3 +1195,8 @@ simpleCreatureToken t you tys cs pt' =
   , _types = creatureTypes tys
   , _pt = Just pt'
   }
+
+viewZone :: ZoneRef ty -> Magic [(ObjectRef ty, ObjectOfType ty)]
+viewZone zoneRef = do
+    idListEls <- IdList.toList <$> view (asks (compileZoneRef zoneRef))
+    return [ ((zoneRef, i), o)| (i, o) <- idListEls ]
