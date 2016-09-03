@@ -13,7 +13,7 @@ import Control.Applicative
 import Control.Arrow (first)
 import Control.Category ((.))
 import Control.Monad (void, when)
-import Data.Boolean (true, (&&*), (||*))
+import Data.Boolean (notB, true, (&&*), (||*))
 import qualified Data.Foldable as Foldable
 import Data.Label (get)
 import Data.Label.Monadic ((=:), asks)
@@ -652,6 +652,27 @@ smelt = mkCard $ do
       { manaCost = Just [Just Red]
       , effect = destroyTargetPermanent (hasTypes artifactType)
       }
+
+
+thundermawHellkite :: Card
+thundermawHellkite = mkCard $ do
+    name           =: Just "Thundermaw Hellkite"
+    types          =: creatureTypes [Dragon]
+    pt             =: Just (5, 5)
+    play           =: Just playObject
+      { manaCost = Just [Nothing, Nothing, Nothing, Just Red, Just Red]
+      }
+    staticKeywordAbilities =: [Flying, Haste]
+    triggeredAbilities =: onSelfETB thundermawHellkiteTrigger
+  where
+    thundermawHellkiteTrigger :: Contextual (Magic ())
+    thundermawHellkiteTrigger rSelf you = mkTrigger you $ do
+      self <- view (asks (objectBase rSelf))
+      let isAffected = notB (isControlledBy you) &&* hasStaticKeywordAbility Flying
+      objs <- filter (isAffected . get permanentObject . snd) <$> viewZone Battlefield
+      let damage obj = DamageObject self obj 1 False True
+      let damageAndTap obj = [Will (damage obj), Will (TapPermanent obj)]
+      void . executeEffects $ concatMap damageAndTap (map fst objs)
 
 
 -- GREEN CARDS
