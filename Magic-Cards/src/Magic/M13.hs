@@ -697,6 +697,16 @@ searingSpear = mkCard $ do
           Right p -> DamagePlayer self p 3 False True
 
 
+smelt :: Card
+smelt = mkCard $ do
+    name  =: Just "Smelt"
+    types =: instantType
+    play  =: Just playObject
+      { manaCost = Just [Just Red]
+      , effect = destroyTargetPermanent (hasTypes artifactType)
+      }
+
+
 -- GREEN CARDS
 
 acidicSlime :: Card
