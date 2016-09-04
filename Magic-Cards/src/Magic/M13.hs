@@ -726,6 +726,33 @@ thundermawHellkite = mkCard $ do
       void . executeEffects $ concatMap damageAndTap (map fst objs)
 
 
+torchFiend :: Card
+torchFiend = mkCard $ do
+    name  =: Just "Torch Fiend"
+    types =: creatureTypes [Devil]
+    pt    =: Just (2, 1)
+    play  =: Just playObject
+      { manaCost = Just [Nothing, Just Red]
+      }
+    activatedAbilities =: [torchFiendAbility]
+  where
+    torchFiendAbility = ActivatedAbility
+      { abilityActivation = torchFiendActivation
+      , abilityType = ActivatedAb
+      , tapCost = NoTapCost
+      }
+    torchFiendActivation = defaultActivation
+      { manaCost = Just [Just Red]
+      , effect = torchFiendEffect
+      }
+    torchFiendEffect :: Contextual (Magic ())
+    torchFiendEffect rSelf@(Some Battlefield, i) you = do
+      ts <- askTarget you $ checkPermanent (hasTypes artifactType) <?> targetPermanent
+      will (Sacrifice (Battlefield, i))
+      mkTargetAbility you ts $ \t ->
+        will $ DestroyPermanent t True
+
+
 -- GREEN CARDS
 
 acidicSlime :: Card
