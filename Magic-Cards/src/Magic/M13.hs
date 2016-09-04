@@ -788,6 +788,34 @@ farseek = mkCard $ do
         Nothing -> return ()
       will $ ShuffleLibrary stackYou
 
+flinthoofBoar :: Card
+flinthoofBoar = mkCard $ do
+  name  =: Just "Flinthoof Boar"
+  types =: creatureTypes [Boar]
+  play  =: Just playObject
+    { manaCost = Just [Nothing, Just Green] }
+  pt    =: Just (2, 2)
+  activatedAbilities =: [flinthoofBoarAbility]
+  triggeredAbilities =: flinthoofBoarTrigger
+  where
+    flinthoofBoarTrigger = undefined -- TODO
+    getHaste rSelf you =
+      mkAbility you $ do
+        t <- tick
+        will $ InstallLayeredEffect rSelf TemporaryLayeredEffect
+          { temporaryTimestamp = t
+          , temporaryDuration  = UntilEndOfTurn
+          , temporaryEffect    = affectingSelf [AddStaticKeywordAbility Haste]
+          }
+    flinthoofBoarAbility = ActivatedAbility
+      { abilityType = ActivatedAb
+      , tapCost = NoTapCost
+      , abilityActivation = defaultActivation
+        { effect = getHaste
+        , manaCost = Just [Just Red]
+        }
+      }
+
 fungalSprouting :: Card
 fungalSprouting = mkCard $ do
     name =: Just "Fungal Sprouting"
