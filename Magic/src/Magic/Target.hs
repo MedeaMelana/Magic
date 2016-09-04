@@ -6,7 +6,7 @@
 module Magic.Target (
     -- * Target lists
     TargetList(..), EntityRef(..),
-    askTarget, askTarget', askMaybeTarget, askTargetsUpTo,
+    askTarget, askTarget', askMaybeTarget, askTargetsUpTo, askTargetsFromUpTo,
     evaluateTargetList,
 
     -- * Constructing @TargetSpec@s
@@ -60,17 +60,23 @@ askMaybeTarget p spec@(TargetSpec cast test) = do
   return $ (\chosen -> Snoc (Nil id) chosen cast test id) <$> maybeChosen
 
 askTargetsUpTo :: Int -> PlayerRef -> TargetSpec a -> Magic (TargetList [a])
-askTargetsUpTo num p spec@(TargetSpec cast test) = do
-    eligibleTargets <- eligibleTargetsForSpec spec
-    targetLists <- askForTargets num eligibleTargets []
-    return $ sequenceA targetLists
+askTargetsUpTo = askTargetsFromUpTo 0
+
+askTargetsFromUpTo :: Int -> Int -> PlayerRef -> TargetSpec a -> Magic (TargetList [a])
+askTargetsFromUpTo from num p spec@(TargetSpec cast test) = do
+  eligibleTargets <- eligibleTargetsForSpec spec
+  targetLists <- askForTargets from num eligibleTargets []
+  return $ sequenceA targetLists
   where
-    askForTargets 0 _ targeted = return targeted
-    askForTargets n ts targeted = do
-      maybeTarget <- askQuestion p (AskMaybeTarget ts)
-      case maybeTarget of
-        Just chosen -> askForTargets (n-1) (delete chosen ts) (Snoc (Nil id) chosen cast test id : targeted)
-        Nothing -> return targeted
+    askForTargets 0 0 _ targeted = return targeted
+    askForTargets 0 n ts targeted = do
+        maybeTarget <- askQuestion p (AskMaybeTarget ts)
+        case maybeTarget of
+          Just chosen -> askForTargets 0 (n-1) (delete chosen ts) (Snoc (Nil id) chosen cast test id : targeted)
+          Nothing -> return targeted
+    askForTargets from n ts targeted = do
+        chosen <- askQuestion p (AskTarget ts)
+        askForTargets (from-1) (n-1) (delete chosen ts) (Snoc (Nil id) chosen cast test id : targeted)
 
 allTargets :: Magic [EntityRef]
 allTargets = do
