@@ -291,6 +291,20 @@ pacifism = mkCard $ do
                         , RestrictAllowBlocks  selfCantBlock ]
       }
 
+planarCleansing :: Card
+planarCleansing = mkCard $ do
+     name =: Just "Planar Cleansing"
+     types =: sorceryType
+     play =: Just playObject { manaCost = Just [Nothing, Nothing, Nothing, Just White, Just White, Just White],
+         effect = stackSelf destroyAllPermanents }
+   where
+     destroyAllPermanents :: ObjectRef 'TyStackItem -> PlayerRef -> Magic ()
+     destroyAllPermanents _ _ = do
+        objects <- IdList.toList <$> view (asks (battlefield))
+        let objectRefs = map (\pair -> (Battlefield, fst pair)) $ filter (not . hasTypes landType . get objectPart . snd) objects
+        let destrutcionEffects = map (\object -> DestroyPermanent object true) objectRefs
+        void $ executeEffects $ map Will destrutcionEffects
+
 pillarfieldOx :: Card
 pillarfieldOx = mkCard $ do
     name =: Just "Pillarfield Ox"
