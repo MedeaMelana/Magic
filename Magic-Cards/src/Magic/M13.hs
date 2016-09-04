@@ -17,6 +17,7 @@ import Data.Boolean (notB, true, (&&*), (||*))
 import qualified Data.Foldable as Foldable
 import Data.Label (get)
 import Data.Label.Monadic ((=:), asks)
+import Data.Maybe (isJust)
 import Data.Monoid ((<>), mconcat)
 import qualified Data.Set as Set
 import Data.Text (Text, pack)
@@ -796,6 +797,22 @@ torchFiend = mkCard $ do
       will (Sacrifice (Battlefield, i))
       mkTargetAbility you ts $ \t ->
         will $ DestroyPermanent t True
+
+
+trumpetBlast :: Card
+trumpetBlast = mkCard $ do
+    name  =: Just "Trumpet Blast"
+    types =: instantType
+    play  =: Just playObject
+      { manaCost = Just [Nothing, Nothing, Just Red]
+      , effect = stackSelf titanicGrowthEffect
+      }
+  where
+    titanicGrowthEffect _rSelf _you = do
+      let isAttacking = isJust . get attacking
+      objs <- map fst . filter (isAttacking . snd) <$> viewZone Battlefield
+      t <- tick
+      void $ traverse (\(r, i) -> modifyPTUntilEOT (2, 0) (Some r, i) t) objs
 
 
 -- GREEN CARDS
