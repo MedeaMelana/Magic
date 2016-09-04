@@ -489,7 +489,7 @@ data ModifyObject
   | RemoveAllAbilities
   | DefinePT (SomeObjectRef -> View PT)
   | SetPT PT
-  | ModifyPT (View PT)
+  | ModifyPT (SomeObjectRef -> View PT)
   | SwitchPT
   | RestrictAllowAttacks ([Attack] -> Contextual (View Bool))
   | RestrictAllowBlocks ([Block] -> Contextual (View Bool))

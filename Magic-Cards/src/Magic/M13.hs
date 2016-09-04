@@ -39,7 +39,7 @@ exalted events (Some Battlefield, _) p = return [ mkTrigger p (boostPT r)
         TemporaryLayeredEffect
           { temporaryTimestamp = t
           , temporaryDuration  = UntilEndOfTurn
-          , temporaryEffect    = affectingSelf [ModifyPT (return (1, 1))]
+          , temporaryEffect    = affectingSelf [ModifyPT (\_ -> return (1, 1))]
           }
 exalted _ _ _ = return []
 
@@ -146,7 +146,7 @@ battleflightEagle = mkCard $ do
             { temporaryTimestamp = t
             , temporaryDuration  = UntilEndOfTurn
             , temporaryEffect    = affectingSelf
-                [ModifyPT (return (2, 2)), AddStaticKeywordAbility Flying]
+                [ModifyPT (\_ -> return (2, 2)), AddStaticKeywordAbility Flying]
             }
 
 captainOfTheWatch :: Card
@@ -164,7 +164,7 @@ captainOfTheWatch = mkCard $ do
       { affectedObjects = affectRestOfBattlefield $ \you ->
           isControlledBy you &&* hasTypes (creatureTypes [Soldier])
       , objectModifications = [ AddStaticKeywordAbility Vigilance
-                        , ModifyPT (return (1, 1))]
+                        , ModifyPT (\_ -> return (1, 1))]
       }
 
     trigger = onSelfETB $ \_ p -> mkTrigger p $ do
@@ -215,7 +215,7 @@ divineFavor = mkCard $ do
       mkTrigger you (will (GainLife you 3))
     boostEnchanted = LayeredObjectEffect
       { affectedObjects = affectAttached
-      , objectModifications = [ModifyPT (return (1, 3))]
+      , objectModifications = [ModifyPT (\_ -> return (1, 3))]
       }
 
 erase :: Card
@@ -337,7 +337,7 @@ showOfValor = mkCard $ do
             { temporaryTimestamp = t
             , temporaryDuration  = UntilEndOfTurn
             , temporaryEffect    = affectingSelf
-                [ModifyPT (return (2, 4))]
+                [ModifyPT (\_ -> return (2, 4))]
             }
 
 warFalcon :: Card
@@ -432,7 +432,7 @@ tricksOfTheTrade = mkCard $ do
   where
     boostEnchanted = LayeredObjectEffect
       { affectedObjects = affectAttached
-      , objectModifications = [ModifyPT (return (2, 0)), RestrictAllowBlocks selfCantBeBlocked]
+      , objectModifications = [ModifyPT (\_ -> return (2, 0)), RestrictAllowBlocks selfCantBeBlocked]
       }
 
 
@@ -463,7 +463,7 @@ cripplingBlight = mkCard $ do
   where
     boostEnchanted = LayeredObjectEffect
       { affectedObjects = affectAttached
-      , objectModifications = [ModifyPT (return (-1, -1)), RestrictAllowBlocks selfCantBlock]
+      , objectModifications = [ModifyPT (\_ -> return (-1, -1)), RestrictAllowBlocks selfCantBlock]
       }
 
 darkFavor :: Card
@@ -479,7 +479,7 @@ darkFavor = mkCard $ do
       mkTrigger you (will (LoseLife you 1))
     darkFavorEffect = LayeredObjectEffect
       { affectedObjects = affectAttached
-      , objectModifications = [ModifyPT (return (3, 1))]
+      , objectModifications = [ModifyPT (\_ -> return (3, 1))]
       }
 
 disentomb :: Card
@@ -546,7 +546,7 @@ liliana'sShade = mkCard $ do
         will $ InstallLayeredEffect rSelf TemporaryLayeredEffect
           { temporaryTimestamp = t
           , temporaryDuration  = UntilEndOfTurn
-          , temporaryEffect    = affectingSelf [ModifyPT (return (1, 1))]
+          , temporaryEffect    = affectingSelf [ModifyPT (\_ -> return (1, 1))]
           }
     liliana'sShadeAbility = ActivatedAbility
       { abilityType = ActivatedAb
@@ -827,7 +827,7 @@ elvishArchdruid = mkCard $ do
     boostYourElves = LayeredObjectEffect
       { affectedObjects = affectRestOfBattlefield $ \you ->
           isControlledBy you &&* hasTypes (creatureTypes [Elf])
-      , objectModifications = [ModifyPT (return (1, 1))]
+      , objectModifications = [ModifyPT (\_ -> return (1, 1))]
       }
 
 elvishVisionary :: Card
@@ -1060,6 +1060,31 @@ spikedBaloth = mkCard $ do
   pt =: Just (4, 2)
   staticKeywordAbilities =: [Trample]
 
+timberpackWolf :: Card
+timberpackWolf = mkCard $ do
+  name  =: Just "Timberpack Wolf"
+  types =: creatureTypes [Wolf]
+  play  =: Just playObject { manaCost = Just [Nothing, Just Green] }
+  pt    =: Just (2, 2)
+  layeredEffects =: [updatePT]
+  where
+    updatePT :: LayeredEffect
+    updatePT =  LayeredObjectEffect
+      { affectedObjects = affectMyselfOnBattlefield
+      , objectModifications = [ModifyPT $ \rSelf ->
+          do
+            you <- view (asks (controller . objectBase rSelf))
+            let isMyWolf = isControlledBy you &&* hasName "Timberpack Wolf"
+            wolves <- IdList.filter (isMyWolf . get objectPart) <$> view (asks battlefield)
+            let factor = length wolfs - 1 -- subtract this current creature
+            return (factor, factor)]
+      }
+
+    affectMyselfOnBattlefield :: Contextual (View [SomeObjectRef])
+    affectMyselfOnBattlefield r@(Some Battlefield, _) you = return [r]
+    affectMyselfOnBattlefield _                       _   = return []
+
+
 titanicGrowth :: Card
 titanicGrowth = mkCard $ do
     name =: Just "Titanic Growth"
@@ -1196,7 +1221,7 @@ modifyPTUntilEOT pt' ref t = will $
   InstallLayeredEffect ref TemporaryLayeredEffect
     { temporaryTimestamp = t
     , temporaryDuration  = UntilEndOfTurn
-    , temporaryEffect    = affectingSelf [ModifyPT (return pt')]
+    , temporaryEffect    = affectingSelf [ModifyPT (\_ -> return pt')]
     }
 
 destroyTargetPermanent :: (Object -> Bool) -> Contextual (Magic ())

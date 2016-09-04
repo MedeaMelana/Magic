@@ -105,7 +105,7 @@ compileModifyObject world m rSelf =
                         . set layeredEffects []
     DefinePT vpt -> set pt (Just (runReader (runViewT (vpt rSelf)) world))
     SetPT newPT -> set pt (Just newPT)
-    ModifyPT vpt -> let (p, t) = runReader (runViewT vpt) world
+    ModifyPT vpt -> let (p, t) = runReader (runViewT (vpt rSelf)) world
                     in modify pt (fmap ((+ p) *** (+ t)))
     SwitchPT -> modify pt (fmap (\(p,t) -> (t,p)))
     RestrictAllowAttacks ok -> modify allowAttacks (&&* ok)
@@ -113,7 +113,7 @@ compileModifyObject world m rSelf =
 
 counterEffect :: (SomeObjectRef, Object) ->
   (Timestamp, View [SomeObjectRef], [ModifyObject])
-counterEffect (r, o) = (0, return [r], [ModifyPT (return (n, n))])
+counterEffect (r, o) = (0, return [r], [ModifyPT (\_ -> return (n, n))])
   where
     nplus  = length [ () | Plus1Plus1   <- _counters o ]
     nminus = length [ () | Minus1Minus1 <- _counters o ]
