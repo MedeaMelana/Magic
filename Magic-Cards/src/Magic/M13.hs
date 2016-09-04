@@ -1148,7 +1148,7 @@ timberpackWolf = mkCard $ do
             you <- view (asks (controller . objectBase rSelf))
             let isMyWolf = isControlledBy you &&* hasName "Timberpack Wolf"
             wolves <- IdList.filter (isMyWolf . get objectPart) <$> view (asks battlefield)
-            let factor = length wolfs - 1 -- subtract this current creature
+            let factor = length wolves - 1 -- subtract this current creature
             return (factor, factor)]
       }
 
