@@ -675,20 +675,20 @@ flamesOfTheFirebrand = mkCard $ do
   play  =: Just playObject
     { manaCost = Just [Nothing, Nothing, Just Red]
     , effect = \rSelf you -> do
-      ts <- askTargetsFromUpTo 1 3 you targetCreatureOrPlayer
-      let (trs, _) = evaluateTargetList ts
-      damages <- case length trs of
-        1 -> return [3]
-        3 -> return [1,1,1]
-        2 -> do
-          firstTwo <- askDamage you
-            "Choose the entity to get 2 damage"
-            (pack $ show $ head trs)
-            (pack $ show $ head $ tail trs)
-          return $ if firstTwo then [2,1] else [1,2]
-      stackTargetSelf rSelf you ts $ \rs stackSelf _ -> do
-        self <- view (asks (objectPart . object stackSelf))
-        void . executeEffects $ zipWith (damageEffect self) damages rs
+        ts <- askTargetsFromUpTo 1 3 you targetCreatureOrPlayer
+        let (trs, _) = evaluateTargetList ts
+        damages <- case length trs of
+          1 -> return [3]
+          3 -> return [1,1,1]
+          2 -> do
+            firstTwo <- askDamage you
+              "Choose the target to deal 2 damage to"
+              (pack $ show $ head trs)
+              (pack $ show $ head $ tail trs)
+            return $ if firstTwo then [2,1] else [1,2]
+        stackTargetSelf rSelf you ts $ \rs stackSelf _ -> do
+          self <- view (asks (objectPart . object stackSelf))
+          void . executeEffects $ zipWith (damageEffect self) damages rs
     }
   where
     damageEffect self dmg t' = case t' of
