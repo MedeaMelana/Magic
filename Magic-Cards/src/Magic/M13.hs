@@ -620,6 +620,7 @@ fireElemental :: Card
 fireElemental = mkCard $ do
   name  =: Just "Fire Elemental"
   types =: creatureTypes [Elemental]
+  pt =: Just (5, 4)
   play  =: Just playObject
     { manaCost = Just [Nothing, Nothing, Nothing, Just Red, Just Red] }
 
@@ -627,6 +628,7 @@ moggFlunkies :: Card
 moggFlunkies = mkCard $ do
     name =: Just "Mogg Flunkies"
     types =: creatureTypes [Goblin]
+    pt =: Just (3, 3)
     play =: Just playObject { manaCost = Just [Nothing, Just Red] }
     layeredEffects =: [affectingSelf
       [ RestrictAllowAttacks selfCantAttackAlone
