@@ -33,18 +33,18 @@ $ cd Magic
 $ cabal sandbox init
 ```
 
-If you want to run the web server:
-
-```
-$ cabal new-build Magic-Web-Server
-$ dist-newstyle/build/Magic-Web-Server-*/build/magic-web-server/magic-web-server
-```
-
 If you want to run the command-line interface:
 
 ```
 $ cabal new-build Magic-CLI
 $ dist-newstyle/build/Magic-CLI-*/build/magic-cli/magic-cli
+```
+
+If you want to run the web server:
+
+```
+$ cabal new-build Magic-Web-Server
+$ dist-newstyle/build/Magic-Web-Server-*/build/magic-web-server/magic-web-server
 ```
 
 ## Building with stack
@@ -58,20 +58,20 @@ $ cd Magic/Magic && stack build
 $ cd ../../Magic/Magic-Cards && stack build
 ```
 
-If you want to run the web server:
-
-```
-$ cd Magic/Magic-Web-Server
-$ stack build
-$ stack exec magic-web-server
-```
-
 If you want to run the command-line:
 
 ```
 $ cd Magic/Magic-Cards
 $ stack build
 $ stack exec magic-cli
+```
+
+If you want to run the web server:
+
+```
+$ cd Magic/Magic-Web-Server
+$ stack build
+$ stack exec magic-web-server
 ```
 
 **Info for NixOS users**: Please use the `nix-shell` to download the newest `stack` version
