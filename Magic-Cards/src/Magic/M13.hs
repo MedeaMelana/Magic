@@ -626,26 +626,26 @@ fireElemental = mkCard $ do
 
 firewingPhoenix :: Card
 firewingPhoenix = mkCard $ do
-  name =: Just "Firewing Phoenix"
-  types =: creatureTypes [Phoenix]
-  pt    =: Just (4, 2)
-  staticKeywordAbilities =: [Flying]
-  play =: Just playObject
-    { manaCost = Just [Nothing, Nothing, Nothing, Just Red] }
-  activatedAbilities =: [returnFromGraveyard]
+    name =: Just "Firewing Phoenix"
+    types =: creatureTypes [Phoenix]
+    pt    =: Just (4, 2)
+    staticKeywordAbilities =: [Flying]
+    play =: Just playObject
+      { manaCost = Just [Nothing, Nothing, Nothing, Just Red] }
+    activatedAbilities =: [returnFromGraveyard]
   where
-    returnFromGraveyard = ActivatedAbility { abilityActivation = Activation
-      { timing    = instantSpeed
-      , available = availableFromGraveyard
-      , manaCost  = Just [Nothing, Just Red, Just Red, Just Red]
-      , effect    = \rSelf@(Some (Graveyard zr), i) you -> mkAbility you $ do
-        card <- view (asks (object (Graveyard zr, i)))
-        void $ executeEffect $
-          WillMoveObject (Just (Some (Graveyard you), i)) (Hand you) card
+    returnFromGraveyard = ActivatedAbility
+      { abilityActivation = defaultActivation
+        { available = availableFromGraveyard
+        , manaCost  = Just [Nothing, Just Red, Just Red, Just Red]
+        , effect    = \(Some (Graveyard zr), i) you -> mkAbility you $ do
+            card <- view (asks (object (Graveyard zr, i)))
+            void $ executeEffect $
+              WillMoveObject (Just (Some (Graveyard you), i)) (Hand you) card
+        }
+      , tapCost     = NoTapCost
+      , abilityType = ActivatedAb
       }
-    , tapCost     = NoTapCost
-    , abilityType = ActivatedAb
-    }
 
 furnaceWhelp :: Card
 furnaceWhelp = mkCard $ do
@@ -662,8 +662,8 @@ furnaceWhelp = mkCard $ do
       , tapCost = NoTapCost
       , abilityActivation = defaultActivation
         { effect = \rSelf you -> mkAbility you $ do
-          t <- tick
-          modifyPTUntilEOT (1, 0) rSelf t
+            t <- tick
+            modifyPTUntilEOT (1, 0) rSelf t
         , manaCost = Just [Just Red]
         }
       }
