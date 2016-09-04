@@ -31,6 +31,9 @@ import Data.Label.Monadic (gets, (=:), (=.), asks)
 import Data.List (nub, intersect, delete)
 import Data.Maybe (catMaybes)
 import Data.Monoid ((<>))
+import qualified Data.MultiSet as MultiSet
+import qualified Data.Text as Text
+import Data.Text (Text)
 import Data.Traversable (for)
 import Prelude hiding (round, (.))
 
@@ -444,8 +447,9 @@ shouldOfferActivation activation rSource you =
 
 activate :: EventSource -> Activation -> Contextual (Engine ())
 activate source activation rSource rActivator  = do
-  let Just mc = manaCost activation
-  --offerManaAbilitiesToPay source rActivator mc
+  --case manaCost activation of
+  --  Just mc -> offerManaAbilitiesToPay source rActivator mc
+  --  Nothing -> return ()
   executeMagic source (effect activation rSource rActivator)
 
 executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
@@ -461,23 +465,40 @@ executePriorityAction p a = do
       payTapCost eventSource (tapCost ab) r p
       activate eventSource (abilityActivation ab) r p
 
-offerManaAbilitiesToPay :: EventSource -> PlayerRef -> ManaPool -> Engine ()
-offerManaAbilitiesToPay _ _ []   = return ()
+offerManaAbilitiesToPay :: EventSource -> PlayerRef -> ManaCost -> Engine ()
+offerManaAbilitiesToPay _ _ cost | MultiSet.null cost  = return ()
 offerManaAbilitiesToPay source p cost = do
   amas <- map ActivateManaAbility <$>
           collectAvailableActivatedAbilities ((== ManaAb) . abilityType) p
   pool <- gets (manaPool . player p)
   let pms =
-        if Nothing `elem` cost
-          then map PayManaFromManaPool (nub pool)  -- there is at least 1 colorless mana to pay
-          else map PayManaFromManaPool (nub pool `intersect` cost)
+        if MultiSet.member GenericCost cost
+        then
+          -- There is at least 1 generic mana to pay.
+          -- Offer all colors in the mana pool to spend.
+          map PayManaFromManaPool (nub pool)
+        else
+          -- Cost has no generic component.
+          -- Only offer colors in the mana pool that occur in the cost.
+          [ PayManaFromManaPool (Just color)
+          | ColorCost color <- MultiSet.distinctElems cost
+          , Just color `elem` pool
+          ]
   action <- askQuestion p (AskManaAbility cost (amas <> pms))
   case action of
     PayManaFromManaPool mc -> do
       _ <- executeEffect source (Will (SpendFromManaPool p [mc]))
-      if mc `elem` cost
-        then offerManaAbilitiesToPay source p (delete mc cost)
-        else offerManaAbilitiesToPay source p (delete Nothing cost)
+      let spentEl =
+            case mc of
+              Nothing -> ColorlessCost
+              Just c  -> ColorCost c
+      let restCost =
+            -- Pay a colored cost element if possible;
+            -- otherwise pay a generic element.
+            if spentEl `elem` cost
+            then MultiSet.delete spentEl     cost
+            else MultiSet.delete GenericCost cost
+      offerManaAbilitiesToPay source p restCost
     ActivateManaAbility (r, i) -> do
       abilities <- gets (activatedAbilities . objectBase r)
       activate source (abilityActivation (abilities !! i)) r p

@@ -54,7 +54,7 @@ ajani'sSunstriker = mkCard $ do
   name  =: Just "Ajani's Sunstriker"
   types =: creatureTypes [Cat, Cleric]
   pt    =: Just (2, 2)
-  play  =: Just playObject { manaCost = Just [Just White, Just White] }
+  play  =: Just playObject { manaCost = Just (white 2) }
   staticKeywordAbilities =: [Lifelink]
 
 angel'sMercy :: Card
@@ -62,7 +62,7 @@ angel'sMercy = mkCard $ do
   name =: Just "Angel's Mercy"
   types =: instantType
   play =: Just playObject
-    { manaCost = Just [Nothing, Nothing, Just White, Just White]
+    { manaCost = Just (generic 2 <> white 2)
     , effect   = stackSelf $ \_ you -> will (GainLife you 7)
     }
 
@@ -71,7 +71,7 @@ angelicBenediction = mkCard $ do
     name =: Just "Angelic Benediction"
     types =: enchantmentType
     play =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Nothing, Just White] }
+      { manaCost = Just (generic 3 <> white 1) }
     triggeredAbilities =: exalted <> tapTrigger
   where
     tapTrigger :: TriggeredAbilities
@@ -98,7 +98,7 @@ attendedKnight = mkCard $ do
     types     =: creatureTypes [Human, Knight]
     pt        =: Just (2, 2)
     play      =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Nothing, Just White] }
+      { manaCost = Just (generic 2 <> white 1) }
     staticKeywordAbilities =: [FirstStrike]
     triggeredAbilities     =: trigger
   where
@@ -123,7 +123,7 @@ avenSquire = mkCard $ do
   name  =: Just "Aven Squire"
   types =: creatureTypes [Bird, Soldier]
   pt    =: Just (1, 1)
-  play  =: Just playObject { manaCost = Just [Nothing, Just White] }
+  play  =: Just playObject { manaCost = Just (generic 1 <> white 1) }
   staticKeywordAbilities =: [Flying]
   triggeredAbilities     =: exalted
 
@@ -133,7 +133,7 @@ battleflightEagle = mkCard $ do
     types     =: creatureTypes [Bird]
     pt        =: Just (2, 2)
     play      =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Nothing, Nothing, Just White] }
+      { manaCost = Just (generic 4 <> white 1) }
     staticKeywordAbilities =: [Flying]
     triggeredAbilities     =: onSelfETB createBoostTrigger
   where
@@ -156,7 +156,7 @@ captainOfTheWatch = mkCard $ do
     types =: creatureTypes [Human, Soldier]
     pt    =: Just (3, 3)
     play  =: Just playObject { manaCost =
-      Just [Nothing, Nothing, Nothing, Nothing, Just White, Just White] }
+      Just (generic 4 <> white 2) }
     staticKeywordAbilities =: [Vigilance]
     layeredEffects         =: [boostSoldiers]
     triggeredAbilities     =: trigger
@@ -177,7 +177,7 @@ captain'sCall = mkCard $ do
   name  =: Just "Captain's Call"
   types =: sorceryType
   play  =: Just playObject
-    { manaCost = Just [Nothing, Nothing, Nothing, Just White]
+    { manaCost = Just (generic 3 <> white 1)
     , effect = stackSelf $ \_ you -> do
         t <- tick
         void $ executeEffects $ replicate 3 $ mkSoldierEffect t you
@@ -188,7 +188,7 @@ crusaderOfOdric = mkCard $ do
     name =: Just "Crusader of Odric"
     types =: creatureTypes [Human, Soldier]
     play =: Just playObject {
-      manaCost = Just [Nothing, Nothing, Just White]
+      manaCost = Just (generic 2 <> white 1)
     }
     layeredEffects =: [definePT]
   where
@@ -210,7 +210,7 @@ divineFavor = mkCard $ do
     staticKeywordAbilities =: [EnchantPermanent creatureType]
     triggeredAbilities =: gainLifeTrigger
     layeredEffects =: [boostEnchanted]
-    play =: Just playObject { manaCost = Just [Nothing, Just White] }
+    play =: Just playObject { manaCost = Just (generic 1 <> white 1) }
   where
     gainLifeTrigger = onSelfETB $ \_ you ->
       mkTrigger you (will (GainLife you 3))
@@ -224,7 +224,7 @@ erase = mkCard $ do
     name =: Just "Erase"
     types =: instantType
     play =: Just playObject
-      { manaCost = Just [Just White]
+      { manaCost = Just (white 1)
       , effect = eraseEffect
       }
   where
@@ -241,7 +241,7 @@ guardianLions = mkCard $ do
     types =: creatureTypes [Cat]
     pt =: Just (1, 6)
     play =: Just playObject {
-      manaCost = Just [Nothing, Nothing, Nothing, Nothing, Just White]
+      manaCost = Just (generic 4 <> white 1)
     }
     staticKeywordAbilities =: [Vigilance]
 
@@ -251,7 +251,7 @@ guardiansOfAkrasa = mkCard $ do
     types =: creatureTypes [Human, Soldier]
     pt =: Just (0, 4)
     play =: Just playObject {
-      manaCost = Just [Nothing, Nothing, Just White]
+      manaCost = Just (generic 2 <> white 1)
     }
     staticKeywordAbilities =: [Defender]
     triggeredAbilities =: exalted
@@ -262,7 +262,7 @@ healerOfThePride = mkCard $ do
     types =: creatureTypes [Cat, Cleric]
     pt =: Just (2, 3)
     play =: Just playObject {
-      manaCost = Just [Nothing, Nothing, Nothing, Just White]
+      manaCost = Just (generic 3 <> white 1)
     }
     triggeredAbilities =: gainLifeTrigger
   where
@@ -283,7 +283,7 @@ pacifism = mkCard $ do
     name =: Just "Pacifism"
     types =: auraType
     staticKeywordAbilities =: [EnchantPermanent creatureType]
-    play =: Just playObject { manaCost = Just [Nothing, Just White] }
+    play =: Just playObject { manaCost = Just (generic 1 <> white 1) }
     layeredEffects =: [eff]
   where
     eff = LayeredObjectEffect
@@ -296,7 +296,7 @@ planarCleansing :: Card
 planarCleansing = mkCard $ do
      name =: Just "Planar Cleansing"
      types =: sorceryType
-     play =: Just playObject { manaCost = Just [Nothing, Nothing, Nothing, Just White, Just White, Just White],
+     play =: Just playObject { manaCost = Just (generic 3 <> white 3),
          effect = stackSelf destroyAllPermanents }
    where
      destroyAllPermanents :: ObjectRef 'TyStackItem -> PlayerRef -> Magic ()
@@ -312,7 +312,7 @@ pillarfieldOx = mkCard $ do
     types =: creatureTypes [Ox]
     pt =: Just (2, 4)
     play =: Just playObject {
-        manaCost = Just [Nothing, Nothing, Nothing, Just White]
+        manaCost = Just (generic 3 <> white 1)
     }
 
 serraAngel :: Card
@@ -321,7 +321,7 @@ serraAngel = mkCard $ do
     types =: creatureTypes [Angel]
     pt =: Just (4, 4)
     play =: Just playObject {
-      manaCost = Just [Nothing, Nothing, Nothing, Just White, Just White]
+      manaCost = Just (generic 3 <> white 2)
     }
     staticKeywordAbilities =: [Flying, Vigilance]
 
@@ -331,7 +331,7 @@ silvercoatLion = mkCard $ do
     types =: creatureTypes [Cat]
     pt =: Just (2, 2)
     play =: Just playObject {
-      manaCost = Just [Nothing, Just White]
+      manaCost = Just (generic 1 <> white 1)
     }
 
 showOfValor :: Card
@@ -339,7 +339,7 @@ showOfValor = mkCard $ do
     name =: Just "Show of Valor"
     types =: instantType
     play =: Just playObject
-      { manaCost = Just [Nothing, Just White]
+      { manaCost = Just (generic 1 <> white 1)
       , effect = showOfValorEffect
       }
   where
@@ -361,7 +361,7 @@ warFalcon = mkCard $ do
     types =: creatureTypes[Bird]
     pt =: Just (2, 1)
     staticKeywordAbilities =: [Flying]
-    play =: Just playObject { manaCost = Just [Just White] }
+    play =: Just playObject { manaCost = Just (white 1) }
     allowAttacks =: controlsKnightOrSoldier
   where
     controlsKnightOrSoldier :: [Attack] -> Contextual (View Bool)
@@ -376,7 +376,7 @@ warPriestOfThune = mkCard $ do
     name =: Just "War Priest of Thune"
     types =: creatureTypes [Human, Cleric]
     pt =: Just (2, 2)
-    play =: Just playObject { manaCost = Just [Nothing, Just White] }
+    play =: Just playObject { manaCost = Just (generic 1 <> white 1) }
     triggeredAbilities =: onSelfETB warPriestOfThuneTrigger
   where
     warPriestOfThuneTrigger _rSelf you = do
@@ -393,7 +393,7 @@ divination = mkCard $ do
     name =: Just "Divination"
     types =: sorceryType
     play =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Just Blue]
+      { manaCost = Just (generic 2 <> blue 1)
       , effect = stackSelf $ \_ stackYou ->
           void $ executeEffects $ replicate 2 (Will (DrawCard stackYou))
       }
@@ -403,7 +403,7 @@ downpour = mkCard $ do
     name =: Just "Downpour"
     types =: instantType
     play =: Just playObject
-      { manaCost = Just [Nothing, Just Blue]
+      { manaCost = Just (generic 1 <> blue 1)
       , effect = downpourEffect
       }
   where
@@ -418,14 +418,14 @@ faerieInvaders = mkCard $ do
     types =: creatureTypes [Faerie, Rogue]
     staticKeywordAbilities =: [Flash]
     play =: Just playObject
-      { manaCost = Just $ replicate 4 Nothing ++ [Just Blue] }
+      { manaCost = Just (generic 4 <> blue 1) }
 
 mindSculpt :: Card
 mindSculpt = mkCard $ do
     name =: Just "Mind Sculpt"
     types =: sorceryType
     play =: Just playObject
-      { manaCost = Just [Nothing, Just Blue]
+      { manaCost = Just (generic 1 <> blue 1)
       , effect = mindSculptEffect
       }
   where
@@ -443,7 +443,7 @@ tricksOfTheTrade = mkCard $ do
     staticKeywordAbilities =: [EnchantPermanent creatureType]
     layeredEffects =: [boostEnchanted]
     play =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Nothing, Just Blue] }
+      { manaCost = Just (generic 3 <> blue 1) }
   where
     boostEnchanted = LayeredObjectEffect
       { affectedObjects = affectAttached
@@ -458,7 +458,7 @@ bloodHunterBat = mkCard $ do
     name =: Just "Bloodhunter Bat"
     types =: creatureTypes [Bat]
     pt =: Just (2, 2)
-    play =: Just playObject { manaCost = Just [Nothing, Nothing, Nothing, Just Black] }
+    play =: Just playObject { manaCost = Just (generic 3 <> black 1) }
     triggeredAbilities =: onSelfETB bloodHunterBatTrigger
   where
     bloodHunterBatTrigger :: Contextual (Magic ())
@@ -474,7 +474,7 @@ cripplingBlight = mkCard $ do
   staticKeywordAbilities =: [EnchantPermanent creatureType]
   layeredEffects =: [boostEnchanted]
   play =: Just playObject
-    { manaCost = Just [Just Black] }
+    { manaCost = Just (black 1) }
   where
     boostEnchanted = LayeredObjectEffect
       { affectedObjects = affectAttached
@@ -486,7 +486,7 @@ darkFavor = mkCard $ do
     name =: Just "Dark Favor"
     types =: auraType
     play =: Just playObject
-      { manaCost = Just [Nothing, Just Black] }
+      { manaCost = Just (generic 1 <> black 1) }
     triggeredAbilities =: loseLifeTrigger
     layeredEffects =: [darkFavorEffect]
   where
@@ -502,7 +502,7 @@ disentomb = mkCard $ do
   name =: Just "Disentomb"
   types =: sorceryType
   play =: Just playObject
-    { manaCost = Just [Just Black]
+    { manaCost = Just (black 1)
     , effect = \rSelf you -> do
         ts <- askTarget you (isCreatureCard <?> targetInZone (Graveyard you))
         stackTargetSelf rSelf you ts $ \t@(z, i) _ stackYou -> do
@@ -519,7 +519,7 @@ essenceDrain = mkCard $ do
     name =: Just "Essence Drain"
     types =: sorceryType
     play =: Just playObject
-      { manaCost = Just $ replicate 4 Nothing ++ [Just Black]
+      { manaCost = Just (generic 4 <> black 1)
       , effect = essenceDrainEffect
       }
   where
@@ -537,7 +537,7 @@ liliana'sShade = mkCard $ do
     name =: Just "Liliana's Shade"
     types =: creatureTypes [Shade]
     pt =: Just (1, 1)
-    play =: Just playObject { manaCost = Just [Nothing, Nothing, Just Black, Just Black] }
+    play =: Just playObject { manaCost = Just (generic 2 <> black 2) }
     triggeredAbilities =: liliana'sShadeTrigger
     activatedAbilities =: [liliana'sShadeAbility]
   where
@@ -568,7 +568,7 @@ liliana'sShade = mkCard $ do
       , tapCost = NoTapCost
       , abilityActivation = defaultActivation
         { effect = plus1plus1
-          , manaCost = Just [Just Black]
+          , manaCost = Just (black 1)
         }
       }
 
@@ -577,7 +577,7 @@ mindRot = mkCard $ do
     name =: Just "Mind Rot"
     types =: sorceryType
     play =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Just Black]
+      { manaCost = Just (generic 2 <> black 1)
       , effect = mindRotEffect
       }
   where
@@ -590,7 +590,7 @@ ravenousRats = mkCard $ do
     name =: Just "Ravenous Rats"
     types =: creatureTypes [Rat]
     pt =: Just (1, 1)
-    play =: Just playObject { manaCost = Just [Nothing, Just Black] }
+    play =: Just playObject { manaCost = Just (generic 1 <> black 1) }
     triggeredAbilities =: onSelfETB ravenousRatsTrigger
   where
     ravenousRatsTrigger _rSelf you = do
@@ -601,7 +601,7 @@ tormentedSoul :: Card
 tormentedSoul = mkCard $ do
     name =: Just "Tormented Soul"
     types =: creatureTypes [Spirit]
-    play =: Just playObject { manaCost = Just [Just Black] }
+    play =: Just playObject { manaCost = Just (black 1) }
     layeredEffects =: [affectingSelf
       [RestrictAllowBlocks (selfCantBlock &&* selfCantBeBlocked)]]
 
@@ -610,7 +610,7 @@ vampireNighthawk = mkCard $ do
   name  =: Just "Vampire Nighthawk"
   types =: creatureTypes [Vampire, Shaman]
   pt    =: Just (2, 3)
-  play  =: Just playObject { manaCost = Just [Nothing, Just Black, Just Black] }
+  play  =: Just playObject { manaCost = Just (generic 1 <> black 2) }
   staticKeywordAbilities =: [Flying, Deathtouch, Lifelink]
 
 
@@ -622,7 +622,7 @@ fervor = mkCard $ do
     name              =: Just "Fervor"
     types             =: enchantmentType
     play              =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Just Red] }
+      { manaCost = Just (generic 2 <> red 1) }
     layeredEffects    =: [grantHaste]
   where
     grantHaste = LayeredObjectEffect
@@ -637,7 +637,7 @@ fireElemental = mkCard $ do
   types =: creatureTypes [Elemental]
   pt    =: Just (5, 4)
   play  =: Just playObject
-    { manaCost = Just [Nothing, Nothing, Nothing, Just Red, Just Red] }
+    { manaCost = Just (generic 3 <> red 2) }
 
 firewingPhoenix :: Card
 firewingPhoenix = mkCard $ do
@@ -646,13 +646,13 @@ firewingPhoenix = mkCard $ do
     pt    =: Just (4, 2)
     staticKeywordAbilities =: [Flying]
     play =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Nothing, Just Red] }
+      { manaCost = Just (generic 3 <> red 1) }
     activatedAbilities =: [returnFromGraveyard]
   where
     returnFromGraveyard = ActivatedAbility
       { abilityActivation = defaultActivation
         { available = availableFromGraveyard
-        , manaCost  = Just [Nothing, Just Red, Just Red, Just Red]
+        , manaCost  = Just (generic 1 <> red 3)
         , effect    = \(Some (Graveyard zr), i) you -> mkAbility you $ do
             card <- view (asks (object (Graveyard zr, i)))
             void $ executeEffect $
@@ -668,7 +668,7 @@ furnaceWhelp = mkCard $ do
   types =: creatureTypes [Dragon]
   pt =: Just (2, 2)
   play =: Just playObject {
-    manaCost = Just [Nothing, Nothing, Just Red, Just Red]
+    manaCost = Just (generic 2 <> red 2)
     }
   activatedAbilities =: [plusOneAbility]
   where
@@ -679,7 +679,7 @@ furnaceWhelp = mkCard $ do
         { effect = \rSelf you -> mkAbility you $ do
             t <- tick
             modifyPTUntilEOT (1, 0) rSelf t
-        , manaCost = Just [Just Red]
+        , manaCost = Just (red 1)
         }
       }
 
@@ -688,7 +688,7 @@ flamesOfTheFirebrand = mkCard $ do
   name  =: Just "Flames of the Firebrand"
   types =: sorceryType
   play  =: Just playObject
-    { manaCost = Just [Nothing, Nothing, Just Red]
+    { manaCost = Just (generic 2 <> red 1)
     , effect = \rSelf you -> do
         ts <- askTargetsFromUpTo 1 3 you targetCreatureOrPlayer
         let (trs, _) = evaluateTargetList ts
@@ -719,7 +719,7 @@ moggFlunkies = mkCard $ do
     name =: Just "Mogg Flunkies"
     types =: creatureTypes [Goblin]
     pt =: Just (3, 3)
-    play =: Just playObject { manaCost = Just [Nothing, Just Red] }
+    play =: Just playObject { manaCost = Just (generic 1 <> red 1) }
     layeredEffects =: [affectingSelf
       [ RestrictAllowAttacks selfCantAttackAlone
       , RestrictAllowBlocks  selfCantBlockAlone  ] ]
@@ -729,7 +729,7 @@ searingSpear = mkCard $ do
     name  =: Just "Searing Spear"
     types =: instantType
     play  =: Just playObject
-      { manaCost = Just [Nothing, Just Red]
+      { manaCost = Just (generic 1 <> red 1)
       , effect   = searingSpearEffect
       }
   where
@@ -747,7 +747,7 @@ smelt = mkCard $ do
     name  =: Just "Smelt"
     types =: instantType
     play  =: Just playObject
-      { manaCost = Just [Just Red]
+      { manaCost = Just (red 1)
       , effect = destroyTargetPermanent (hasTypes artifactType)
       }
 
@@ -757,7 +757,7 @@ thundermawHellkite = mkCard $ do
     types          =: creatureTypes [Dragon]
     pt             =: Just (5, 5)
     play           =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Nothing, Just Red, Just Red]
+      { manaCost = Just (generic 3 <> red 2)
       }
     staticKeywordAbilities =: [Flying, Haste]
     triggeredAbilities =: onSelfETB thundermawHellkiteTrigger
@@ -778,7 +778,7 @@ torchFiend = mkCard $ do
     types =: creatureTypes [Devil]
     pt    =: Just (2, 1)
     play  =: Just playObject
-      { manaCost = Just [Nothing, Just Red]
+      { manaCost = Just (generic 1 <> red 1)
       }
     activatedAbilities =: [torchFiendAbility]
   where
@@ -788,7 +788,7 @@ torchFiend = mkCard $ do
       , tapCost = NoTapCost
       }
     torchFiendActivation = defaultActivation
-      { manaCost = Just [Just Red]
+      { manaCost = Just (red 1)
       , effect = torchFiendEffect
       }
     torchFiendEffect :: Contextual (Magic ())
@@ -804,7 +804,7 @@ trumpetBlast = mkCard $ do
     name  =: Just "Trumpet Blast"
     types =: instantType
     play  =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Just Red]
+      { manaCost = Just (generic 2 <> red 1)
       , effect = stackSelf titanicGrowthEffect
       }
   where
@@ -822,7 +822,7 @@ acidicSlime = mkCard $ do
     name =: Just "Acidic Slime"
     types =: creatureTypes [Ooze]
     pt =: Just (2, 2)
-    play =: Just playObject { manaCost = Just [Nothing, Nothing, Nothing, Just Green, Just Green] }
+    play =: Just playObject { manaCost = Just (generic 3 <> green 2) }
     staticKeywordAbilities =: [Deathtouch]
     triggeredAbilities =: onSelfETB acidicSlimeTrigger
   where
@@ -836,7 +836,7 @@ arborElf = mkCard $ do
     name =: Just "Arbor Elf"
     types =: creatureTypes [Elf, Druid]
     pt =: Just (1, 1)
-    play =: Just playObject { manaCost = Just [Just Green] }
+    play =: Just playObject { manaCost = Just (green 1) }
     activatedAbilities =: [untapTargetForest]
   where
     untapTargetForest = tapAbility $ \_ you -> do
@@ -850,7 +850,7 @@ bondBeetle = mkCard $ do
     name =: Just "Bond Beetle"
     types =: creatureTypes [Insect]
     pt =: Just (0, 1)
-    play =: Just playObject { manaCost = Just [Just Green] }
+    play =: Just playObject { manaCost = Just (green 1) }
     triggeredAbilities =: onSelfETB createAddCounterTrigger
   where
     createAddCounterTrigger :: Contextual (Magic ())
@@ -864,7 +864,7 @@ bountifulHarvest = mkCard $ do
     name =: Just "Bountiful Harvest"
     types =: sorceryType
     play =: Just playObject
-      { manaCost = Just $ replicate 4 Nothing ++ [Just Green]
+      { manaCost = Just $ (generic 4 <> green 1)
       , effect = bountifulHarvestEffect
       }
   where
@@ -881,14 +881,14 @@ centaurCourser = mkCard $ do
   name =: Just "Centaur Courser"
   types =: creatureTypes [Centaur, Warrior]
   pt =: Just (3, 3)
-  play =: Just playObject { manaCost = Just [Nothing, Nothing, Just Green] }
+  play =: Just playObject { manaCost = Just (generic 2 <> green 1) }
 
 deadlyRecluse :: Card
 deadlyRecluse = mkCard $ do
   name =: Just "Deadly Recluse"
   types =: creatureTypes [Spider]
   pt =: Just (1, 2)
-  play =: Just playObject { manaCost = Just [Nothing, Just Green] }
+  play =: Just playObject { manaCost = Just (generic 1 <> green 1) }
   staticKeywordAbilities =: [Reach, Deathtouch]
 
 duskdaleWurm :: Card
@@ -896,7 +896,7 @@ duskdaleWurm = mkCard $ do
   name =: Just "Duskdale Wurm"
   types =: creatureTypes [Wurm]
   pt =: Just (7, 7)
-  play =: Just playObject { manaCost = Just $ replicate 5 Nothing ++ [Just Green, Just Green] }
+  play =: Just playObject { manaCost = Just (generic 5 <> green 2) }
   staticKeywordAbilities =: [Trample]
 
 elvishArchdruid :: Card
@@ -904,7 +904,7 @@ elvishArchdruid = mkCard $ do
     name =: Just "Elvish Archdruid"
     types =: creatureTypes [Elf, Druid]
     pt =: Just (2, 2)
-    play =: Just playObject { manaCost = Just [Nothing, Just Green, Just Green] }
+    play =: Just playObject { manaCost = Just (generic 1 <> green 2) }
     activatedAbilities =: [addManaAbility]
     layeredEffects =: [boostYourElves]
   where
@@ -924,7 +924,7 @@ elvishVisionary = mkCard $ do
     name =: Just "Elvish Visionary"
     types =: creatureTypes [Elf, Shaman]
     pt =: Just (1, 1)
-    play =: Just playObject { manaCost = Just [Nothing, Just Green] }
+    play =: Just playObject { manaCost = Just (generic 1 <> green 1) }
     triggeredAbilities =: onSelfETB drawCardEffect
   where
     drawCardEffect _ you = mkTrigger you $ will $ DrawCard you
@@ -934,7 +934,7 @@ farseek = mkCard $ do
     name =: Just "Farseek"
     types =: sorceryType
     play =: Just playObject
-      { manaCost = Just [Nothing, Just Green]
+      { manaCost = Just (generic 1 <> green 1)
       , effect = farseekEffect
       }
   where
@@ -955,7 +955,7 @@ fungalSprouting = mkCard $ do
     name =: Just "Fungal Sprouting"
     types =: sorceryType
     play =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Nothing, Just Green]
+      { manaCost = Just (generic 3 <> green 1)
       , effect = makeTokenEffect
       }
   where
@@ -972,8 +972,7 @@ garrukPrimalHunter :: Card
 garrukPrimalHunter = mkCard $ do
     name =: Just "Garruk, Primal Hunter"
     types =: planeswalkerWithType Garruk
-    play =: Just playObject { manaCost =
-      Just [Nothing, Nothing, Just Green, Just Green, Just Green] }
+    play =: Just playObject { manaCost = Just (generic 2 <> green 3) }
     activatedAbilities =: [plusOne, minusThree, minusSix]
     loyalty =: Just 3
     replacementEffects =: [etbWithLoyaltyCounters]
@@ -1007,7 +1006,7 @@ naturalize = mkCard $ do
     name =: Just "Naturalize"
     types =: instantType
     play =: Just playObject
-      { manaCost = Just [Nothing, Just Green]
+      { manaCost = Just (generic 1 <> green 1)
       , effect = naturalizeEffect
       }
   where
@@ -1018,7 +1017,7 @@ plummet = mkCard $ do
     name =: Just "Plummet"
     types =: instantType
     play =: Just playObject
-      { manaCost = Just [Nothing, Just Green]
+      { manaCost = Just (generic 1 <> green 1)
       , effect = plummetEffect
       }
   where
@@ -1029,7 +1028,7 @@ preyUpon = mkCard $ do
     name =: Just "Prey Upon"
     types =: sorceryType
     play =: Just playObject
-      { manaCost = Just [Just Green]
+      { manaCost = Just (green 1)
       , effect = preyUponEffect
       }
   where
@@ -1052,7 +1051,7 @@ primalHuntbeast = mkCard $ do
   name =: Just "Primal Huntbeast"
   types =: creatureTypes [Beast]
   pt =: Just (3, 3)
-  play =: Just playObject { manaCost = Just [Nothing, Nothing, Nothing, Just Green] }
+  play =: Just playObject { manaCost = Just (generic 3 <> green 1) }
   staticKeywordAbilities =: [Hexproof]
 
 quirionDryad :: Card
@@ -1060,7 +1059,7 @@ quirionDryad = mkCard $ do
     name =: Just "Quirion Dryad"
     types =: creatureTypes [Dryad]
     pt =: Just (1, 1)
-    play =: Just playObject { manaCost = Just [Nothing, Just Green] }
+    play =: Just playObject { manaCost = Just (generic 1 <> green 1) }
     triggeredAbilities =: dryadTrigger
   where
     dryadTrigger :: TriggeredAbilities
@@ -1079,7 +1078,7 @@ revive = mkCard $ do
     name =: Just "Revive"
     types =: sorceryType
     play =: Just playObject
-      { manaCost = Just [Nothing, Just Green]
+      { manaCost = Just (generic 1 <> green 1)
       , effect = reviveEffect
       }
   where
@@ -1096,7 +1095,7 @@ roaringPrimadox = mkCard $ do
     name =: Just "Roaring Primadox"
     types =: creatureTypes [Beast]
     pt =: Just (4, 4)
-    play =: Just playObject { manaCost = Just [Nothing, Nothing, Nothing, Just Green] }
+    play =: Just playObject { manaCost = Just (generic 3 <> green 1) }
     triggeredAbilities =: roaringPrimadoxTrigger
   where
     roaringPrimadoxTrigger :: TriggeredAbilities
@@ -1118,7 +1117,7 @@ sentinelSpider :: Card
 sentinelSpider = mkCard $ do
   name =: Just "Sentinel Spider"
   types =: creatureTypes [Spider]
-  play =: Just playObject { manaCost = Just [Nothing, Nothing, Nothing, Just Green, Just Green] }
+  play =: Just playObject { manaCost = Just (generic 3 <> green 2) }
   pt =: Just (4, 4)
   staticKeywordAbilities =: [Vigilance, Reach]
 
@@ -1127,7 +1126,7 @@ serpent'sGift = mkCard $ do
     name =: Just "Serpent's Gift"
     types =: instantType
     play =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Just Green]
+      { manaCost = Just (generic 2 <> green 1)
       , effect = serpent'sGiftEffect
       }
   where
@@ -1145,7 +1144,7 @@ spikedBaloth :: Card
 spikedBaloth = mkCard $ do
   name =: Just "Spiked Baloth"
   types =: creatureTypes [Beast]
-  play =: Just playObject { manaCost = Just [Nothing, Nothing, Nothing, Just Green] }
+  play =: Just playObject { manaCost = Just (generic 3 <> green 1) }
   pt =: Just (4, 2)
   staticKeywordAbilities =: [Trample]
 
@@ -1153,7 +1152,7 @@ timberpackWolf :: Card
 timberpackWolf = mkCard $ do
   name  =: Just "Timberpack Wolf"
   types =: creatureTypes [Wolf]
-  play  =: Just playObject { manaCost = Just [Nothing, Just Green] }
+  play  =: Just playObject { manaCost = Just (generic 1 <> green 1) }
   pt    =: Just (2, 2)
   layeredEffects =: [updatePT]
   where
@@ -1179,7 +1178,7 @@ titanicGrowth = mkCard $ do
     name =: Just "Titanic Growth"
     types =: instantType
     play =: Just playObject
-      { manaCost = Just [Nothing, Nothing, Nothing, Just Green]
+      { manaCost = Just (generic 3 <> green 1)
       , effect = titanicGrowthEffect
       }
   where
@@ -1193,7 +1192,7 @@ vastwoodGorger :: Card
 vastwoodGorger = mkCard $ do
   name =: Just "Vastwood Gorger"
   types =: creatureTypes [Wurm]
-  play =: Just playObject { manaCost = Just $ replicate 5 Nothing ++ [Just Green] }
+  play =: Just playObject { manaCost = Just (generic 5 <> green 1) }
   pt =: Just (5, 6)
 
 yeva'sForcemage :: Card
@@ -1201,7 +1200,7 @@ yeva'sForcemage = mkCard $ do
     name =: Just "Yeva's Forcemage"
     types =: creatureTypes [Elf, Shaman]
     pt =: Just (2, 2)
-    play =: Just playObject { manaCost = Just [Nothing, Nothing, Just Green] }
+    play =: Just playObject { manaCost = Just (generic 2 <> green 1) }
     triggeredAbilities =: onSelfETB yeva'sForcemageTrigger
   where
     yeva'sForcemageTrigger _rSelf you = do
@@ -1217,7 +1216,7 @@ chronomaton = mkCard $ do
     name =: Just "Chronomaton"
     types =: artifactType <> creatureTypes [Golem]
     pt =: Just (1, 1)
-    play =: Just playObject { manaCost = Just [Nothing] }
+    play =: Just playObject { manaCost = Just (generic 1) }
     activatedAbilities =: [addCounter]
   where
     addCounter = tapAbility $ \rSelf you ->
@@ -1227,10 +1226,10 @@ elixirOfImmortality :: Card
 elixirOfImmortality = mkCard $ do
     name =: Just "Elixir of Immortality"
     types =: artifactType
-    play =: Just playObject { manaCost = Just [Nothing] }
+    play =: Just playObject { manaCost = Just (generic 1) }
     activatedAbilities =: [crack]
   where
-    crack = tapAbilityWithCost [Nothing, Nothing] $
+    crack = tapAbilityWithCost (generic 2) $
       \rSelf you -> mkTrigger you $ do
         will (GainLife you 5)
         rs <- view $ allRefsInSomeZone (Some (Graveyard you))
@@ -1240,7 +1239,7 @@ tormod'sCrypt :: Card
 tormod'sCrypt = mkCard $ do
     name =: Just "Tormod's Crypt"
     types =: artifactType
-    play =: Just playObject { manaCost = Just [] }
+    play =: Just playObject { manaCost = Just mempty }
     activatedAbilities =: [tapToExile]
   where
     tapToExile = tapAbility $ \(Some Battlefield, i) you -> do
@@ -1287,7 +1286,7 @@ checkLand :: Text -> [Color] -> [LandSubtype] -> Card
 checkLand n cols tys = mkCard $ do
   name =: Just n
   types =: landType
-  play =: Just playObject { manaCost = Just [] }
+  play =: Just playObject { manaCost = Just mempty }
   activatedAbilities =: map (tapToAddMana . Just) cols
   replacementEffects =: [ etbTappedUnless (map (\ty -> landTypes [ty]) tys) ]
 

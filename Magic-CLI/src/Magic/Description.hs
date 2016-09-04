@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE GADTs #-}
 
 module Magic.Description where
@@ -20,6 +21,7 @@ import Data.Label (get)
 import Data.List (sort)
 import Data.Maybe (catMaybes)
 import Data.Monoid (Monoid(..), (<>), mempty)
+import qualified Data.MultiSet as MultiSet
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.String (IsString(..))
@@ -186,6 +188,18 @@ describeManaPool mcs =
     (n, cs) -> sh n <> describeColoredMana cs
   where
     describeColoredMana = foldMap describeColor
+
+describeManaCost :: ManaCost -> Description
+describeManaCost cost =
+    case MultiSet.toAscOccurList cost of
+      []   -> "0"
+      els  -> foldMap describeEl els
+  where
+    describeEl = \case
+      (ColorlessCost, n) -> mconcat (replicate n "C")
+      (ColorCost col, n) -> mconcat (replicate n (describeColor col))
+      (GenericCost, n) -> sh n
+
 
 describeColor :: Color -> Description
 describeColor Blue = string "U"

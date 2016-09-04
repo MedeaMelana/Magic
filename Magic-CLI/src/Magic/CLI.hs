@@ -7,8 +7,9 @@ module Magic.CLI where
 import Magic
 import Magic.Engine.Types (GameOver(..))
 import Magic.Description (Description(..), describeWorld, describeZone, describePriorityAction,
-  describeEvent, describeEntityRef, describeManaPool, describePayManaAction, describeObjectName, describeObjectNameByRef, describeObjectByRef,
-  describeChoice)
+  describeEvent, describeEntityRef, describeManaPool, describeManaCost,
+  describePayManaAction, describeObjectName, describeObjectNameByRef,
+  describeObjectByRef, describeChoice)
 
 import Control.Arrow (first)
 import Control.Monad (forM_)
@@ -69,7 +70,7 @@ askQuestions = eval . viewT
           ("No Target", Nothing) : [ (desc world (describeEntityRef t), Just t) | t <- ts ]
         askQuestions (k t)
       AskQuestion p world (AskManaAbility cost actions) :>>= k -> do
-        let costDesc = desc world (describeManaPool cost)
+        let costDesc = desc world (describeManaCost cost)
         let options = [ (desc world (describePayManaAction action), action) | action <- actions ]
         chosen <- offerOptions p ("Pay " <> costDesc) options
         askQuestions (k chosen)

@@ -53,6 +53,7 @@ module Magic.Types (
     Contextual,
     ActivatedAbility(..), Activation(..), TapCost(..), AbilityType(..),
     StackItem, ManaPool,
+    ManaCost, ManaCostEl(..),
     StaticKeywordAbility(..),
     ReplacementEffect, TriggeredAbilities,
     PriorityAction(..), PayManaAction(..),
@@ -90,6 +91,7 @@ import Control.Monad.Operational (Program, ProgramT)
 import Data.Boolean
 import Data.Label (mkLabels, lens)
 import Data.Label ((:->))
+import Data.MultiSet (MultiSet)
 import Data.Monoid (Monoid(..))
 import Data.Set (Set)
 import Data.Text (Text, unpack)
@@ -418,7 +420,7 @@ data ActivatedAbility = ActivatedAbility
 data Activation = Activation
   { timing    :: Contextual (View Bool)  -- check timing restrictions
   , available :: Contextual (View Bool)  -- check activator and current zone
-  , manaCost  :: Maybe ManaPool
+  , manaCost  :: Maybe ManaCost
   , effect    :: Contextual (Magic ())
   }
 
@@ -431,6 +433,13 @@ type StackItem = TargetList (ObjectRef TyStackItem -> PlayerRef -> Magic ())
 
 type ManaPool = Bag (Maybe Color)
 
+type ManaCost = MultiSet ManaCostEl
+
+-- | Single element of a mana cost.
+data ManaCostEl = ColorlessCost | ColorCost Color | GenericCost
+  -- Order is important: matches order of mana symbols on cards.
+  deriving (Eq, Ord, Show, Read)
+
 data StaticKeywordAbility
   = Bloodthirst Int
   | Deathtouch
@@ -439,7 +448,7 @@ data StaticKeywordAbility
   | EnchantPermanent ObjectTypes
   | FirstStrike
   | Flash
-  | Flashback ManaPool
+  | Flashback ManaCost
   | Flying
   | Haste
   | Hexproof
@@ -702,7 +711,7 @@ data Choice =
 data Question a where
   AskKeepHand              :: Question Bool
   AskPriorityAction        :: [PriorityAction] -> Question (Maybe PriorityAction)
-  AskManaAbility           :: ManaPool -> [PayManaAction] -> Question PayManaAction
+  AskManaAbility           :: ManaCost -> [PayManaAction] -> Question PayManaAction
   AskTarget                :: [EntityRef] -> Question EntityRef
   AskMaybeTarget           :: [EntityRef] -> Question (Maybe EntityRef)
   --AskPickReplacementEffect :: [(ReplacementEffect, Magic [OneShotEffect])] -> Question (Pick (ReplacementEffect, Magic [OneShotEffect]))

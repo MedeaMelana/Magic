@@ -10,6 +10,7 @@ import Control.Category ((.))
 import Control.Monad (void)
 import Data.Boolean ((||*), false)
 import Data.Label.Monadic (asks, (=:))
+import Data.Monoid ((<>))
 import Prelude hiding ((.))
 
 
@@ -22,7 +23,7 @@ misthollowGriffin = mkCard $ do
     staticKeywordAbilities =: [Flying]
     play =: Just playObject
       { available = availableFromHand ||* availableFromExile
-      , manaCost  = Just [Nothing, Nothing, Just Blue, Just Blue]
+      , manaCost  = Just (generic 2 <> blue 2)
       }
   where
     availableFromExile :: Contextual (View Bool)
@@ -36,7 +37,7 @@ bloodArtist = mkCard $ do
     name =: Just "Blood Artist"
     types =: creatureTypes [Vampire]
     pt =: Just (0, 1)
-    play =: Just playObject { manaCost = Just [Nothing, Just Black] }
+    play =: Just playObject { manaCost = Just (generic 1 <> black 1) }
     triggeredAbilities =: ifSelfWasOrIsOnBattlefield trigger
   where
     trigger :: TriggeredAbilities

@@ -2,6 +2,7 @@ module Magic (
     module Magic.Abilities,
     module Magic.Combat,
     module Magic.Core,
+    module Magic.Cost,
     module Magic.Engine,
     module Magic.Events,
     module Magic.Labels,
@@ -19,6 +20,7 @@ module Magic (
 import Magic.Abilities
 import Magic.Combat
 import Magic.Core
+import Magic.Cost
 import Magic.Engine
 import Magic.Events
 import Magic.Labels

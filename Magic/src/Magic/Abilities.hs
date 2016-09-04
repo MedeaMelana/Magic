@@ -198,7 +198,7 @@ loyaltyAbility cost eff = ActivatedAbility
     { abilityActivation = Activation
       { timing    = sorcerySpeed &&* hasAtLeastLoyalty cost
       , available = availableFromBattlefield
-      , manaCost  = Just []
+      , manaCost  = Just mempty
       , effect    = \rSelf you -> do
           void $ executeEffects (replicate cost (Will (RemoveCounter rSelf Loyalty)))
           eff rSelf you
@@ -220,10 +220,10 @@ mkAbility = mkTrigger
 
 -- | Helper function to create an activated ability (with type 'ActivatedAb') that requires tapping to be activated. Its activation is 'defaultActivation', with its effect set to the specified argument effect.
 tapAbility :: Contextual (Magic ()) -> ActivatedAbility
-tapAbility = tapAbilityWithCost []
+tapAbility = tapAbilityWithCost mempty
 
 -- | Helper function to create an activated ability (with type 'ActivatedAb') that requires tapping to be activated. Its activation is 'defaultActivation', with its effect set to the specified argument effect and cost.
-tapAbilityWithCost :: ManaPool -> Contextual (Magic ()) -> ActivatedAbility
+tapAbilityWithCost :: ManaCost -> Contextual (Magic ()) -> ActivatedAbility
 tapAbilityWithCost cost eff = ActivatedAbility
   { abilityType = ActivatedAb
   , tapCost = TapCost
@@ -235,7 +235,7 @@ defaultActivation :: Activation
 defaultActivation = Activation
   { timing = instantSpeed
   , available = availableFromBattlefield
-  , manaCost = Just []
+  , manaCost = Just mempty
   , effect = \_ _ -> return ()
   }
 

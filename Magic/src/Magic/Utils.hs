@@ -10,8 +10,10 @@ import Data.Label
 import Data.List (sortBy)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Monoid (mempty)
+import qualified Data.MultiSet as MultiSet
 import Data.Ord (comparing)
 import qualified Data.Set as Set
+import Data.Set (Set)
 import Data.Text (Text, pack)
 
 
@@ -21,9 +23,17 @@ import Data.Text (Text, pack)
 mkCard :: State Object () -> Card
 mkCard f = Card (setColors . execState f . emptyObject 0)
   where
-    setColors o = case get play o of
-      Just ab -> set colors (Set.fromList (catMaybes (fromMaybe [] (manaCost ab)))) o
-      Nothing -> o
+    setColors :: Object -> Object
+    setColors o = fromMaybe o $ do
+      playActivation <- get play o
+      cost <- manaCost playActivation
+      return (set colors (colorsFromManaCost cost) o)
+
+colorsFromManaCost :: ManaCost -> Set Color
+colorsFromManaCost = MultiSet.toSet . MultiSet.mapMaybe manaColor
+  where
+    manaColor (ColorCost c) = Just c
+    manaColor _ = Nothing
 
 emptyObject :: Timestamp -> PlayerRef -> Object
 emptyObject t rOwner = Object

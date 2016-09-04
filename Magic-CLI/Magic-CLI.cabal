@@ -24,6 +24,7 @@ executable magic-cli
                     Magic-Cards ==0.1.*,
                     MonadRandom >= 0.1 && <0.5,
                     mtl >=2.1 && <2.3,
+                    multiset ==0.3.*,
                     containers,
                     fclabels ==2.0.*,
                     operational ==0.2.*,
