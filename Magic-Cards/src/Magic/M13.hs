@@ -616,6 +616,13 @@ fervor = mkCard $ do
       , objectModifications = [AddStaticKeywordAbility Haste]
       }
 
+fireElemental :: Card
+fireElemental = mkCard $ do
+  name  =: Just "Fire Elemental"
+  types =: creatureTypes [Elemental]
+  play  =: Just playObject
+    { manaCost = Just [Nothing, Nothing, Nothing, Just Red, Just Red] }
+
 moggFlunkies :: Card
 moggFlunkies = mkCard $ do
     name =: Just "Mogg Flunkies"
