@@ -17,7 +17,7 @@ Magic is a big game. This implementation targets only a specific part of it.
 For now, only two-player games and only cards, rules, card types and abilities
 available and relevant in the Magic 2013 core set are targeted.
 
-A good indication of the current progress is to open [module M13](/Magic-Cards/src/Magic/M13.hs) and see how many M13 cards have been implemented yet. A list of issues to be fixed before the whole of M13 can be implemented can be [found on GitHub](https://github.com/MedeaMelana/Magic/issues/milestones).
+A good indication of the current progress is to open [module M13](/Magic-Cards/src/Magic/M13.hs) and see how many M13 cards have been implemented yet. A list of issues to be fixed before the whole of M13 can be implemented can be [found on GitHub](https://github.com/MedeaMelana/Magic/milestone/1).
 
 There is also a command-line interface that allows you to play the game. To run it, follow the installation instructions below and run the executable that it produced by building `Magic-CLI`. This will run a two-player game with preselected decks.
 

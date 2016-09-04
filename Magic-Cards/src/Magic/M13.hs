@@ -13,7 +13,7 @@ import Control.Applicative
 import Control.Arrow (first)
 import Control.Category ((.))
 import Control.Monad (void, when)
-import Data.Boolean (true, (&&*), (||*))
+import Data.Boolean (notB, true, (&&*), (||*))
 import qualified Data.Foldable as Foldable
 import Data.Label (get)
 import Data.Label.Monadic ((=:), asks)
@@ -620,9 +620,53 @@ fireElemental :: Card
 fireElemental = mkCard $ do
   name  =: Just "Fire Elemental"
   types =: creatureTypes [Elemental]
-  pt =: Just (5, 4)
+  pt    =: Just (5, 4)
   play  =: Just playObject
     { manaCost = Just [Nothing, Nothing, Nothing, Just Red, Just Red] }
+
+firewingPhoenix :: Card
+firewingPhoenix = mkCard $ do
+    name =: Just "Firewing Phoenix"
+    types =: creatureTypes [Phoenix]
+    pt    =: Just (4, 2)
+    staticKeywordAbilities =: [Flying]
+    play =: Just playObject
+      { manaCost = Just [Nothing, Nothing, Nothing, Just Red] }
+    activatedAbilities =: [returnFromGraveyard]
+  where
+    returnFromGraveyard = ActivatedAbility
+      { abilityActivation = defaultActivation
+        { available = availableFromGraveyard
+        , manaCost  = Just [Nothing, Just Red, Just Red, Just Red]
+        , effect    = \(Some (Graveyard zr), i) you -> mkAbility you $ do
+            card <- view (asks (object (Graveyard zr, i)))
+            void $ executeEffect $
+              WillMoveObject (Just (Some (Graveyard you), i)) (Hand you) card
+        }
+      , tapCost     = NoTapCost
+      , abilityType = ActivatedAb
+      }
+
+furnaceWhelp :: Card
+furnaceWhelp = mkCard $ do
+  name =: Just "Furnace Whelp"
+  types =: creatureTypes [Dragon]
+  pt =: Just (2, 2)
+  play =: Just playObject {
+    manaCost = Just [Nothing, Nothing, Just Red, Just Red]
+    }
+  activatedAbilities =: [plusOneAbility]
+  where
+    plusOneAbility = ActivatedAbility
+      { abilityType = ActivatedAb
+      , tapCost = NoTapCost
+      , abilityActivation = defaultActivation
+        { effect = \rSelf you -> mkAbility you $ do
+            t <- tick
+            modifyPTUntilEOT (1, 0) rSelf t
+        , manaCost = Just [Just Red]
+        }
+      }
 
 moggFlunkies :: Card
 moggFlunkies = mkCard $ do
@@ -651,6 +695,35 @@ searingSpear = mkCard $ do
         will $ case t of
           Left r  -> DamageObject self r 3 False True
           Right p -> DamagePlayer self p 3 False True
+
+smelt :: Card
+smelt = mkCard $ do
+    name  =: Just "Smelt"
+    types =: instantType
+    play  =: Just playObject
+      { manaCost = Just [Just Red]
+      , effect = destroyTargetPermanent (hasTypes artifactType)
+      }
+
+thundermawHellkite :: Card
+thundermawHellkite = mkCard $ do
+    name           =: Just "Thundermaw Hellkite"
+    types          =: creatureTypes [Dragon]
+    pt             =: Just (5, 5)
+    play           =: Just playObject
+      { manaCost = Just [Nothing, Nothing, Nothing, Just Red, Just Red]
+      }
+    staticKeywordAbilities =: [Flying, Haste]
+    triggeredAbilities =: onSelfETB thundermawHellkiteTrigger
+  where
+    thundermawHellkiteTrigger :: Contextual (Magic ())
+    thundermawHellkiteTrigger rSelf you = mkTrigger you $ do
+      self <- view (asks (objectBase rSelf))
+      let isAffected = notB (isControlledBy you) &&* hasStaticKeywordAbility Flying
+      objs <- filter (isAffected . get permanentObject . snd) <$> viewZone Battlefield
+      let damage r = DamageObject self r 1 False True
+      let damageAndTap r = [Will (damage r), Will (TapPermanent r)]
+      void . executeEffects $ concatMap damageAndTap (map fst objs)
 
 
 -- GREEN CARDS
@@ -1169,3 +1242,8 @@ simpleCreatureToken t you tys cs pt' =
   , _types = creatureTypes tys
   , _pt = Just pt'
   }
+
+viewZone :: ZoneRef ty -> Magic [(ObjectRef ty, ObjectOfType ty)]
+viewZone zoneRef = do
+    idListEls <- IdList.toList <$> view (asks (compileZoneRef zoneRef))
+    return [ ((zoneRef, i), o)| (i, o) <- idListEls ]
