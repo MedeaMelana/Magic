@@ -696,7 +696,6 @@ searingSpear = mkCard $ do
           Left r  -> DamageObject self r 3 False True
           Right p -> DamagePlayer self p 3 False True
 
-
 smelt :: Card
 smelt = mkCard $ do
     name  =: Just "Smelt"
@@ -705,7 +704,6 @@ smelt = mkCard $ do
       { manaCost = Just [Just Red]
       , effect = destroyTargetPermanent (hasTypes artifactType)
       }
-
 
 thundermawHellkite :: Card
 thundermawHellkite = mkCard $ do
