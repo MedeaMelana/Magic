@@ -721,7 +721,7 @@ thundermawHellkite = mkCard $ do
       self <- view (asks (objectBase rSelf))
       let isAffected = notB (isControlledBy you) &&* hasStaticKeywordAbility Flying
       objs <- filter (isAffected . get permanentObject . snd) <$> viewZone Battlefield
-      let damage r = DamageObject self obj 1 False True
+      let damage r = DamageObject self r 1 False True
       let damageAndTap r = [Will (damage r), Will (TapPermanent r)]
       void . executeEffects $ concatMap damageAndTap (map fst objs)
 
