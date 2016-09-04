@@ -5,4 +5,5 @@ dist
 Main
 .cabal-sandbox
 cabal.sandbox.config
-.stack-work/
+.stack-work
+dist-newstyle
