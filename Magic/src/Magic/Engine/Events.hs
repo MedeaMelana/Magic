@@ -17,7 +17,7 @@ import Magic.Engine.Types
 import Control.Applicative ((<$>), (<$))
 import Control.Category ((.))
 import Control.Monad (forM_,)
-import Control.Monad.Error (throwError)
+import Control.Monad.Except (throwError)
 import Control.Monad.Reader (ask, runReaderT)
 import Control.Monad.Operational (singleton, Program, ProgramT, viewT, ProgramViewT(..))
 import Data.Label (get, set)

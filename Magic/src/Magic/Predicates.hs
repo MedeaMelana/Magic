@@ -4,6 +4,7 @@ module Magic.Predicates (
     hasColor,
     isOwnedBy,
     isControlledBy,
+    hasName,
     hasTypes,
     hasOneOfTypes,
     hasPermanentType,
@@ -21,10 +22,14 @@ import Control.Category ((.))
 import Data.Label (get)
 import Data.Label.Monadic (asks)
 import qualified Data.Set as Set
+import Data.Text (Text)
 import Prelude hiding ((.))
 
 
 -- Objects
+
+hasName :: Text -> Object -> Bool
+hasName t o = pure t == get name o
 
 hasColor :: Color -> Object -> Bool
 hasColor c o = c `Set.member` get colors o

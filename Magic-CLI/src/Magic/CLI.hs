@@ -42,7 +42,6 @@ askQuestions = eval . viewT
       GameWin p -> Text.putStrLn ("Player " <> showText p <> " wins!")
       GameDraw  -> Text.putStrLn "The game is a draw"
       ErrorWithMessage message -> Text.putStrLn ("Engine failed with error: " <> message)
-      UnknownError -> Text.putStrLn "Unknown error"
     eval (Right program) = case program of
       Return x -> return x
       Debug t :>>= k -> do
