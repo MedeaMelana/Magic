@@ -63,7 +63,7 @@ emptyObject t rOwner = Object
 
 
 countCountersOfType :: CounterType -> Object -> Int
-countCountersOfType ty o = length (filter (== ty) (get counters o))
+countCountersOfType ty o = MultiSet.occur ty (get counters o)
 
 sortOn :: Ord b => (a -> b) -> [a] -> [a]
 sortOn = sortBy . comparing

@@ -248,7 +248,7 @@ data Object = Object
   , _replacementEffects     :: [ReplacementEffect]
 
   -- these fields are reset whenever this object changes zones
-  , _counters               :: Bag CounterType
+  , _counters               :: MultiSet CounterType
   , _temporaryEffects       :: [TemporaryLayeredEffect]
   }
 

@@ -11,6 +11,7 @@ import Magic.Some
 import Magic.Core
 import qualified Magic.IdList as IdList
 import Magic.Events (willMoveToGraveyard)
+import Magic.Labels ((=+))
 import Magic.Types
 import Magic.Engine.Types
 
@@ -192,7 +193,7 @@ compileEffect e =
             simply $ tapStatus . object r =: Untapped
 
         AddCounter r ty ->
-          simply $ counters . objectBase r =. (ty :)
+          simply $ counters . objectBase r =+ [ty]
 
         DrawCard p -> do
           lib <- gets (library . player p)

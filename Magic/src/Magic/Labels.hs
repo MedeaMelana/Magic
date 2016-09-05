@@ -21,5 +21,6 @@ listEl i = lens (fromJust . IdList.get i) (IdList.modify i)
 (=.*) :: (Functor f, MonadState s m) => (s :-> f a) -> (a -> a) -> m ()
 l =.* f = l =. fmap f
 
+infix 8 =+
 (=+) :: (MonadState s m, Ord a) => (s :-> MultiSet a) -> [a] -> m ()
 l =+ xs = l =. foldr (\x f -> f . MultiSet.insert x) id xs

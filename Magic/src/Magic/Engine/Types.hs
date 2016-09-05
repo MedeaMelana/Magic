@@ -118,6 +118,6 @@ counterEffect :: (SomeObjectRef, Object) ->
   (Timestamp, View [SomeObjectRef], [ModifyObject])
 counterEffect (r, o) = (0, return [r], [ModifyPT (\_ -> return (n, n))])
   where
-    nplus  = length [ () | Plus1Plus1   <- _counters o ]
-    nminus = length [ () | Minus1Minus1 <- _counters o ]
+    nplus  = MultiSet.occur Plus1Plus1  (_counters o)
+    nminus = MultiSet.occur Minus1Minus1 (_counters o)
     n      = nplus - nminus

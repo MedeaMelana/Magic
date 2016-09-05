@@ -302,6 +302,6 @@ etbWithLoyaltyCounters :: ReplacementEffect
 etbWithLoyaltyCounters (WillMoveObject (Just fromRef) Battlefield perm) rSelf _you
   | fromRef == rSelf =
       case get (loyalty . objectPart) perm of
-        Just n -> Just $ return [WillMoveObject (Just fromRef) Battlefield (modify (counters . objectPart) (++ replicate n Loyalty) perm)]
+        Just n -> Just $ return [WillMoveObject (Just fromRef) Battlefield (modify (counters . objectPart) (MultiSet.insertMany Loyalty n) perm)]
         Nothing -> Nothing
 etbWithLoyaltyCounters _ _ _ = Nothing
