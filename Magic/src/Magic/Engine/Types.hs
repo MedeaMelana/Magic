@@ -21,6 +21,7 @@ import Data.Boolean ((&&*))
 import Data.Label (set, modify)
 import Data.List (delete)
 import Data.Monoid ((<>), mempty)
+import qualified Data.MultiSet as MultiSet
 import Data.Text (Text, pack)
 import Prelude hiding (interact)
 
@@ -95,13 +96,15 @@ compileModifyObject world m rSelf =
     ChangeController p -> set controller p
     ChangeTypes f -> modify types f
     ChangeColors f -> modify colors f
-    AddStaticKeywordAbility ab -> modify staticKeywordAbilities (++ [ab])
-    RemoveStaticKeywordAbility ab -> modify staticKeywordAbilities (delete ab)
+    AddStaticKeywordAbility ab ->
+      modify staticKeywordAbilities (MultiSet.insert ab)
+    RemoveStaticKeywordAbility ab ->
+      modify staticKeywordAbilities (MultiSet.delete ab)
     AddActivatedAbility ab -> modify activatedAbilities (++ [ab])
     AddTriggeredAbilities as -> modify triggeredAbilities (<> as)
     RemoveAllAbilities -> set activatedAbilities []
                         . set triggeredAbilities mempty
-                        . set staticKeywordAbilities []
+                        . set staticKeywordAbilities mempty
                         . set layeredEffects []
     DefinePT vpt -> set pt (Just (runReader (runViewT (vpt rSelf)) world))
     SetPT newPT -> set pt (Just newPT)

@@ -54,6 +54,7 @@ import Data.Boolean (true, false, (&&*))
 import Data.Label (get, modify)
 import Data.Label.Monadic (asks)
 import Data.Monoid (mempty)
+import qualified Data.MultiSet as MultiSet
 import Prelude hiding ((.))
 
 
@@ -184,7 +185,9 @@ playObjectEffect rSelf you = do
     collectEnchantPredicate :: Object -> Object -> Bool
     collectEnchantPredicate aura enchanted = gand
       [ hasTypes tys enchanted
-      | EnchantPermanent tys <- get staticKeywordAbilities aura ]
+      | (EnchantPermanent tys, _) <-
+          MultiSet.toOccurList (get staticKeywordAbilities aura)
+      ]
 
     playPermanentEffect :: Magic ()
     playPermanentEffect = stackSelf (\_ _ -> return ()) rSelf you

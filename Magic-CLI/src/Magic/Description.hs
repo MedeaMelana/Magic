@@ -109,7 +109,10 @@ describeObject :: Id -> Some ObjectOfType -> Description
 describeObject i (Some typedObj) = intercalate ", " components
   where
     components = mconcat [ nm, ptd, [describeTypes (get types o)]] ++
-                    map sh (get staticKeywordAbilities o) ++ ts
+                    map sh (toList (get staticKeywordAbilities o)) ++ ts
+
+    toList multiset =
+      foldMap (\(x, n) -> replicate n x) (MultiSet.toAscOccurList multiset)
 
     o :: Object
     o = get objectPart typedObj

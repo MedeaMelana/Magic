@@ -52,7 +52,7 @@ emptyObject t rOwner = Object
 
   , _play = Nothing
   , _alternativePlays = []
-  , _staticKeywordAbilities = []
+  , _staticKeywordAbilities = mempty
   , _layeredEffects = []
   , _activatedAbilities = []
   , _triggeredAbilities = mempty

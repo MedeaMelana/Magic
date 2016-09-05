@@ -241,7 +241,7 @@ data Object = Object
 
   , _play                   :: Maybe Activation
   , _alternativePlays       :: [Activation]
-  , _staticKeywordAbilities :: Bag StaticKeywordAbility
+  , _staticKeywordAbilities :: MultiSet StaticKeywordAbility
   , _layeredEffects         :: [LayeredEffect]
   , _activatedAbilities     :: [ActivatedAbility]
   , _triggeredAbilities     :: TriggeredAbilities

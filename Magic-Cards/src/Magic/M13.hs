@@ -55,7 +55,7 @@ ajani'sSunstriker = mkCard $ do
   types =: creatureTypes [Cat, Cleric]
   pt    =: Just (2, 2)
   play  =: Just playObject { manaCost = Just (white 2) }
-  staticKeywordAbilities =: [Lifelink]
+  staticKeywordAbilities =+ [Lifelink]
 
 angel'sMercy :: Card
 angel'sMercy = mkCard $ do
@@ -99,7 +99,7 @@ attendedKnight = mkCard $ do
     pt        =: Just (2, 2)
     play      =: Just playObject
       { manaCost = Just (generic 2 <> white 1) }
-    staticKeywordAbilities =: [FirstStrike]
+    staticKeywordAbilities =+ [FirstStrike]
     triggeredAbilities     =: trigger
   where
     trigger :: TriggeredAbilities
@@ -124,7 +124,7 @@ avenSquire = mkCard $ do
   types =: creatureTypes [Bird, Soldier]
   pt    =: Just (1, 1)
   play  =: Just playObject { manaCost = Just (generic 1 <> white 1) }
-  staticKeywordAbilities =: [Flying]
+  staticKeywordAbilities =+ [Flying]
   triggeredAbilities     =: exalted
 
 battleflightEagle :: Card
@@ -134,7 +134,7 @@ battleflightEagle = mkCard $ do
     pt        =: Just (2, 2)
     play      =: Just playObject
       { manaCost = Just (generic 4 <> white 1) }
-    staticKeywordAbilities =: [Flying]
+    staticKeywordAbilities =+ [Flying]
     triggeredAbilities     =: onSelfETB createBoostTrigger
   where
     createBoostTrigger :: Contextual (Magic ())
@@ -157,7 +157,7 @@ captainOfTheWatch = mkCard $ do
     pt    =: Just (3, 3)
     play  =: Just playObject { manaCost =
       Just (generic 4 <> white 2) }
-    staticKeywordAbilities =: [Vigilance]
+    staticKeywordAbilities =+ [Vigilance]
     layeredEffects         =: [boostSoldiers]
     triggeredAbilities     =: trigger
   where
@@ -207,7 +207,7 @@ divineFavor :: Card
 divineFavor = mkCard $ do
     name =: Just "Divine Favor"
     types =: auraType
-    staticKeywordAbilities =: [EnchantPermanent creatureType]
+    staticKeywordAbilities =+ [EnchantPermanent creatureType]
     triggeredAbilities =: gainLifeTrigger
     layeredEffects =: [boostEnchanted]
     play =: Just playObject { manaCost = Just (generic 1 <> white 1) }
@@ -243,7 +243,7 @@ guardianLions = mkCard $ do
     play =: Just playObject {
       manaCost = Just (generic 4 <> white 1)
     }
-    staticKeywordAbilities =: [Vigilance]
+    staticKeywordAbilities =+ [Vigilance]
 
 guardiansOfAkrasa :: Card
 guardiansOfAkrasa = mkCard $ do
@@ -253,7 +253,7 @@ guardiansOfAkrasa = mkCard $ do
     play =: Just playObject {
       manaCost = Just (generic 2 <> white 1)
     }
-    staticKeywordAbilities =: [Defender]
+    staticKeywordAbilities =+ [Defender]
     triggeredAbilities =: exalted
 
 healerOfThePride :: Card
@@ -282,7 +282,7 @@ pacifism :: Card
 pacifism = mkCard $ do
     name =: Just "Pacifism"
     types =: auraType
-    staticKeywordAbilities =: [EnchantPermanent creatureType]
+    staticKeywordAbilities =+ [EnchantPermanent creatureType]
     play =: Just playObject { manaCost = Just (generic 1 <> white 1) }
     layeredEffects =: [eff]
   where
@@ -323,7 +323,7 @@ serraAngel = mkCard $ do
     play =: Just playObject {
       manaCost = Just (generic 3 <> white 2)
     }
-    staticKeywordAbilities =: [Flying, Vigilance]
+    staticKeywordAbilities =+ [Flying, Vigilance]
 
 silvercoatLion :: Card
 silvercoatLion = mkCard $ do
@@ -360,7 +360,7 @@ warFalcon = mkCard $ do
     name =: Just "War Falcon"
     types =: creatureTypes[Bird]
     pt =: Just (2, 1)
-    staticKeywordAbilities =: [Flying]
+    staticKeywordAbilities =+ [Flying]
     play =: Just playObject { manaCost = Just (white 1) }
     allowAttacks =: controlsKnightOrSoldier
   where
@@ -416,7 +416,7 @@ faerieInvaders :: Card
 faerieInvaders = mkCard $ do
     name =: Just "Faerie Invaders"
     types =: creatureTypes [Faerie, Rogue]
-    staticKeywordAbilities =: [Flash]
+    staticKeywordAbilities =+ [Flash]
     play =: Just playObject
       { manaCost = Just (generic 4 <> blue 1) }
 
@@ -440,7 +440,7 @@ tricksOfTheTrade :: Card
 tricksOfTheTrade = mkCard $ do
     name =: Just "Tricks of the Trade"
     types =: auraType
-    staticKeywordAbilities =: [EnchantPermanent creatureType]
+    staticKeywordAbilities =+ [EnchantPermanent creatureType]
     layeredEffects =: [boostEnchanted]
     play =: Just playObject
       { manaCost = Just (generic 3 <> blue 1) }
@@ -471,7 +471,7 @@ cripplingBlight :: Card
 cripplingBlight = mkCard $ do
   name =: Just "Crippling Blight"
   types =: auraType
-  staticKeywordAbilities =: [EnchantPermanent creatureType]
+  staticKeywordAbilities =+ [EnchantPermanent creatureType]
   layeredEffects =: [boostEnchanted]
   play =: Just playObject
     { manaCost = Just (black 1) }
@@ -611,7 +611,7 @@ vampireNighthawk = mkCard $ do
   types =: creatureTypes [Vampire, Shaman]
   pt    =: Just (2, 3)
   play  =: Just playObject { manaCost = Just (generic 1 <> black 2) }
-  staticKeywordAbilities =: [Flying, Deathtouch, Lifelink]
+  staticKeywordAbilities =+ [Flying, Deathtouch, Lifelink]
 
 
 -- RED CARDS
@@ -644,7 +644,7 @@ firewingPhoenix = mkCard $ do
     name =: Just "Firewing Phoenix"
     types =: creatureTypes [Phoenix]
     pt    =: Just (4, 2)
-    staticKeywordAbilities =: [Flying]
+    staticKeywordAbilities =+ [Flying]
     play =: Just playObject
       { manaCost = Just (generic 3 <> red 1) }
     activatedAbilities =: [returnFromGraveyard]
@@ -759,7 +759,7 @@ thundermawHellkite = mkCard $ do
     play           =: Just playObject
       { manaCost = Just (generic 3 <> red 2)
       }
-    staticKeywordAbilities =: [Flying, Haste]
+    staticKeywordAbilities =+ [Flying, Haste]
     triggeredAbilities =: onSelfETB thundermawHellkiteTrigger
   where
     thundermawHellkiteTrigger :: Contextual (Magic ())
@@ -823,7 +823,7 @@ acidicSlime = mkCard $ do
     types =: creatureTypes [Ooze]
     pt =: Just (2, 2)
     play =: Just playObject { manaCost = Just (generic 3 <> green 2) }
-    staticKeywordAbilities =: [Deathtouch]
+    staticKeywordAbilities =+ [Deathtouch]
     triggeredAbilities =: onSelfETB acidicSlimeTrigger
   where
     targetTypes = [artifactType, enchantmentType, landType]
@@ -889,7 +889,7 @@ deadlyRecluse = mkCard $ do
   types =: creatureTypes [Spider]
   pt =: Just (1, 2)
   play =: Just playObject { manaCost = Just (generic 1 <> green 1) }
-  staticKeywordAbilities =: [Reach, Deathtouch]
+  staticKeywordAbilities =+ [Reach, Deathtouch]
 
 duskdaleWurm :: Card
 duskdaleWurm = mkCard $ do
@@ -897,7 +897,7 @@ duskdaleWurm = mkCard $ do
   types =: creatureTypes [Wurm]
   pt =: Just (7, 7)
   play =: Just playObject { manaCost = Just (generic 5 <> green 2) }
-  staticKeywordAbilities =: [Trample]
+  staticKeywordAbilities =+ [Trample]
 
 elvishArchdruid :: Card
 elvishArchdruid = mkCard $ do
@@ -1052,7 +1052,7 @@ primalHuntbeast = mkCard $ do
   types =: creatureTypes [Beast]
   pt =: Just (3, 3)
   play =: Just playObject { manaCost = Just (generic 3 <> green 1) }
-  staticKeywordAbilities =: [Hexproof]
+  staticKeywordAbilities =+ [Hexproof]
 
 quirionDryad :: Card
 quirionDryad = mkCard $ do
@@ -1119,7 +1119,7 @@ sentinelSpider = mkCard $ do
   types =: creatureTypes [Spider]
   play =: Just playObject { manaCost = Just (generic 3 <> green 2) }
   pt =: Just (4, 4)
-  staticKeywordAbilities =: [Vigilance, Reach]
+  staticKeywordAbilities =+ [Vigilance, Reach]
 
 serpent'sGift :: Card
 serpent'sGift = mkCard $ do
@@ -1146,7 +1146,7 @@ spikedBaloth = mkCard $ do
   types =: creatureTypes [Beast]
   play =: Just playObject { manaCost = Just (generic 3 <> green 1) }
   pt =: Just (4, 2)
-  staticKeywordAbilities =: [Trample]
+  staticKeywordAbilities =+ [Trample]
 
 timberpackWolf :: Card
 timberpackWolf = mkCard $ do
