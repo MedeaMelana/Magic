@@ -29,7 +29,7 @@ import Prelude hiding ((.))
 -- Objects
 
 hasName :: Text -> Object -> Bool
-hasName t o = pure t == get name o
+hasName t o = return t == get name o
 
 hasColor :: Color -> Object -> Bool
 hasColor c o = c `Set.member` get colors o

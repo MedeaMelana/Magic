@@ -23,7 +23,7 @@ import qualified Data.Set as Set
 import Data.Text (Text, pack)
 import qualified Data.Text as Text
 import Prelude hiding ((.))
-
+import Data.Traversable (traverse)
 
 
 -- COMMON ABILITIES
