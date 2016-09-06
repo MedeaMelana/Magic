@@ -23,4 +23,5 @@ library
                     containers,
                     fclabels ==2.0.*,
                     Boolean ==0.2.*,
-                    text >=1.1 && <1.3
+                    text >=1.1 && <1.3,
+                    multiset ==0.3.*

@@ -14,22 +14,25 @@ import Data.MultiSet (MultiSet)
 import qualified Data.MultiSet as MultiSet
 
 white :: Int -> ManaCost
-white = mkManaCost (ColorCost White)
+white = mkColorCost White
 
 blue :: Int -> ManaCost
-blue = mkManaCost (ColorCost Blue)
+blue = mkColorCost Blue
 
 black :: Int -> ManaCost
-black = mkManaCost (ColorCost Black)
+black = mkColorCost Black
 
 red :: Int -> ManaCost
-red = mkManaCost (ColorCost Red)
+red = mkColorCost Red
 
 green :: Int -> ManaCost
-green = mkManaCost (ColorCost Green)
+green = mkColorCost Green
+
+mkColorCost :: Color -> Int -> ManaCost
+mkColorCost = mkManaCost . ManaElCost . ColorEl
 
 colorless :: Int -> ManaCost
-colorless = mkManaCost ColorlessCost
+colorless = mkManaCost (ManaElCost (ColorlessEl))
 
 generic :: Int -> ManaCost
 generic = mkManaCost GenericCost

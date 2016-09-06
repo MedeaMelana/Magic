@@ -12,9 +12,6 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Magic.Types (
-    -- * Data structures
-    Bag,
-
     -- * Reference types
     PlayerRef, ObjectRef, SomeObjectRef, ActivatedAbilityRef, ZoneRef(..),
     ObjectType(..), LastKnownObjectInfo, toSomeObjectRef,
@@ -52,7 +49,8 @@ module Magic.Types (
     -- * Abilities
     Contextual,
     ActivatedAbility(..), Activation(..), TapCost(..), AbilityType(..),
-    StackItem, ManaPool,
+    StackItem,
+    ManaPool, ManaEl(..),
     ManaCost, ManaCostEl(..),
     StaticKeywordAbility(..),
     ReplacementEffect, TriggeredAbilities,
@@ -97,13 +95,6 @@ import Data.Set (Set)
 import Data.Text (Text, unpack)
 import Data.Type.Equality (TestEquality(..), (:~:)(..))
 import Prelude hiding (interact)
-
-
-
--- DATA STRUCTURES
-
-
-type Bag = []
 
 
 
@@ -431,12 +422,16 @@ data AbilityType = ActivatedAb | ManaAb | LoyaltyAb
 
 type StackItem = TargetList (ObjectRef TyStackItem -> PlayerRef -> Magic ())
 
-type ManaPool = Bag (Maybe Color)
+type ManaPool = MultiSet ManaEl
+
+-- | Single element of a mana pool.
+data ManaEl = ColorlessEl | ColorEl Color
+  deriving (Eq, Ord, Show, Read)
 
 type ManaCost = MultiSet ManaCostEl
 
 -- | Single element of a mana cost.
-data ManaCostEl = ColorlessCost | ColorCost Color | GenericCost
+data ManaCostEl = ManaElCost ManaEl | GenericCost
   -- Order is important: matches order of mana symbols on cards.
   deriving (Eq, Ord, Show, Read)
 
@@ -538,7 +533,7 @@ data PriorityAction
 
 -- Actions that may be taken when paying a mana cost
 data PayManaAction
-  = PayManaFromManaPool (Maybe Color)
+  = PayManaFromManaPool ManaEl
   | ActivateManaAbility ActivatedAbilityRef
 
 

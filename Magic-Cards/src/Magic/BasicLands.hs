@@ -9,6 +9,7 @@ import Control.Applicative
 import Control.Monad (void)
 import Data.Label.Monadic ((=:), asks)
 import Data.Monoid
+import qualified Data.MultiSet as MultiSet
 import Data.String
 
 
@@ -24,15 +25,16 @@ mkBasicLandCard ty color = mkCard $ do
   name               =: Just (fromString (show ty))
   types              =: basicType <> landTypes [ty]
   play               =: Just playObject
-  activatedAbilities =: [tapToAddMana (Just color)]
+  activatedAbilities =: [tapToAddMana (ColorEl color)]
 
-tapToAddMana :: Maybe Color -> ActivatedAbility
-tapToAddMana mc = ActivatedAbility
+tapToAddMana :: ManaEl -> ActivatedAbility
+tapToAddMana manaEl = ActivatedAbility
   { abilityType = ManaAb
   , tapCost = TapCost
   , abilityActivation = defaultActivation
     { effect = \_rSource you ->
-        void (executeEffect (Will (AddToManaPool you [mc])))
+        void . executeEffect $
+          Will (AddToManaPool you (MultiSet.singleton manaEl))
     }
   }
 

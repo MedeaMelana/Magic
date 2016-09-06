@@ -25,6 +25,7 @@ import Data.Label (get, set)
 import Data.Label.Monadic (gets, puts, (=:), (=.), asks)
 import Data.List ((\\))
 import Data.Monoid ((<>))
+import qualified Data.MultiSet as MultiSet
 import Data.Traversable (for)
 import Prelude hiding (interact, (.))
 
@@ -221,10 +222,10 @@ compileEffect e =
           combine $ WillMoveObject (Just ro) Battlefield (Permanent o Untapped 0 False Nothing Nothing)
 
         AddToManaPool p pool ->
-          simply $ manaPool . player p =. (pool <>)
+          simply $ manaPool . player p =. MultiSet.union pool
 
         SpendFromManaPool p pool ->
-          simply $ manaPool . player p =. (\\ pool)
+          simply $ manaPool . player p =. MultiSet.difference pool
 
         DamageObject _source r amount _isCombatDamage _isPreventable ->
           -- TODO check for protection, infect, wither, lifelink

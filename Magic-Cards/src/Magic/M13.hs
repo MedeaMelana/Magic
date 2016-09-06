@@ -19,6 +19,7 @@ import Data.Label (get)
 import Data.Label.Monadic ((=:), asks)
 import Data.Maybe (isJust)
 import Data.Monoid ((<>), mconcat)
+import qualified Data.MultiSet as MultiSet
 import qualified Data.Set as Set
 import Data.Text (Text, pack)
 import qualified Data.Text as Text
@@ -911,7 +912,7 @@ elvishArchdruid = mkCard $ do
     addManaAbility = tapAbility $ \_rSelf you -> do
       cards <- (map (get objectPart) . IdList.elems) <$> view (asks battlefield)
       let yourElves = filter (isControlledBy you &&* hasTypes (creatureTypes [Elf])) cards
-      mkTrigger you $ will $ AddToManaPool you $ replicate (length yourElves) (Just Green)
+      mkTrigger you $ will $ AddToManaPool you $ MultiSet.insertMany (ColorEl Green) (length yourElves) mempty
 
     boostYourElves = LayeredObjectEffect
       { affectedObjects = affectRestOfBattlefield $ \you ->
@@ -1287,7 +1288,7 @@ checkLand n cols tys = mkCard $ do
   name =: Just n
   types =: landType
   play =: Just playObject { manaCost = Just mempty }
-  activatedAbilities =: map (tapToAddMana . Just) cols
+  activatedAbilities =: map (tapToAddMana . ColorEl) cols
   replacementEffects =: [ etbTappedUnless (map (\ty -> landTypes [ty]) tys) ]
 
 

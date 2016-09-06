@@ -86,7 +86,7 @@ turnSteps =
 newPlayer :: PlayerRef -> Deck -> Player
 newPlayer i deck = Player
   { _life = 20
-  , _manaPool = []
+  , _manaPool = mempty
   , _prestack = []
   , _library = IdList.fromList [ CardObject (instantiateCard card i)
                                | card <- deck ]
@@ -124,7 +124,7 @@ fullGame = do
   ps <- IdList.ids <$> gets players
   drawOpeningHands ps 7
   forever $ do
-    players =.* set manaPool []
+    players =.* set manaPool mempty
     (step, newTurn) <- nextStep
     when newTurn (turnHistory =: [])
     raise TurnBasedActions [DidBeginStep step]
@@ -476,28 +476,25 @@ offerManaAbilitiesToPay source p cost = do
         then
           -- There is at least 1 generic mana to pay.
           -- Offer all colors in the mana pool to spend.
-          map PayManaFromManaPool (nub pool)
+          map PayManaFromManaPool (MultiSet.distinctElems pool)
         else
           -- Cost has no generic component.
           -- Only offer colors in the mana pool that occur in the cost.
-          [ PayManaFromManaPool (Just color)
-          | ColorCost color <- MultiSet.distinctElems cost
-          , Just color `elem` pool
+          [ PayManaFromManaPool manaEl
+          | ManaElCost manaEl <- MultiSet.distinctElems cost
+          , manaEl `MultiSet.member` pool
           ]
   action <- askQuestion p (AskManaAbility cost (amas <> pms))
   case action of
-    PayManaFromManaPool mc -> do
-      _ <- executeEffect source (Will (SpendFromManaPool p [mc]))
-      let spentEl =
-            case mc of
-              Nothing -> ColorlessCost
-              Just c  -> ColorCost c
+    PayManaFromManaPool manaEl -> do
+      _ <- executeEffect source $
+        Will (SpendFromManaPool p (MultiSet.singleton manaEl))
       let restCost =
             -- Pay a colored cost element if possible;
             -- otherwise pay a generic element.
-            if spentEl `elem` cost
-            then MultiSet.delete spentEl     cost
-            else MultiSet.delete GenericCost cost
+            if ManaElCost manaEl `elem` cost
+            then MultiSet.delete (ManaElCost manaEl) cost
+            else MultiSet.delete GenericCost         cost
       offerManaAbilitiesToPay source p restCost
     ActivateManaAbility (r, i) -> do
       abilities <- gets (activatedAbilities . objectBase r)

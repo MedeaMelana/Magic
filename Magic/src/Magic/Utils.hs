@@ -32,7 +32,7 @@ mkCard f = Card (setColors . execState f . emptyObject 0)
 colorsFromManaCost :: ManaCost -> Set Color
 colorsFromManaCost = MultiSet.toSet . MultiSet.mapMaybe manaColor
   where
-    manaColor (ColorCost c) = Just c
+    manaColor (ManaElCost (ColorEl c)) = Just c
     manaColor _ = Nothing
 
 emptyObject :: Timestamp -> PlayerRef -> Object

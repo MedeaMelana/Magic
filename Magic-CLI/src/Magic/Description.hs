@@ -83,7 +83,7 @@ describePriorityAction a =
 describePayManaAction :: PayManaAction -> Description
 describePayManaAction a =
   case a of
-    PayManaFromManaPool mc -> "Use " <> describeManaPool [mc] <> " from mana pool"
+    PayManaFromManaPool mc -> "Use " <> describeManaEl mc <> " from mana pool"
     ActivateManaAbility (ro, i) -> "Activate ability " <> sh i <> " of " <> describeObjectByRef ro
 
 describeWorld :: Description
@@ -183,30 +183,28 @@ describeManaPools = withWorld $ \world -> header ("Mana pools: ") $ unlines
   , not (null (get manaPool p))
   ]
 
-describeManaPool :: Bag (Maybe Color) -> Description
-describeManaPool mcs =
-  case partitionMaybes (sort mcs) of
-    (n, []) -> sh n
-    (0, cs) -> describeColoredMana cs
-    (n, cs) -> sh n <> describeColoredMana cs
-  where
-    describeColoredMana = foldMap describeColor
+describeManaPool :: ManaPool -> Description
+describeManaPool = describeManaCost . MultiSet.map ManaElCost
 
 describeManaCost :: ManaCost -> Description
-describeManaCost cost =
-    case MultiSet.toAscOccurList cost of
-      []   -> "0"
-      els  -> foldMap describeEl els
+describeManaCost cost
+    | MultiSet.null cost  = "0"
+    | otherwise           =
+        foldMap describeManaCostEl (MultiSet.toAscOccurList cost)
   where
-    describeEl = \case
-      (ColorlessCost, n) -> mconcat (replicate n "C")
-      (ColorCost col, n) -> mconcat (replicate n (describeColor col))
-      (GenericCost, n) -> sh n
+    describeManaCostEl = \case
+      (ManaElCost manaEl, n) -> mconcat (replicate n (describeManaEl manaEl))
+      (GenericCost,       n) -> sh n
 
+describeManaEl :: ManaEl -> Description
+describeManaEl = \case
+  ColorlessEl   -> "C"
+  ColorEl color -> describeColor color
 
 describeColor :: Color -> Description
-describeColor Blue = string "U"
-describeColor m = string . take 1 . show $ m
+describeColor = \case
+  Blue -> string "U"
+  m    -> string . take 1 . show $ m
 
 partitionMaybes :: [Maybe a] -> (Int, [a])
 partitionMaybes []              = (0, [])

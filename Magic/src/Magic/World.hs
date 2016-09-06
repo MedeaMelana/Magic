@@ -1,7 +1,4 @@
 module Magic.World (
-    -- * Data structures
-    Bag,
-
     -- * Reference types
     PlayerRef, ObjectRef, SomeObjectRef, ActivatedAbilityRef, ZoneRef(..),
     ObjectType(..), LastKnownObjectInfo, toSomeObjectRef,
@@ -13,7 +10,7 @@ module Magic.World (
     Step(..), BeginningStep(..), CombatStep(..), EndStep(..),
 
     -- * Players
-    Player(..), life, manaPool, prestack, library, hand, graveyard, maximumHandSize, failedCardDraw,
+    Player(..), ManaEl(..), life, manaPool, prestack, library, hand, graveyard, maximumHandSize, failedCardDraw,
 
   ) where
 
