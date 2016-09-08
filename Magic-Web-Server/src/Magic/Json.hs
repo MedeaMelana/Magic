@@ -284,7 +284,6 @@ instance ToJSON GameOver where
     GameWin p -> ("gameWin", [ "playerId" .= p ])
     GameDraw -> ("gameDraw", [])
     ErrorWithMessage msg -> ("error", [ "message" .= msg ])
-    UnknownError -> ("error", [])
 
 instance ToJSON EntityRef where
   toJSON t = typedObject $ case t of
