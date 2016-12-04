@@ -815,6 +815,37 @@ trumpetBlast = mkCard $ do
       void $ traverse (\(r, i) -> modifyPTUntilEOT (2, 0) (Some r, i) t) objs
 
 
+smelt :: Card
+smelt = mkCard $ do
+    name  =: Just "Smelt"
+    types =: instantType
+    play  =: Just playObject
+      { manaCost = Just [Just Red]
+      , effect = destroyTargetPermanent (hasTypes artifactType)
+      }
+
+
+thundermawHellkite :: Card
+thundermawHellkite = mkCard $ do
+    name           =: Just "Thundermaw Hellkite"
+    types          =: creatureTypes [Dragon]
+    pt             =: Just (5, 5)
+    play           =: Just playObject
+      { manaCost = Just [Nothing, Nothing, Nothing, Just Red, Just Red]
+      }
+    staticKeywordAbilities =: [Flying, Haste]
+    triggeredAbilities =: onSelfETB thundermawHellkiteTrigger
+  where
+    thundermawHellkiteTrigger :: Contextual (Magic ())
+    thundermawHellkiteTrigger rSelf you = mkTrigger you $ do
+      self <- view (asks (objectBase rSelf))
+      let isAffected = notB (isControlledBy you) &&* hasStaticKeywordAbility Flying
+      objs <- filter (isAffected . get permanentObject . snd) <$> viewZone Battlefield
+      let damage obj = DamageObject self obj 1 False True
+      let damageAndTap obj = [Will (damage obj), Will (TapPermanent obj)]
+      void . executeEffects $ concatMap damageAndTap (map fst objs)
+
+
 -- GREEN CARDS
 
 acidicSlime :: Card
