@@ -12,6 +12,7 @@ maintainer:         martijn@van.steenbergen.nl
 category:           Game
 build-type:         Simple
 cabal-version:      >=1.8
+tested-with:        GHC ==8.6.3
 
 executable magic-cli
   hs-source-dirs:   src

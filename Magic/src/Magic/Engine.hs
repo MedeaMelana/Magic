@@ -134,11 +134,13 @@ fullGame = do
 -- | Moves to the next step. Returns the new step, and whether a new turn has begun.
 nextStep :: Engine (Step, Bool)
 nextStep = do
-  (rp, s : ss) : ts <- gets turnStructure
-  turnStructure =: if null ss then ts else (rp, ss) : ts
-  activePlayer  =: rp
-  activeStep    =: s
-  return (s, null ss)
+  structure <- gets turnStructure
+  case structure of
+    (rp, s : ss) : ts -> do
+      turnStructure =: if null ss then ts else (rp, ss) : ts
+      activePlayer  =: rp
+      activeStep    =: s
+      return (s, null ss)
 
 
 
@@ -400,19 +402,21 @@ collectSBAs = view $ execWriterT $ do
 
 resolve :: ObjectRef TyStackItem -> Engine ()
 resolve r@(Stack, i) = do
-  StackItem o item <- gets (object r)
-  let (_, Just mkEffects) = evaluateTargetList item
-  let eventSource = ResolutionOf r
-  executeMagic eventSource (mkEffects r (get controller o))
+  stackItem <- gets (object r)
+  case stackItem of
+    StackItem o item -> do
+      let (_, Just mkEffects) = evaluateTargetList item
+      let eventSource = ResolutionOf r
+      executeMagic eventSource (mkEffects r (get controller o))
 
-  -- if the object is now still on the stack, move it to the appropriate zone
-  if (hasTypes instantType o || hasTypes sorceryType o)
-  then void $ executeEffect eventSource $
-    WillMoveObject (Just (Some Stack, i)) (Graveyard (get controller o)) (CardObject o)
-  else if hasPermanentType o
-  then void $ executeEffect eventSource $
-    WillMoveObject (Just (Some Stack, i)) Battlefield (Permanent o Untapped 0 False Nothing Nothing)
-  else void $ executeEffect eventSource $ Will $ CeaseToExist (Some Stack, i)
+      -- if the object is now still on the stack, move it to the appropriate zone
+      if (hasTypes instantType o || hasTypes sorceryType o)
+      then void $ executeEffect eventSource $
+        WillMoveObject (Just (Some Stack, i)) (Graveyard (get controller o)) (CardObject o)
+      else if hasPermanentType o
+      then void $ executeEffect eventSource $
+        WillMoveObject (Just (Some Stack, i)) Battlefield (Permanent o Untapped 0 False Nothing Nothing)
+      else void $ executeEffect eventSource $ Will $ CeaseToExist (Some Stack, i)
 
 collectPriorityActions :: PlayerRef -> Engine [PriorityAction]
 collectPriorityActions p = do
@@ -456,8 +460,10 @@ executePriorityAction :: PlayerRef -> PriorityAction -> Engine ()
 executePriorityAction p a = do
   case a of
     PlayCard r -> do
-      Just ability <- gets (play . objectPart . object r)
-      activate (PriorityActionExecution a) ability (someObjectRef r) p
+      maybeAbility <- gets (play . objectPart . object r)
+      case maybeAbility of
+        Just ability ->
+          activate (PriorityActionExecution a) ability (someObjectRef r) p
     ActivateAbility (r, i) -> do
       abilities <- gets (activatedAbilities . objectBase r)
       let ab = abilities !! i

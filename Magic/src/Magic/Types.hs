@@ -330,18 +330,20 @@ data ObjectTypes = ObjectTypes
   , sorcerySubtypes      :: Maybe (Set SpellSubtype)
   } deriving (Eq, Ord, Show, Read)
 
+instance Semigroup ObjectTypes where
+  x <> y = ObjectTypes
+    { supertypes           = supertypes x           <> supertypes y
+    , artifactSubtypes     = artifactSubtypes x     <> artifactSubtypes y
+    , creatureSubtypes     = creatureSubtypes x     <> creatureSubtypes y
+    , enchantmentSubtypes  = enchantmentSubtypes x  <> enchantmentSubtypes y
+    , instantSubtypes      = instantSubtypes x      <> instantSubtypes y
+    , landSubtypes         = landSubtypes x         <> landSubtypes y
+    , planeswalkerSubtypes = planeswalkerSubtypes x <> planeswalkerSubtypes y
+    , sorcerySubtypes      = sorcerySubtypes x      <> sorcerySubtypes y
+    }
+
 instance Monoid ObjectTypes where
   mempty = ObjectTypes mempty mempty mempty mempty mempty mempty mempty mempty
-  x  `mappend` y = ObjectTypes
-    { supertypes           = supertypes x           `mappend` supertypes y
-    , artifactSubtypes     = artifactSubtypes x     `mappend` artifactSubtypes y
-    , creatureSubtypes     = creatureSubtypes x     `mappend` creatureSubtypes y
-    , enchantmentSubtypes  = enchantmentSubtypes x  `mappend` enchantmentSubtypes y
-    , instantSubtypes      = instantSubtypes x      `mappend` instantSubtypes y
-    , landSubtypes         = landSubtypes x         `mappend` landSubtypes y
-    , planeswalkerSubtypes = planeswalkerSubtypes x `mappend` planeswalkerSubtypes y
-    , sorcerySubtypes      = sorcerySubtypes x      `mappend` sorcerySubtypes y
-    }
 
 data Supertype = Basic | Legendary
   deriving (Eq, Ord, Show, Read, Enum, Bounded)
@@ -637,9 +639,11 @@ instance Applicative TargetList where
       test' (_, y) = test y
       g' (ab, y)   = ab (g y)
 
+instance Semigroup a => Semigroup (TargetList a) where
+  (<>) = liftA2 (<>)
+
 instance Monoid a => Monoid (TargetList a) where
   mempty  = pure mempty
-  mappend = liftA2 mappend
 
 instance Show (TargetList a) where
   show _ = "<target list>"
@@ -652,9 +656,11 @@ instance Show (TargetList a) where
 newtype ViewT m a = ViewT { runViewT :: ReaderT World m a }
   deriving (Functor, Applicative, Monad, MonadReader World, MonadTrans)
 
+instance (Semigroup a, Monad m) => Semigroup (ViewT m a) where
+  ViewT x <> ViewT y = ViewT (liftM2 (<>) x y)
+
 instance (Monoid a, Monad m) => Monoid (ViewT m a) where
   mempty = return mempty
-  ViewT x `mappend` ViewT y = ViewT (liftM2 mappend x y)
 
 instance (Monad m, Boolean a) => Boolean (ViewT m a) where
   true  = return true
@@ -738,9 +744,11 @@ instance MonadView Magic where
 instance MonadInteract Magic where
   interact = Magic . lift . lift
 
+instance Semigroup a => Semigroup (Magic a) where
+  (<>) = liftM2 (<>)
+
 instance Monoid a => Monoid (Magic a) where
   mempty  = return mempty
-  mappend = liftM2 mappend
 
 
 mkLabels [''World, ''Player, ''Object]

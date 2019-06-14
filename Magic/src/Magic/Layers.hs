@@ -73,7 +73,7 @@ affectRestOfBattlefield _ _ _ = return []
 -- | Affect whatever object this object is attached to.
 affectAttached :: Contextual (View [SomeObjectRef])
 affectAttached (Some Battlefield, i) _you = do
-  perm@Permanent {} <- asks (object (Battlefield, i))
+  perm <- asks (object (Battlefield, i))
   return (maybeToList (get attachedTo perm))
 affectAttached _ _ = return []
 

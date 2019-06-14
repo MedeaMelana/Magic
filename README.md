@@ -23,28 +23,20 @@ There is also a command-line interface that allows you to play the game. To run 
 
 ## Building with cabal
 
-You need [GHC 7.8](http://www.haskell.org/ghc/download_ghc_7_8_2) or greater and [cabal-install 1.24](http://www.haskell.org/cabal/download.html) or greater to build Magic.
+You need [GHC 8.6.3](https://www.haskell.org/ghc/download_ghc_8_6_3) or greater and [cabal-install 2.4.1](https://www.haskell.org/cabal/download.html) or greater to build Magic.
 
-Clone the repository and create a Cabal sandbox:
+Clone the repository:
 
 ```
 $ git clone git@github.com:MedeaMelana/Magic.git
 $ cd Magic
-$ cabal sandbox init
 ```
 
-If you want to run the command-line interface:
+Run the command-line interface:
 
 ```
 $ cabal new-build Magic-CLI
-$ dist-newstyle/build/Magic-CLI-*/build/magic-cli/magic-cli
-```
-
-If you want to run the web server:
-
-```
-$ cabal new-build Magic-Web-Server
-$ dist-newstyle/build/Magic-Web-Server-*/build/magic-web-server/magic-web-server
+$ dist-newstyle/build/*/*/Magic-CLI-*/x/magic-cli/build/magic-cli/magic-cli
 ```
 
 ## Building with stack

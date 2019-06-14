@@ -38,9 +38,11 @@ newtype Description = Description { runDescription :: View Text }
 instance IsString Description where
   fromString = Description . return . pack
 
+instance Semigroup Description where
+  Description x <> Description y = Description (mappend <$> x <*> y)
+
 instance Monoid Description where
   mempty = Description (return mempty)
-  Description x `mappend` Description y = Description (mappend <$> x <*> y)
 
 text :: Text -> Description
 text = Description . return
